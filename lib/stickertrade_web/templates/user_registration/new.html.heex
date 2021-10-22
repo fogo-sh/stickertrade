@@ -1,0 +1,28 @@
+<div class="w-1/2 mx-auto">
+  <h1>Register</h1>
+
+  <.form let={f} for={@changeset} action={Routes.user_registration_path(@conn, :create)} class="flex flex-col">
+    <%= if @changeset.action do %>
+      <div class="alert-error">
+        <p>Oops, something went wrong! Please check the errors below.</p>
+      </div>
+    <% end %>
+
+    <%= label f, :email %>
+    <%= email_input f, :email, required: true %>
+    <%= error_tag f, :email %>
+
+    <%= label f, :password %>
+    <%= password_input f, :password, required: true %>
+    <%= error_tag f, :password %>
+
+    <div class="mt-3 mb-1">
+      <%= submit "Register", class: "btn-primary" %>
+    </div>
+  </.form>
+
+  <p class="text-center">
+    <%= link "Log in", to: Routes.user_session_path(@conn, :new) %> |
+    <%= link "Forgot your password?", to: Routes.user_reset_password_path(@conn, :new) %>
+  </p>
+</div>

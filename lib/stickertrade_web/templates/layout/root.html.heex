@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <%= csrf_meta_tag() %>
+    <%= live_title_tag assigns[:page_title] || "Sticker Trade" %>
+    <link phx-track-static rel="stylesheet" href={Routes.static_path(@conn, "/assets/app.css")}/>
+    <script defer phx-track-static type="text/javascript" src={Routes.static_path(@conn, "/assets/app.js")}></script>
+  </head>
+  <body class="h-full bg-backdrop p-2 border-8 border-primary">
+    <header>
+      <section>
+        <nav class="p-2 flex justify-between h-12">
+          <a href="/">
+            <button class="h-full btn-primary">Sticker Trade</button>
+          </a>
+          <%= render "_user_menu.html", assigns %>
+        </nav>
+      </section>
+    </header>
+    <%= @inner_content %>
+  </body>
+</html>
