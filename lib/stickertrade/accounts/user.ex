@@ -4,6 +4,7 @@ defmodule Stickertrade.Accounts.User do
 
   schema "users" do
     field :email, :string
+    field :username, :string
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
     field :confirmed_at, :naive_datetime
@@ -30,8 +31,9 @@ defmodule Stickertrade.Accounts.User do
   """
   def registration_changeset(user, attrs, opts \\ []) do
     user
-    |> cast(attrs, [:email, :password])
+    |> cast(attrs, [:email, :username, :password])
     |> validate_email()
+    |> validate_username()
     |> validate_password(opts)
   end
 
@@ -42,6 +44,16 @@ defmodule Stickertrade.Accounts.User do
     |> validate_length(:email, max: 160)
     |> unsafe_validate_unique(:email, Stickertrade.Repo)
     |> unique_constraint(:email)
+  end
+
+  defp validate_username(changeset) do
+    changeset
+    |> validate_required([:username])
+    |> validate_format(:email, ~r/^\w*$/, message: "invalid characters")
+    |> validate_length(:username, min: 3)
+    |> validate_length(:username, max: 16)
+    |> unsafe_validate_unique(:username, Stickertrade.Repo)
+    |> unique_constraint(:username)
   end
 
   defp validate_password(changeset, opts) do
@@ -81,6 +93,21 @@ defmodule Stickertrade.Accounts.User do
     |> case do
       %{changes: %{email: _}} = changeset -> changeset
       %{} = changeset -> add_error(changeset, :email, "did not change")
+    end
+  end
+
+  @doc """
+  A user changeset for changing the username.
+
+  It requires the username to change otherwise an error is added.
+  """
+  def username_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:username])
+    |> validate_username()
+    |> case do
+      %{changes: %{username: _}} = changeset -> changeset
+      %{} = changeset -> add_error(changeset, :username, "did not change")
     end
   end
 

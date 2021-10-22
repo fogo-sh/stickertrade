@@ -109,6 +109,19 @@ defmodule Stickertrade.Accounts do
   end
 
   @doc """
+  Returns an `%Ecto.Changeset{}` for changing the user username.
+
+  ## Examples
+
+      iex> change_user_username(user)
+      %Ecto.Changeset{data: %User{}}
+
+  """
+  def change_user_username(user, attrs \\ %{}) do
+    User.username_changeset(user, attrs)
+  end
+
+  @doc """
   Emulates that the email will change without actually changing
   it in the database.
 
@@ -182,6 +195,26 @@ defmodule Stickertrade.Accounts do
   """
   def change_user_password(user, attrs \\ %{}) do
     User.password_changeset(user, attrs, hash_password: false)
+  end
+
+  @doc """
+  Updates the user username
+
+  ## Examples
+
+      iex> update_user_username(user, "password", %{username: ...})
+      {:ok, %User{}}
+  """
+  def update_user_username(user, password, attrs) do
+    changeset =
+      user
+      |> User.username_changeset(attrs)
+      |> User.validate_current_password(password)
+
+    case Repo.update(changeset) do
+      {:ok, user} -> {:ok, user}
+      {:error, :user, changeset, _} -> {:error, changeset}
+    end
   end
 
   @doc """

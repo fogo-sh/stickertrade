@@ -8,8 +8,9 @@
     <%= live_title_tag assigns[:page_title] || "Sticker Trade" %>
     <link phx-track-static rel="stylesheet" href={Routes.static_path(@conn, "/assets/app.css")}/>
     <script defer phx-track-static type="text/javascript" src={Routes.static_path(@conn, "/assets/app.js")}></script>
+    <script defer src="//unpkg.com/alpinejs"></script>
   </head>
-  <body class="h-full bg-backdrop p-2 border-8 border-primary">
+  <body class="min-h-full bg-backdrop p-2 border-8 border-primary">
     <header>
       <section>
         <nav class="p-2 flex justify-between h-12">

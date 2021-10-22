@@ -1,6 +1,6 @@
 <ul class="flex">
 <%= if @current_user do %>
-  <button class="btn-secondary"><%= @current_user.email %></button>
+  <button class="btn-secondary"><%= @current_user.username %></button>
   <button class="btn-secondary"><%= link "Settings", to: Routes.user_settings_path(@conn, :edit) %></button>
   <button class="btn-secondary"><%= link "Log out", to: Routes.user_session_path(@conn, :delete), method: :delete %></button>
 <% else %>

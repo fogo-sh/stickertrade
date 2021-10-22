@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+[x-cloak] {
+  display: none;
+}
+
 @layer base {
   input {
     @apply bg-primary-400 text-light rounded-sm px-2 py-1 border-2 border-primary;

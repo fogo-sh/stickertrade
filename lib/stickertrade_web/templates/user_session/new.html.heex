@@ -3,7 +3,7 @@
 
   <.form let={f} for={@conn} action={Routes.user_session_path(@conn, :create)} as={:user} class="flex flex-col">
     <%= if @error_message do %>
-      <div>
+      <div class="alert-error">
         <p><%= @error_message %></p>
       </div>
     <% end %>
