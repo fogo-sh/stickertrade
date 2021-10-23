@@ -213,7 +213,7 @@ defmodule Stickertrade.Accounts do
 
     case Repo.update(changeset) do
       {:ok, user} -> {:ok, user}
-      {:error, :user, changeset, _} -> {:error, changeset}
+      {:error, changeset} -> {:error, changeset}
     end
   end
 

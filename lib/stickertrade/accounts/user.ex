@@ -49,7 +49,7 @@ defmodule Stickertrade.Accounts.User do
   defp validate_username(changeset) do
     changeset
     |> validate_required([:username])
-    |> validate_format(:email, ~r/^\w*$/, message: "invalid characters")
+    |> validate_format(:username, ~r/^\w*$/, message: "invalid characters")
     |> validate_length(:username, min: 3)
     |> validate_length(:username, max: 16)
     |> unsafe_validate_unique(:username, Stickertrade.Repo)
