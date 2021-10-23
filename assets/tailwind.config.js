@@ -12,13 +12,13 @@ module.exports = {
           400: '#BD82A9',
           DEFAULT: '#D291BC',
           600: '#DBA7C9',
-          700: 'white',
+          700: '#E8C8DD',
         },
         'secondary': {
           400: '#86709B',
           DEFAULT: '#957DAD',
           600: '#AA97BD',
-          700: 'white',
+          700: '#CABED6',
         },
         'dark': {
           DEFAULT: 'black',

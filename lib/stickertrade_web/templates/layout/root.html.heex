@@ -13,10 +13,24 @@
   <body class="min-h-full bg-backdrop p-2 border-8 border-primary">
     <header>
       <section>
-        <nav class="p-2 flex justify-between h-12">
-          <a href="/">
-            <button class="h-full btn-primary">Sticker Trade</button>
-          </a>
+        <nav class="p-2 flex items-center justify-between h-16">
+          <div class="bg-primary-400 p-2">
+            <button class="btn-primary">
+              <a href="/">
+                Sticker Trade
+              </a>
+            </button>
+            <button class="btn-primary">
+              <a href="/market">
+                Market
+              </a>
+            </button>
+            <button class="btn-primary">
+              <a href="/trades">
+                Trades
+              </a>
+            </button>
+          </div>
           <%= render "_user_menu.html", assigns %>
         </nav>
       </section>

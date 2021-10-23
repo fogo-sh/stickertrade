@@ -29,11 +29,15 @@
 }
 
 @layer components {
+  .btn {
+    @apply text-light px-3 mx-1 first:ml-0 last:mr-0 border-2 border-dashed;
+  }
+
   .btn-primary {
-    @apply bg-primary text-light px-2 mx-1 first:ml-0 last:mr-0 border-2 border-dashed border-primary-600 hover:border-secondary-700;
+    @apply btn bg-primary border-primary-600 hover:border-primary-700;
   }
   .btn-secondary {
-    @apply bg-secondary text-light px-2 mx-1 first:ml-0 last:mr-0 border-2 border-dashed border-secondary-600 hover:border-secondary-700;
+    @apply btn bg-secondary  border-secondary-600 hover:border-secondary-700;
   }
 
   .alert-info {

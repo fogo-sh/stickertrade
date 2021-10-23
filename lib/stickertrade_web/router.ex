@@ -21,6 +21,8 @@ defmodule StickertradeWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :index
+    get "/market", MarketViewController, :index
+    get "/trades", TradesViewController, :index
   end
 
   # Other scopes may use custom stacks.
