@@ -1,5 +1,7 @@
 # Sticker Trade
 
+https://stickertrade.ca
+
 Made using [Phoenix](https://www.phoenixframework.org)
 
 ## Running locally
