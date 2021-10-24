@@ -1,5 +1,7 @@
 # Sticker Trade
 
+_work in progress_
+
 https://stickertrade.ca
 
 Made using [Phoenix](https://www.phoenixframework.org)
