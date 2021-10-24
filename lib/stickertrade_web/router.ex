@@ -25,6 +25,12 @@ defmodule StickertradeWeb.Router do
     get "/trades", TradesViewController, :index
   end
 
+  scope "/", StickertradeWeb do
+    pipe_through [:browser, :require_authenticated_user]
+
+    get "/stickers/add", StickersAddController, :new
+  end
+
   # Other scopes may use custom stacks.
   # scope "/api", StickertradeWeb do
   #   pipe_through :api

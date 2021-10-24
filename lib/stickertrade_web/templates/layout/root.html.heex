@@ -15,21 +15,9 @@
       <section>
         <nav class="p-2 flex items-center justify-between h-16">
           <div class="bg-primary-400 p-2">
-            <button class="btn-primary">
-              <a href="/">
-                Sticker Trade
-              </a>
-            </button>
-            <button class="btn-primary">
-              <a href="/market">
-                Market
-              </a>
-            </button>
-            <button class="btn-primary">
-              <a href="/trades">
-                Trades
-              </a>
-            </button>
+            <button class="btn-primary"><%= link "Sticker Trade", to: Routes.page_path(@conn, :index) %></button>
+            <button class="btn-primary"><%= link "Market", to: Routes.market_view_path(@conn, :index) %></button>
+            <button class="btn-primary"><%= link "Trades", to: Routes.trades_view_path(@conn, :index) %></button>
           </div>
           <%= render "_user_menu.html", assigns %>
         </nav>
