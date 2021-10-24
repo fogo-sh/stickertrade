@@ -7,8 +7,12 @@
 }
 
 @layer base {
-  input {
-    @apply bg-primary-400 text-light rounded-sm px-2 py-1 border-2 border-primary;
+  input, textarea {
+    @apply bg-primary text-light rounded-sm px-1 py-0.5 border-2 border-primary-600;
+  }
+
+  textarea {
+    @apply min-h-[4rem] max-h-[30rem];
   }
 
   h1 {
@@ -28,9 +32,17 @@
   }
 }
 
+.sticker-img {
+  @apply h-16;
+}
+
 @layer components {
   .btn {
     @apply text-light px-3 mx-1 first:ml-0 last:mr-0 border-2 border-dashed;
+  }
+
+  .btn:disabled {
+    @apply opacity-60 cursor-not-allowed;
   }
 
   .btn-primary {
@@ -50,5 +62,9 @@
 
   .error-tag {
     @apply text-error italic font-medium mt-1;
+  }
+
+  .sticker-img {
+    @apply h-16;
   }
 }

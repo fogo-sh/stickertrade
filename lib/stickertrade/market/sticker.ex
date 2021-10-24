@@ -5,7 +5,7 @@ defmodule Stickertrade.Market.Sticker do
   alias Stickertrade.Accounts
 
   schema "stickers" do
-    field :description, :string
+    field :description, :string, default: ""
     field :image, :string
     field :name, :string
     field :user_id, :integer
@@ -19,6 +19,6 @@ defmodule Stickertrade.Market.Sticker do
   def changeset(sticker, attrs) do
     sticker
     |> cast(attrs, [:name, :description, :image, :user_id])
-    |> validate_required([:name, :description, :image, :user_id])
+    |> validate_required([:name, :image, :user_id])
   end
 end

@@ -10,19 +10,21 @@
     <script defer phx-track-static type="text/javascript" src={Routes.static_path(@conn, "/assets/app.js")}></script>
     <script defer src="//unpkg.com/alpinejs"></script>
   </head>
-  <body class="min-h-full bg-backdrop p-2 border-8 border-primary">
-    <header>
-      <section>
-        <nav class="p-2 flex items-center justify-between h-16">
-          <div class="bg-primary-400 p-2">
-            <button class="btn-primary"><%= link "Sticker Trade", to: Routes.page_path(@conn, :index) %></button>
-            <button class="btn-primary"><%= link "Market", to: Routes.market_view_path(@conn, :index) %></button>
-            <button class="btn-primary"><%= link "Trades", to: Routes.trades_view_path(@conn, :index) %></button>
-          </div>
-          <%= render "_user_menu.html", assigns %>
-        </nav>
-      </section>
-    </header>
-    <%= @inner_content %>
+  <body class="h-full bg-primary">
+    <div class="min-h-full bg-backdrop p-2 border-8 border-primary">
+      <header>
+        <section>
+          <nav class="p-2 flex items-center justify-between h-16">
+            <div class="bg-primary-400 p-2">
+              <button class="btn-primary"><%= link "Sticker Trade", to: Routes.page_path(@conn, :index) %></button>
+              <button class="btn-primary"><%= link "Market", to: Routes.market_view_path(@conn, :index) %></button>
+              <button class="btn-primary"><%= link "Trades", to: Routes.trades_view_path(@conn, :index) %></button>
+            </div>
+            <%= render "_user_menu.html", assigns %>
+          </nav>
+        </section>
+      </header>
+      <%= @inner_content %>
+    </div>
   </body>
 </html>
