@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap");
+
+* {
+  font-family: "Inter", sans-serif;
+}
+
+p,
+a,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+li {
+  @apply text-light-500;
+}
+
+a:hover {
+  @apply text-light-700 underline;
+}
+
+h1 {
+  @apply font-semibold;
+}
+
+h2,
+h3 {
+  @apply font-normal;
+}
+
+.markdown h1 {
+  @apply text-2xl mt-5 mb-4;
+}
+
+.markdown ul {
+  @apply my-3 list-disc;
+}
+
+.markdown hr {
+  @apply my-4;
+}
+
+.markdown p {
+  @apply my-3;
+}
+
+.markdown a {
+  @apply text-secondary-500;
+}
