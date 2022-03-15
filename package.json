@@ -5,10 +5,10 @@
   "license": "",
   "sideEffects": false,
   "scripts": {
-    "build": "run-p build:*",
+    "build": "npm run build:css && npm run build:remix",
     "build:css": "npm run generate:css -- --minify",
     "build:remix": "cross-env NODE_ENV=production remix build",
-    "dev": "run-p dev:*",
+    "dev": "npm run dev:css && npm run dev:remix",
     "dev:css": "npm run generate:css -- --watch",
     "dev:remix": "cross-env NODE_ENV=development remix dev",
     "generate:css": "npx tailwindcss -i ./styles/tailwind.css -o ./app/tailwind.css",
