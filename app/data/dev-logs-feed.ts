@@ -35,7 +35,7 @@ devLogs.forEach((devLog) => {
     content: devLog.html,
     author: [jack],
     contributor: [],
-    date: new Date(2022, 1, 1),
+    date: devLog.date,
     image: `https://stickertrade.ca/dev-logs/${devLog.slug}.ogimage`,
   });
 });
