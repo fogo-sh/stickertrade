@@ -1,25 +1,35 @@
+import type { LoaderFunction } from "remix";
 import { json, Link, useLoaderData } from "remix";
 
-import { getDevLogs } from "../../dev-log";
-import type { DevLog } from "../../dev-log";
+import { getDevLogs } from "~/data/dev-logs.server";
+import type { DevLog } from "~/data/dev-logs.server";
 
-export const loader = async () => {
-  return json(await getDevLogs());
+type LoaderData = DevLog[];
+
+export const loader: LoaderFunction = async () => {
+  const data: LoaderData = getDevLogs();
+  return json(data);
 };
 
 export default function DevLogs() {
-  const devLogs = useLoaderData<DevLog[]>();
+  const devLogs = useLoaderData<LoaderData>();
 
   return (
     <main className="max-w-lg mx-auto markdown">
       <h1>dev logs</h1>
-      <ul>
-        {devLogs.map((devLog) => (
-          <li key={devLog.slug}>
-            <Link to={devLog.slug}>{devLog.title}</Link>
-          </li>
-        ))}
-      </ul>
+      <p>a collection of development logs regarding stickertrade.ca</p>
+      <p>
+        feed available as: <a href="/dev-logs.rss">rss</a> -{" "}
+        <a href="/dev-logs.atom">atom</a> - <a href="/dev-logs.json">json</a>
+      </p>
+      {devLogs.map((devLog) => (
+        <Link key={devLog.slug} to={devLog.slug}>
+          <div className="flex justify-between">
+            <div>{devLog.title}</div>
+            <div>{devLog.dateString}</div>
+          </div>
+        </Link>
+      ))}
     </main>
   );
 }

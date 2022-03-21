@@ -10,6 +10,7 @@
 
 p,
 a,
+pre,
 h1,
 h2,
 h3,
@@ -37,6 +38,10 @@ h3 {
   @apply text-2xl mt-5 mb-4;
 }
 
+.markdown h2 {
+  @apply text-xl mt-4 mb-3;
+}
+
 .markdown ul {
   @apply my-3 list-disc;
 }
@@ -51,4 +56,20 @@ h3 {
 
 .markdown a {
   @apply text-secondary-500;
+}
+
+.markdown img {
+  @apply border-2 border-light-500 my-4 rounded-sm;
+}
+
+.markdown code {
+  @apply bg-black rounded-lg;
+}
+
+.markdown blockquote {
+  @apply border-l-2 border-light-500 pl-4 my-4;
+}
+
+.markdown pre {
+  @apply bg-black overflow-y-auto p-4 rounded-lg;
 }

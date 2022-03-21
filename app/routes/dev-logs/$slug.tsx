@@ -2,20 +2,26 @@ import { json, useLoaderData } from "remix";
 import type { LoaderFunction } from "remix";
 import invariant from "tiny-invariant";
 
-import { DevLog, getDevLog } from "../../dev-log";
+import { getDevLog } from "~/data/dev-logs.server";
+import type { DevLog } from "~/data/dev-logs.server";
 
-export const loader: LoaderFunction = async ({ params }) => {
+type LoaderData = DevLog;
+
+export const loader: LoaderFunction = ({ params }) => {
   invariant(params.slug, "expected params.slug");
-  return json(await getDevLog(params.slug));
+  const data: LoaderData | null = getDevLog(params.slug);
+
+  if (data === null) {
+    throw new Response("Not Found", {
+      status: 404,
+    });
+  }
+
+  return json(data);
 };
 
 export default function DevLogSlug() {
-  const log = useLoaderData<DevLog | null>();
-
-  if (!log) {
-    // TODO better and more centralized 404 page
-    return <h1>404</h1>;
-  }
+  const log = useLoaderData<LoaderData>();
 
   return (
     <main
