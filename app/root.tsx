@@ -15,6 +15,7 @@ import React from "react";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: tailwindStyles },
+  { rel: "icon", href: "/favicon.svg" },
 ];
 
 export const meta: MetaFunction = () => {
@@ -32,8 +33,9 @@ function Document({ children }: { children: React.ReactNode }) {
       </head>
       <body className="bg-dark-500 p-4">
         <div className="mx-8 pb-8">
-          <div className="border-b border-light p-2 mb-2 flex justify-between max-w-[36rem] mx-auto">
-            <Link to="/">
+          <header className="border-b border-light p-2 mb-2 flex justify-between max-w-[36rem] mx-auto">
+            <Link to="/" className="flex items-center gap-2">
+              <img src="/favicon.svg" alt="stickertrade logo" className="h-4" />
               <h1>stickertrade</h1>
             </Link>
             <div className="flex gap-4">
@@ -44,7 +46,7 @@ function Document({ children }: { children: React.ReactNode }) {
                 <h1>dev logs</h1>
               </Link>
             </div>
-          </div>
+          </header>
           {children}
         </div>
         <ScrollRestoration />

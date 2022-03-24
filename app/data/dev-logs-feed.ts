@@ -14,7 +14,7 @@ export const feed = new Feed({
   link: "https://stickertrade.ca/dev-logs",
   language: "en",
   image: `https://stickertrade.ca/dev-logs.ogimage`,
-  favicon: "http://stickertrade.ca/favicon.ico",
+  favicon: "http://stickertrade.ca/favicon.svg",
   updated: new Date(2022, 1, 1), // TODO make the time of the latest blog post
   copyright: `All rights reserved ${new Date().getFullYear()}, Jack Harrhy`,
   feedLinks: {
