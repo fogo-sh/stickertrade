@@ -36,9 +36,14 @@ function Document({ children }: { children: React.ReactNode }) {
             <Link to="/">
               <h1>stickertrade</h1>
             </Link>
-            <Link to="/dev-logs">
-              <h1>dev logs</h1>
-            </Link>
+            <div className="flex gap-4">
+              <Link to="/roadmap">
+                <h1>roadmap</h1>
+              </Link>
+              <Link to="/dev-logs">
+                <h1>dev logs</h1>
+              </Link>
+            </div>
           </div>
           {children}
         </div>
