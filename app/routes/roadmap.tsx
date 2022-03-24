@@ -1,19 +1,29 @@
 import clsx from "clsx";
+import { marked } from "marked";
 import type { LoaderFunction } from "remix";
 import { json, useLoaderData } from "remix";
+import dedent from "ts-dedent";
 
 type Roadmap = {
   id: number;
   title: string;
+  description?: string;
   focus?: boolean;
   eventually?: boolean;
 };
 
 type LoaderData = Roadmap[];
 
-const tasks: Roadmap[] = [
+const taskList: Roadmap[] = [
   {
     title: "Work on social image generator microservice 🖼️",
+    description: dedent`
+      - generate images for /, /roadmap, /dev-logs
+      - generate images for /dev-logs/$slug
+      - dockerize
+      - github action workflow
+      - production deployment
+    `,
     focus: true,
   },
   {
@@ -59,10 +69,14 @@ const tasks: Roadmap[] = [
     title: "Trading 💱",
     eventually: true,
   },
-].map((task, index) => ({ ...task, id: index }));
+].map((task, index) => ({
+  ...task,
+  description: task.description ? marked(task.description.trim()) : undefined,
+  id: index,
+}));
 
 export const loader: LoaderFunction = async () => {
-  const data: LoaderData = tasks;
+  const data: LoaderData = taskList;
   return json(data);
 };
 
@@ -83,14 +97,23 @@ export default function Index() {
             className={clsx("my-1", { "opacity-70 text-sm": task.eventually })}
           >
             {task.focus ? "🎯" : ""} {task.title}
+            {task.description && (
+              <div
+                className="px-4 markdown"
+                dangerouslySetInnerHTML={{
+                  __html: task.description,
+                }}
+              />
+            )}
           </li>
         ))}
       </ul>
-      <p className="mt-2.5 text-sm">
+      <p className="mt-3 text-sm">
         🎯 means <span className="text-primary-500">focus</span>
       </p>
       <p className="text-sm">
-        smaller means <span className="text-secondary-500">eventually</span>
+        smaller <span className="opacity-70">and lesser opacity</span> means{" "}
+        <span className="text-secondary-500">eventually</span>
       </p>
     </main>
   );
