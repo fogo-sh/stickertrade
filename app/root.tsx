@@ -42,6 +42,9 @@ function Document({ children }: { children: React.ReactNode }) {
               <Link to="/roadmap">
                 <h1>roadmap</h1>
               </Link>
+              <Link to="/brand">
+                <h1>brand</h1>
+              </Link>
               <Link to="/dev-logs">
                 <h1>dev logs</h1>
               </Link>
