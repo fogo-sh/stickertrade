@@ -5,6 +5,7 @@ node_modules
 /public/build
 
 /app/tailwind.css
+/img-gen/tailwind.css
 
 .env
 *.db
