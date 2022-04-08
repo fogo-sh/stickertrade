@@ -13,7 +13,6 @@ export const feed = new Feed({
   id: "https://stickertrade.ca/dev-logs",
   link: "https://stickertrade.ca/dev-logs",
   language: "en",
-  image: `https://stickertrade.ca/dev-logs.ogimage`,
   favicon: "http://stickertrade.ca/favicon.svg",
   updated: new Date(2022, 1, 1), // TODO make the time of the latest blog post
   copyright: `All rights reserved ${new Date().getFullYear()}, Jack Harrhy`,
@@ -36,6 +35,5 @@ devLogs.forEach((devLog) => {
     author: [jack],
     contributor: [],
     date: devLog.date,
-    image: `https://stickertrade.ca/dev-logs/${devLog.slug}.ogimage`,
   });
 });
