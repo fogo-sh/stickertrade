@@ -14,8 +14,7 @@
     "generate:css": "npx tailwindcss -i ./styles/tailwind.css -o ./app/tailwind.css",
     "postinstall": "remix setup node",
     "start": "cross-env NODE_ENV=production remix-serve build",
-    "prod": "npx prisma generate && npx prisma migrate deploy && npm run start",
-    "img-gen:generate:css": "npx tailwindcss -i ./styles/tailwind.css --content img-gen/index.js -o ./img-gen/tailwind.css"
+    "prod": "npx prisma generate && npx prisma migrate deploy && npm run start"
   },
   "prisma": {
     "seed": "node --require esbuild-register prisma/seed.ts"
