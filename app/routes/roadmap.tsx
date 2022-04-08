@@ -14,62 +14,56 @@ type Roadmap = {
 
 type LoaderData = Roadmap[];
 
-const taskList: Roadmap[] = [
-  {
-    title: "Work on social image generator microservice 🖼️",
-    description: dedent`
-      - generate images for /, /roadmap, /dev-logs
-      - generate images for /dev-logs/$slug
-      - dockerize
-      - github action workflow
-      - production deployment
-    `,
-    focus: true,
-  },
-  {
-    title: "Login page 👤",
-  },
-  {
-    title: "Login that works ✅️👤",
-  },
-  {
-    title: "Logout 👋👤",
-  },
-  {
-    title: "Create Sticker ➕",
-  },
-  {
-    title: "Edit Sticker ➕",
-  },
-  {
-    title: "Users rough location 📍",
-    eventually: true,
-  },
-  {
-    title: "Profile page 👤",
-    eventually: true,
-  },
-  {
-    title: "Edit profile page 👤",
-    eventually: true,
-  },
-  {
-    title: "Events 📅",
-    eventually: true,
-  },
-  {
-    title: "Create Event 📅",
-    eventually: true,
-  },
-  {
-    title: "Events Map 📍",
-    eventually: true,
-  },
-  {
-    title: "Trading 💱",
-    eventually: true,
-  },
-].map((task, index) => ({
+const taskList: Roadmap[] = (
+  [
+    {
+      title: "Login page 👤",
+    },
+    {
+      title: "Login that works ✅️👤",
+    },
+    {
+      title: "Logout 👋👤",
+    },
+    {
+      title: "Create Sticker ➕",
+    },
+    {
+      title: "Edit Sticker ➕",
+    },
+    {
+      title: "Users rough location 📍",
+      eventually: true,
+    },
+    {
+      title: "Profile page 👤",
+      eventually: true,
+    },
+    {
+      title: "Edit profile page 👤",
+      eventually: true,
+    },
+    {
+      title: "Events 📅",
+      eventually: true,
+    },
+    {
+      title: "Create Event 📅",
+      eventually: true,
+    },
+    {
+      title: "Events Map 📍",
+      eventually: true,
+    },
+    {
+      title: "Trading 💱",
+      eventually: true,
+    },
+    {
+      title: "Opengraph Images 🖼️",
+    },
+  ] as Roadmap[]
+).map((task, index) => ({
   ...task,
   description: task.description ? marked(task.description.trim()) : undefined,
   id: index,
