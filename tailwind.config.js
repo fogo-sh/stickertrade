@@ -5,6 +5,7 @@ module.exports = {
       colors: {
         // https://coolors.co/f1eee4-1c0f13-f7a1c4-f5d491-1985a1
         primary: {
+          400: "#f9bdd5",
           500: "#F7A1C4",
         },
         secondary: {

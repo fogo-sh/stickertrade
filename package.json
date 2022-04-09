@@ -20,9 +20,12 @@
     "seed": "node --require esbuild-register prisma/seed.ts"
   },
   "dependencies": {
+    "@headlessui/react": "^1.4.3",
+    "@heroicons/react": "^1.0.6",
     "@prisma/client": "^3.12.0",
-    "@remix-run/react": "^1.3.5",
-    "@remix-run/serve": "^1.3.5",
+    "@remix-run/node": "1.3.4",
+    "@remix-run/react": "1.3.4",
+    "@remix-run/serve": "1.3.4",
     "@remix-validated-form/with-zod": "^2.0.1",
     "bcryptjs": "^2.4.3",
     "canvas": "^2.9.1",
@@ -41,8 +44,8 @@
     "zod": "^3.14.4"
   },
   "devDependencies": {
-    "@remix-run/dev": "^1.3.5",
-    "@remix-run/eslint-config": "^1.3.5",
+    "@remix-run/dev": "1.3.4",
+    "@remix-run/eslint-config": "1.3.4",
     "@types/bcryptjs": "^2.4.2",
     "@types/marked": "^4.0.3",
     "@types/react": "^18.0.0",

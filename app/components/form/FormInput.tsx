@@ -1,4 +1,4 @@
-import { HTMLInputTypeAttribute } from "react";
+import type { HTMLInputTypeAttribute } from "react";
 import { useField } from "remix-validated-form";
 
 type FormInputProps = {

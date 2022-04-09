@@ -24,7 +24,7 @@ export default function DevLogs() {
           <a href="/dev-logs.atom">atom</a> - <a href="/dev-logs.json">json</a>
         </p>
         {devLogs.map((devLog) => (
-          <Link key={devLog.slug} to={devLog.slug}>
+          <Link key={devLog.slug} to={devLog.slug} className="hover:underline">
             <div className="flex justify-between">
               <div>{devLog.title}</div>
               <div>{devLog.dateString}</div>

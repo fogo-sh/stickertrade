@@ -34,7 +34,10 @@ input {
 }
 
 a:hover,
-a:focus,
+a:focus {
+  @apply text-light-500;
+}
+
 .button-a:hover,
 .button-a:focus {
   @apply text-light-500 underline;
