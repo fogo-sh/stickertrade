@@ -16,15 +16,6 @@ type LoaderData = Roadmap[];
 const taskList: Roadmap[] = (
   [
     {
-      title: "Login page 👤",
-    },
-    {
-      title: "Login that works ✅️👤",
-    },
-    {
-      title: "Logout 👋👤",
-    },
-    {
       title: "Create Sticker ➕",
     },
     {
@@ -32,10 +23,6 @@ const taskList: Roadmap[] = (
     },
     {
       title: "Users rough location 📍",
-      eventually: true,
-    },
-    {
-      title: "Profile page 👤",
       eventually: true,
     },
     {
