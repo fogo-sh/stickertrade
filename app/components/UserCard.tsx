@@ -12,7 +12,7 @@ export function UserCard({ user }: UserCardProps) {
         src={user.avatarUrl ?? "/images/default-avatar.webp"}
         alt={user.username}
       />
-      <p className="my-1 text-lg">{user.username}</p>
+      <p className="my-1 text-[1.3em]">{user.username}</p>
     </div>
   );
 }

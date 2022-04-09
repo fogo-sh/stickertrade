@@ -29,7 +29,12 @@ export function StickerCard({
             "hover:underline"
           )}
         >
-          <div className="flex gap-3 items-center">
+          <div
+            className={clsx(
+              { "opacity-60": sticker.owner === null },
+              "flex gap-3 items-center"
+            )}
+          >
             <img
               className="w-[1.5em] h-[1.5em] rounded-full"
               src={sticker.owner?.avatarUrl ?? "/images/default-avatar.webp"}

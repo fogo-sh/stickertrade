@@ -65,7 +65,7 @@ export default function Index() {
           <StickerCard key={sticker.id} sticker={sticker} />
         ))}
       </div>
-      <p className="text-lg font-semibold mt-12 mb-4">active users</p>
+      <p className="text-lg font-semibold mt-12 mb-4">recently active users</p>
       <div className="flex flex-wrap gap-8">
         {users.map((user) => (
           <Link

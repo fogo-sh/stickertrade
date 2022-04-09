@@ -2,9 +2,13 @@ import { json, useLoaderData } from "remix";
 import type { LoaderFunction } from "remix";
 import invariant from "tiny-invariant";
 import { db } from "~/utils/db.server";
-import { Sticker } from "@prisma/client";
+import { Sticker, User } from "@prisma/client";
+import { UserCard } from "~/components/UserCard";
+import { Link } from "react-router-dom";
 
-type LoaderData = Pick<Sticker, "name" | "imageUrl">;
+type LoaderData = Pick<Sticker, "name" | "imageUrl"> & {
+  owner: Pick<User, "username" | "avatarUrl"> | null;
+};
 
 export const loader: LoaderFunction = async ({ params }) => {
   invariant(params.id, "expected params.username");
@@ -13,6 +17,12 @@ export const loader: LoaderFunction = async ({ params }) => {
     select: {
       name: true,
       imageUrl: true,
+      owner: {
+        select: {
+          username: true,
+          avatarUrl: true,
+        },
+      },
     },
   });
 
@@ -30,15 +40,28 @@ export default function StickerPage() {
   const sticker = useLoaderData<LoaderData>();
 
   return (
-    <main>
-      <div className="flex flex-col items-center gap-2 w-52 mt-4 mx-auto">
+    <main className="max-w-lg mx-auto">
+      <div className="flex flex-col items-center gap-2 w-64 mt-4 mx-auto">
         <img
-          className="w-[20em] border-2 border-light-500 border-opacity-25"
+          className="w-full border-2 border-light-500 border-opacity-25"
           src={sticker.imageUrl}
           alt={sticker.name}
         />
-        <h1 className="text-xl my-2">{sticker.name}</h1>
+        <h1 className="text-xl my-2 text-center">{sticker.name}</h1>
       </div>
+      {sticker.owner !== null && (
+        <div className="text-[0.8rem] mt-2">
+          <div className="flex justify-center items-center gap-3.5">
+            <h2 className="text-[1.3em]">owned by</h2>
+            <Link
+              to={`/profile/${sticker.owner.username}`}
+              className="hover:underline"
+            >
+              <UserCard user={sticker.owner} />
+            </Link>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
