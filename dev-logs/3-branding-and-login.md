@@ -7,7 +7,7 @@ Lapse in logs, but I'm back!
 
 ## Branding
 
-I'm not fully settled on the look and feel of this site just yet, but I spent some time working on a 'branding' page, to have quick access to the hex values I've currently defined for the theme for the site and such.
+I'm not fully settled on the look and feel of this site just yet, but I spent some time working on a 'branding' page, to have quick access to the color values (as hex) I've currently defined for the theme for the site and such.
 
 <img src="/images/dev-logs/3/branding-page.webp" alt="Current view of the branding page, with the new header (that is just homepage link + new login link), the content of the branding page (hex colors on display, along with the new logo, and footer containing what was once in header (roadmap, branding, and dev logs links)">
 
@@ -19,7 +19,7 @@ Noticeable above:
 
 <img src="/images/dev-logs/3/current-favicon.svg" alt="Current favicon / logo of the site, a slightly peeled off sticker with a gradient on its front, and the white of the peeled off area visible" class="w-1/2 mx-auto p-2">
 
-Hand-edited SVG (that's actually just the sites favicon), which uses the brand colors, and is meant to look like a partially peeled sticker with the white on its top right.
+Logo is a hand-edited SVG (that's actually just the sites favicon), which uses the brand colors, and is meant to look like a partially peeled sticker with the white on its top right.
 
 ---
 
@@ -37,7 +37,7 @@ No registration yet, hence users are still only just populated by seeding the da
 
 ### Form Validation
 
-Remix has very decent examples of how you can do form validation, but as someone who is acustom to [react-hook-form](https://react-hook-form.com/), I wanted something similar to this within Remix, and it exists!
+Remix has very decent examples of how you can do form validation, but as someone who is a large fan of the level of abstraction offered by frameworks like [react-hook-form](https://react-hook-form.com/), I wanted something similar to this within Remix, and it exists!
 
 [Remix Validated Form](https://www.remix-validated-form.io/) is pretty much exactly what I was looking for.
 
@@ -58,8 +58,7 @@ export const validator = withZod(
 );
 ```
 
-The above defines a 'validator' that can run on serverside and clientside, that basically encapsulates all of the logic for validation for me (you can also use methods within Zod to introspect validators to get valid type definitions from them, since it is TypeScript first).
-
+The above defines a 'validator' that can run on serverside and clientside, that basically encapsulates all of the logic for validation for me (you can also use methods within Zod to introspect validators to get TypeScript type definitions from them, since it is TypeScript-first library).
 
 ```tsx
 export const action: ActionFunction = async ({ request }) => {
@@ -89,9 +88,11 @@ export const action: ActionFunction = async ({ request }) => {
 };
 ```
 
-I then define an 'action' function, which is basically something Remix will make a post request to clientside when it wants to do fancy things, and I use the `validator` to fetch data from the form body of the `POST` request, and then invoke `login` (something internal that returns user metadata if the username / password combo is correct).
+I then define an 'action' function, which is basically something the clientside will POST to when it wants to actually submit its data, and I use the `validator` to fetch data from the form body of the `POST` request to then invoke `login` (`login` being something internal that returns user metadata if the username / password combo is correct).
 
-If I don't get an user back from `login`, I error the form with validation error on password, and otherwise, I create a user session (more internal plumbing that sets a cookie and then returns a redirection status code).
+If I don't get an user back from `login`, the actions errors on the password field.
+
+But if we do get a user back, a user session is created (more internal plumbing that sets a cookie and then returns a redirection status code).
 
 ```tsx
 export default function Index() {
@@ -112,3 +113,5 @@ export default function Index() {
 ```
 
 The smallest bit of code is the actual JSX, partially due to the inputs and submit button being mostly defined and styled elsewhere (but still within my project so I have full control over them, very headless).
+
+This feels clean, like most of Remix so far.
