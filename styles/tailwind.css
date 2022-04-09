@@ -73,7 +73,8 @@ h3 {
   @apply text-secondary-500;
 }
 
-.markdown img {
+.markdown img,
+.markdown video {
   @apply border-2 border-light-500 my-4 rounded-sm;
 }
 

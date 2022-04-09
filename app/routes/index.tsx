@@ -45,7 +45,6 @@ export const loader: LoaderFunction = async () => {
 export default function Index() {
   const { users, stickers } = useLoaderData<LoaderData>();
 
-  // TODO better layout, don't be full size on larger displays, only pick like 12 stickers
   return (
     <>
       <div className="flex flex-col items-center">

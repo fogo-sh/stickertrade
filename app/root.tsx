@@ -70,12 +70,12 @@ function Document({ children }: { children: React.ReactNode }) {
           <div className="pt-5 pb-8">{children}</div>
         </div>
         <footer className="mb-2 border-t mx-auto max-w-[36rem] border-t-light-500">
-          <div className="flex items-center gap-4 p-2 justify-between">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 py-3 sm:py-2 p-2 justify-between">
             <Link to="/" className="flex items-center gap-2">
               <img src="/favicon.svg" alt="stickertrade logo" className="h-4" />
               <h1>stickertrade</h1>
             </Link>
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
               <Link to="/roadmap">
                 <h1>roadmap</h1>
               </Link>

@@ -16,7 +16,7 @@ export default function DevLogs() {
 
   return (
     <main className="max-w-lg mx-auto">
-      <h1 className="text-2xl mb-4">dev-logs</h1>
+      <h1 className="text-2xl mb-4">dev logs</h1>
       <div className="markdown">
         <p>a collection of development logs regarding stickertrade.ca</p>
         <p>

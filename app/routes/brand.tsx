@@ -1,22 +1,9 @@
 import type { LoaderFunction } from "remix";
 import { json, useLoaderData } from "remix";
-
-// TODO actually type a proper interface to the tailwind config
-// @ts-expect-error
-import tailwindConfig from "../../tailwind.config";
-
-type ColorKey = "primary" | "secondary" | "dark" | "light";
-type ColorVariant = 500 | 600 | 700;
-
-type Colors = {
-  [key in ColorKey]: {
-    [key in ColorVariant]?: string;
-  };
-};
+import type { Colors } from "~/utils/tailwind-data";
+import { colors } from "~/utils/tailwind-data";
 
 type LoaderData = Colors;
-
-const colors: Colors = tailwindConfig.theme.extend.colors;
 
 export const loader: LoaderFunction = async () => {
   const data: LoaderData = colors;
@@ -34,7 +21,7 @@ export default function Index() {
         className="w-[10rem] mx-auto mt-2 mb-6"
         alt="stickertrade logo"
       />
-      <div className="flex justify-center gap-4">
+      <div className="flex flex-col sm:flex-row items-center sm:items-start justify-center gap-8 sm:gap-4">
         {Object.entries(colors).map(([key, value]) => (
           <div key={key} className="flex gap-2 flex-col">
             {Object.entries(value).map(([variant, color]) => (
