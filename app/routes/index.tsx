@@ -1,4 +1,5 @@
 import type { Sticker, User } from "@prisma/client";
+import { Link } from "react-router-dom";
 import type { LoaderFunction } from "remix";
 import { json, useLoaderData } from "remix";
 import { StickerCard } from "~/components/StickerCard";
@@ -58,16 +59,22 @@ export default function Index() {
           <span className="opacity-50">coming soooooooon.....</span>
         </p>
       </div>
-      <p className="text-lg my-4">recently posted stickers</p>
+      <p className="text-lg font-semibold my-4">recently posted stickers</p>
       <div className="flex flex-wrap gap-8">
         {stickers.map((sticker) => (
           <StickerCard key={sticker.id} sticker={sticker} />
         ))}
       </div>
-      <p className="text-lg mt-12 mb-4">active users</p>
+      <p className="text-lg font-semibold mt-12 mb-4">active users</p>
       <div className="flex flex-wrap gap-8">
         {users.map((user) => (
-          <UserCard key={user.id} user={user} />
+          <Link
+            key={user.id}
+            to={`/profile/${user.username}`}
+            className="hover:underline"
+          >
+            <UserCard user={user} />
+          </Link>
         ))}
       </div>
     </>

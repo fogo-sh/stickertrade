@@ -63,6 +63,10 @@ const stickers: Sticker[] = [
     owner: "jack",
   },
   {
+    name: "CTSNL owned by nobody",
+    imageUrl: "/test-data/stickers/ctsnl.webp",
+  },
+  {
     name: "pogfish",
     imageUrl: "/test-data/stickers/pogfish.webp",
     owner: "ethan",
