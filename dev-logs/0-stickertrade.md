@@ -3,10 +3,6 @@ title: 0 - stickertrade
 date: "2022-03-15"
 ---
 
-# dev log 0 - stickertrade
-
-_2022-03-15_
-
 Sticker Trade is an idea I've had for quite some time, to build a simple sticker trading website, with emphasis on:
 
 - community

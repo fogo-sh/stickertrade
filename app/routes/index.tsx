@@ -26,8 +26,8 @@ export default function Index() {
   // TODO better layout, don't be full size on larger displays, only pick like 12 stickers
   return (
     <>
-      <div className="flex justify-center">
-        <p className="text-primary-500 text-xl m-4">
+      <div className="flex flex-col items-center">
+        <p className="text-primary-500 text-xl mx-2 mb-1">
           WARNING:
           <br />
           this site is currently in a pre-pre-pre-alpha state

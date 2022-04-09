@@ -78,8 +78,8 @@ export default function Index() {
   const tasks = useLoaderData<LoaderData>();
 
   return (
-    <main className="max-w-lg mx-auto pt-2">
-      <h1 className="text-2xl mt-1 mb-4">roadmap</h1>
+    <main className="max-w-lg mx-auto">
+      <h1 className="text-2xl mb-4">roadmap</h1>
       <p className="mt-1 italic text-sm">
         This is my own little todo list of things to get done, eventually this
         might grow into something more complex as more of the site is built.

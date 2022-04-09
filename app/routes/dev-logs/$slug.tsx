@@ -24,11 +24,15 @@ export default function DevLogSlug() {
   const log = useLoaderData<LoaderData>();
 
   return (
-    <main
-      className="max-w-lg mx-auto markdown"
-      dangerouslySetInnerHTML={{
-        __html: log.html ?? "ERROR: Log without HTML!",
-      }}
-    />
+    <main className="max-w-lg mx-auto">
+      <h1 className="text-2xl mb-2">dev log {log.title}</h1>
+      <p className="italic opacity-60">{log.dateString}</p>
+      <div
+        className="markdown"
+        dangerouslySetInnerHTML={{
+          __html: log.html ?? "ERROR: Log without HTML!",
+        }}
+      />
+    </main>
   );
 }

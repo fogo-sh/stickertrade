@@ -3,10 +3,6 @@ title: 1 - building some UI
 date: "2022-03-20"
 ---
 
-# dev log 1 - building some UI
-
-_2022-03-20_
-
 Things are starting to take shape!
 
 As of the creation of this article, the website currently looks like this:

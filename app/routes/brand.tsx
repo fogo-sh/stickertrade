@@ -27,8 +27,8 @@ export default function Index() {
   const colors = useLoaderData<LoaderData>();
 
   return (
-    <main className="max-w-lg mx-auto pt-2">
-      <h1 className="text-2xl mt-1 mb-4">brand</h1>
+    <main className="max-w-lg mx-auto">
+      <h1 className="text-2xl mb-4">brand</h1>
       <img
         src="/favicon.svg"
         className="w-[10rem] mx-auto mt-2 mb-6"

@@ -24,16 +24,30 @@ export const meta: MetaFunction = () => {
 
 function Document({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className="h-full">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         <Meta />
         <Links />
       </head>
-      <body className="bg-dark-500 p-4">
-        <div className="mx-8 pb-8">
-          <header className="border-b border-light p-2 mb-2 flex justify-between max-w-[36rem] mx-auto">
+      <body className="bg-dark-500 p-4 h-full">
+        <div className="mx-auto px-4 min-h-[91.5vh] max-w-7xl">
+          <header className="border-b border-light p-2 flex justify-between max-w-[36rem] mx-auto">
+            <Link to="/" className="flex items-center gap-2">
+              <img src="/favicon.svg" alt="stickertrade logo" className="h-4" />
+              <h1>stickertrade</h1>
+            </Link>
+            <div className="flex flex-col gap-4">
+              <Link to="/login">
+                <h1>login</h1>
+              </Link>
+            </div>
+          </header>
+          <div className="pt-5 pb-8">{children}</div>
+        </div>
+        <footer className="mb-2 border-t mx-auto max-w-[36rem] border-t-light-500">
+          <div className="flex items-center gap-4 p-2 justify-between">
             <Link to="/" className="flex items-center gap-2">
               <img src="/favicon.svg" alt="stickertrade logo" className="h-4" />
               <h1>stickertrade</h1>
@@ -49,9 +63,8 @@ function Document({ children }: { children: React.ReactNode }) {
                 <h1>dev logs</h1>
               </Link>
             </div>
-          </header>
-          {children}
-        </div>
+          </div>
+        </footer>
         <ScrollRestoration />
         <Scripts />
         <LiveReload />
@@ -84,7 +97,7 @@ export function CatchBoundary() {
 
   return (
     <Document>
-      <h1 className="text-primary-500 text-3xl text-center my-6">
+      <h1 className="text-primary-500 text-3xl text-center my-2">
         {caught.status} {caught.statusText}
       </h1>
     </Document>

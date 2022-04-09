@@ -3,10 +3,6 @@ title: 2 - roadmap
 date: "2022-03-24"
 ---
 
-# dev log 2 - roadmap
-
-_2022-03-24_
-
 Small entry in comparison to 1, but I made a little roadmap!
 
 <img src="/images/dev-logs/2/roadmap.webp" alt="TODO">
