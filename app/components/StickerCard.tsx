@@ -3,7 +3,9 @@ import type { Sticker, User } from "@prisma/client";
 export function StickerCard({
   sticker,
 }: {
-  sticker: Sticker & { owner: User | null };
+  sticker: Pick<Sticker, "name" | "imageUrl"> & {
+    owner: Pick<User, "username" | "avatarUrl"> | null;
+  };
 }) {
   return (
     <div>

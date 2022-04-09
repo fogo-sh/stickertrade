@@ -12,6 +12,9 @@ p,
 a,
 pre,
 code,
+label,
+button,
+span,
 h1,
 h2,
 h3,
@@ -22,8 +25,19 @@ li {
   @apply text-light-500;
 }
 
-a:hover {
-  @apply text-light-700 underline;
+.button {
+  @apply border border-opacity-50 focus:border-opacity-100 hover:border-opacity-100 border-light-500 font-bold px-3 py-1 rounded;
+}
+
+input {
+  @apply bg-dark-500 border border-light-500 border-opacity-50 focus:border-opacity-100 hover:border-opacity-100 text-light-500 px-2 py-1;
+}
+
+a:hover,
+a:focus,
+.button-a:hover,
+.button-a:focus {
+  @apply text-light-500 underline;
 }
 
 h1 {

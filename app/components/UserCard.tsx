@@ -1,6 +1,10 @@
 import type { User } from "@prisma/client";
 
-export function UserCard({ user }: { user: User }) {
+export type UserCardProps = {
+  user: Pick<User, "username" | "avatarUrl">;
+};
+
+export function UserCard({ user }: UserCardProps) {
   return (
     <div className="flex items-center gap-4">
       <img

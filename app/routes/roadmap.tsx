@@ -2,7 +2,6 @@ import clsx from "clsx";
 import { marked } from "marked";
 import type { LoaderFunction } from "remix";
 import { json, useLoaderData } from "remix";
-import dedent from "ts-dedent";
 
 type Roadmap = {
   id: number;

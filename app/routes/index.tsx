@@ -3,16 +3,38 @@ import type { LoaderFunction } from "remix";
 import { json, useLoaderData } from "remix";
 import { StickerCard } from "~/components/StickerCard";
 import { UserCard } from "~/components/UserCard";
-import { getStickers } from "~/data/stickers";
-import { getUsers } from "~/data/users";
+import { db } from "~/utils/db.server";
 
 type LoaderData = {
-  users: User[];
-  stickers: (Sticker & { owner: User | null })[];
+  users: Pick<User, "id" | "username" | "avatarUrl">[];
+  stickers: (Pick<Sticker, "id" | "name" | "imageUrl"> & {
+    owner: Pick<User, "id" | "username" | "avatarUrl"> | null;
+  })[];
 };
 
 export const loader: LoaderFunction = async () => {
-  const [users, stickers] = await Promise.all([getUsers(8), getStickers(12)]);
+  const users = await db.user.findMany({
+    take: 8,
+    select: { id: true, username: true, avatarUrl: true },
+  });
+
+  const stickers = await db.sticker.findMany({
+    take: 12,
+    select: {
+      id: true,
+      name: true,
+      imageUrl: true,
+      owner: {
+        select: {
+          id: true,
+          username: true,
+          avatarUrl: true,
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
   const data: LoaderData = {
     users,
     stickers,
