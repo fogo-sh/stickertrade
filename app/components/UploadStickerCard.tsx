@@ -7,9 +7,9 @@ export function UploadStickerCard() {
         <img
           src={"/images/upload-sticker.webp"}
           alt={`upload sticker icon`}
-          className="w-[12em] h-[12em] bg-light-500 border-2 border-light-500 border-opacity-25"
+          className="w-[12em] h-[12em] bg-light-500 border-2 border-light-500 border-opacity-25 rounded-full"
         />
-        <p className="my-1 text-lg text-center">upload sticker</p>
+        <p className="my-2.5 text-lg text-center">upload sticker</p>
       </Link>
     </div>
   );
