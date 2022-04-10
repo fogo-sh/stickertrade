@@ -7,6 +7,7 @@ import { UploadStickerCard } from "~/components/UploadStickerCard";
 import { UserCard } from "~/components/UserCard";
 import type { RootOutletContext } from "~/root";
 import { db } from "~/utils/db.server";
+import { imageUrlHandler } from "~/utils/files.server";
 
 type LoaderData = {
   users: Pick<User, "id" | "username" | "avatarUrl">[];
@@ -38,6 +39,10 @@ export const loader: LoaderFunction = async () => {
     orderBy: { createdAt: "desc" },
   });
 
+  stickers.map(
+    (sticker) => (sticker.imageUrl = imageUrlHandler(sticker.imageUrl))
+  );
+
   const data: LoaderData = {
     users,
     stickers,
@@ -64,10 +69,10 @@ export default function Index() {
       </div>
       <p className="text-lg font-semibold my-4">recently posted stickers</p>
       <div className="flex flex-wrap gap-x-6 gap-y-6">
-        {currentUser && <UploadStickerCard />}
         {stickers.map((sticker) => (
           <StickerCard key={sticker.id} sticker={sticker} />
         ))}
+        {currentUser && <UploadStickerCard />}
       </div>
       <p className="text-lg font-semibold mt-12 mb-4">recently active users</p>
       <div className="flex flex-wrap gap-8">

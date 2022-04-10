@@ -49,8 +49,8 @@ export default function Index() {
   return (
     <main className="max-w-sm mx-auto">
       <ValidatedForm validator={validator} method="post">
-        <FormInput name="username" label="Username" />
-        <FormInput name="password" label="Password" type="password" />
+        <FormInput name="username" label="username" />
+        <FormInput name="password" label="password" type="password" />
         <SubmitButton
           className="mt-3"
           submit="Login"

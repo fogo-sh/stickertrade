@@ -5,16 +5,22 @@ type FormInputProps = {
   name: string;
   label: string;
   type?: HTMLInputTypeAttribute;
+  accept?: string;
 };
 
-export const FormInput = ({ name, label, type = "text" }: FormInputProps) => {
+export const FormInput = ({
+  name,
+  label,
+  type = "text",
+  accept = undefined,
+}: FormInputProps) => {
   const { error, getInputProps } = useField(name);
   return (
     <div className="flex flex-col my-2">
       <label htmlFor={name} className="mb-2">
         {label}
       </label>
-      <input {...getInputProps({ id: name, type })} />
+      <input {...getInputProps({ id: name, type, accept })} />
       {error && (
         <span className="text-primary-500 italic text-sm mt-1">{error}</span>
       )}

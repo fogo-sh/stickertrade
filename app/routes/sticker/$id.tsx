@@ -5,6 +5,7 @@ import { db } from "~/utils/db.server";
 import { Sticker, User } from "@prisma/client";
 import { UserCard } from "~/components/UserCard";
 import { Link } from "react-router-dom";
+import { imageUrlHandler } from "~/utils/files.server";
 
 type LoaderData = Pick<Sticker, "name" | "imageUrl"> & {
   owner: Pick<User, "username" | "avatarUrl"> | null;
@@ -12,7 +13,7 @@ type LoaderData = Pick<Sticker, "name" | "imageUrl"> & {
 
 export const loader: LoaderFunction = async ({ params }) => {
   invariant(params.id, "expected params.username");
-  const user = await db.sticker.findUnique({
+  const sticker = await db.sticker.findUnique({
     where: { id: params.id },
     select: {
       name: true,
@@ -26,13 +27,15 @@ export const loader: LoaderFunction = async ({ params }) => {
     },
   });
 
-  if (user === null) {
+  if (sticker === null) {
     throw new Response("Not Found", {
       status: 404,
     });
   }
 
-  const data: LoaderData = user;
+  sticker.imageUrl = imageUrlHandler(sticker.imageUrl);
+
+  const data: LoaderData = sticker;
   return json(data);
 };
 
