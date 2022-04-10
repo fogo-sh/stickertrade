@@ -1,4 +1,4 @@
-import { LoaderFunction, useOutletContext, useSubmit } from "remix";
+import { LoaderFunction, useSubmit } from "remix";
 import {
   json,
   Link,

@@ -6,6 +6,8 @@ import { db } from "~/utils/db.server";
 import { StickerCard } from "~/components/StickerCard";
 import { UploadStickerCard } from "~/components/UploadStickerCard";
 import type { RootOutletContext } from "~/root";
+import { imageUrlHandler } from "~/utils/files.server";
+import { XCircleIcon } from "@heroicons/react/solid";
 
 type LoaderData = Pick<User, "username" | "avatarUrl"> & {
   stickers: Pick<Sticker, "id" | "name" | "imageUrl">[];
@@ -24,6 +26,7 @@ export const loader: LoaderFunction = async ({ params }) => {
           name: true,
           imageUrl: true,
         },
+        orderBy: { createdAt: "desc" },
       },
     },
   });
@@ -33,6 +36,10 @@ export const loader: LoaderFunction = async ({ params }) => {
       status: 404,
     });
   }
+
+  user.stickers.map(
+    (sticker) => (sticker.imageUrl = imageUrlHandler(sticker.imageUrl))
+  );
 
   const data: LoaderData = user;
   return json(data);
@@ -56,11 +63,19 @@ export default function Profile() {
       <div className="flex flex-wrap gap-x-6 gap-y-2">
         {currentUser?.username === user.username && <UploadStickerCard />}
         {user.stickers.map((sticker) => (
-          <StickerCard
-            key={sticker.id}
-            sticker={{ ...sticker, owner: user }}
-            showOwner={false}
-          />
+          <div key={sticker.id} className="h-[15.75rem] w-48">
+            {currentUser?.username === user.username && (
+              <div className="relative">
+                <button className="absolute right-0 p-1">
+                  <XCircleIcon className="text-light-500 stroke-1 stroke-dark-500 h-8 w-8" />
+                </button>
+              </div>
+            )}
+            <StickerCard
+              sticker={{ ...sticker, owner: user }}
+              showOwner={false}
+            />
+          </div>
         ))}
       </div>
     </main>

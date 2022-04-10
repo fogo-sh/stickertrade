@@ -16,18 +16,16 @@ type LoaderData = Roadmap[];
 const taskList: Roadmap[] = (
   [
     {
-      title: "Create Sticker ➕",
-    },
-    {
       title: "Edit Sticker ➕",
     },
     {
       title: "Users rough location 📍",
-      eventually: true,
     },
     {
       title: "Edit profile page 👤",
-      eventually: true,
+    },
+    {
+      title: "User invitations 👋",
     },
     {
       title: "Events 📅",
@@ -47,6 +45,7 @@ const taskList: Roadmap[] = (
     },
     {
       title: "Opengraph Images 🖼️",
+      eventually: true,
     },
   ] as Roadmap[]
 ).map((task, index) => ({

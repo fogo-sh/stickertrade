@@ -9,6 +9,7 @@ const db = new PrismaClient();
 const users = [
   {
     username: "jack",
+    role: "ADMIN",
     avatarUrl: "/test-data/avatars/jack.webp",
     passwordHash: bcrypt.hashSync(defaultPassword, salt),
   },
