@@ -1,4 +1,4 @@
-import { LoaderFunction, useSubmit } from "remix";
+import { LoaderFunction, useOutletContext, useSubmit } from "remix";
 import {
   json,
   Link,
@@ -31,15 +31,23 @@ export const meta: MetaFunction = () => {
 };
 
 type LoaderData = Pick<User, "id" | "username" | "avatarUrl"> | null;
+export type RootOutletContext = { user: LoaderData };
 
 export const loader: LoaderFunction = async ({ request }) => {
   const data: LoaderData = await getUser(request);
   return json(data);
 };
 
-function Document({ children }: { children: React.ReactNode }) {
+function Document({
+  user = null,
+  error = false,
+  children,
+}: {
+  user?: LoaderData;
+  error?: boolean;
+  children: React.ReactNode;
+}) {
   const submit = useSubmit();
-  const user = useLoaderData<LoaderData>();
 
   function handleLogoutClick() {
     submit(new FormData(), { action: "/logout", method: "post" });
@@ -62,67 +70,70 @@ function Document({ children }: { children: React.ReactNode }) {
               <h1>stickertrade</h1>
             </Link>
             <div className="flex flex-col gap-4 items-center">
-              {user ? (
-                <div className="flex items-center gap-4">
-                  <Menu
-                    as="div"
-                    className="relative h-0 inline-block text-left"
-                  >
-                    <Menu.Button className="inline-flex items-center justify-center w-full">
-                      <div className="flex items-center gap-3">
-                        <img
-                          className="w-[1.6em] rounded-full"
-                          src={user.avatarUrl ?? "/images/default-avatar.webp"}
-                          alt={user.username}
+              {!error &&
+                (user ? (
+                  <div className="flex items-center gap-4">
+                    <Menu
+                      as="div"
+                      className="relative h-0 inline-block text-left"
+                    >
+                      <Menu.Button className="inline-flex items-center justify-center w-full">
+                        <div className="flex items-center gap-3">
+                          <img
+                            className="w-[1.6em] rounded-full"
+                            src={
+                              user.avatarUrl ?? "/images/default-avatar.webp"
+                            }
+                            alt={user.username}
+                          />
+                          <p>{user.username}</p>
+                        </div>
+                        <ChevronDownIcon
+                          className="w-5 h-5 ml-1 mt-0.5"
+                          aria-hidden="true"
                         />
-                        <p>{user.username}</p>
-                      </div>
-                      <ChevronDownIcon
-                        className="w-5 h-5 ml-1 mt-0.5"
-                        aria-hidden="true"
-                      />
-                    </Menu.Button>
-                    <Menu.Items className="absolute -mt-1 right-0 origin-top-right bg-light-500 divide-y divide-dark-100 rounded-sm focus:outline-none">
-                      <div className="px-1 py-1 ">
-                        <Menu.Item>
-                          {({ active }) => (
-                            <Link to={`/profile/${user.username}`}>
+                      </Menu.Button>
+                      <Menu.Items className="absolute -mt-1 right-0 origin-top-right bg-light-500 divide-y divide-dark-100 rounded-sm focus:outline-none">
+                        <div className="px-1 py-1 ">
+                          <Menu.Item>
+                            {({ active }) => (
+                              <Link to={`/profile/${user.username}`}>
+                                <button
+                                  className={clsx(
+                                    { "bg-primary-400": active },
+                                    "text-dark-500 group flex rounded-sm items-center w-full px-2 py-1.5 text-sm"
+                                  )}
+                                >
+                                  profile
+                                </button>
+                              </Link>
+                            )}
+                          </Menu.Item>
+                        </div>
+                        <div className="px-1 py-1 ">
+                          <Menu.Item>
+                            {({ active }) => (
                               <button
+                                type="submit"
+                                onClick={handleLogoutClick}
                                 className={clsx(
                                   { "bg-primary-400": active },
                                   "text-dark-500 group flex rounded-sm items-center w-full px-2 py-1.5 text-sm"
                                 )}
                               >
-                                profile
+                                logout
                               </button>
-                            </Link>
-                          )}
-                        </Menu.Item>
-                      </div>
-                      <div className="px-1 py-1 ">
-                        <Menu.Item>
-                          {({ active }) => (
-                            <button
-                              type="submit"
-                              onClick={handleLogoutClick}
-                              className={clsx(
-                                { "bg-primary-400": active },
-                                "text-dark-500 group flex rounded-sm items-center w-full px-2 py-1.5 text-sm"
-                              )}
-                            >
-                              logout
-                            </button>
-                          )}
-                        </Menu.Item>
-                      </div>
-                    </Menu.Items>
-                  </Menu>
-                </div>
-              ) : (
-                <Link to="/login" className="hover:underline">
-                  <h1>login</h1>
-                </Link>
-              )}
+                            )}
+                          </Menu.Item>
+                        </div>
+                      </Menu.Items>
+                    </Menu>
+                  </div>
+                ) : (
+                  <Link to="/login" className="hover:underline">
+                    <h1>login</h1>
+                  </Link>
+                ))}
             </div>
           </header>
           <div className="pt-5 pb-8">{children}</div>
@@ -155,16 +166,18 @@ function Document({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const user = useLoaderData<LoaderData>();
+
   return (
-    <Document>
-      <Outlet />
+    <Document user={user}>
+      <Outlet context={{ user } as RootOutletContext} />
     </Document>
   );
 }
 
 export function ErrorBoundary({ error }: { error: Error }) {
   return (
-    <Document>
+    <Document error={true}>
       <h1 className="text-primary-500">Oops, something went wrong!</h1>
       <div className="px-3 py-2 border rounded-md  mt-4 bg-light-500">
         <pre className="text-dark-500 font-semibold whitespace-pre-wrap">
@@ -179,7 +192,7 @@ export function CatchBoundary() {
   const caught = useCatch();
 
   return (
-    <Document>
+    <Document error={true}>
       <h1 className="text-primary-500 text-3xl text-center my-2">
         {caught.status} {caught.statusText}
       </h1>

@@ -1,9 +1,11 @@
 import type { Sticker, User } from "@prisma/client";
 import { Link } from "react-router-dom";
 import type { LoaderFunction } from "remix";
-import { json, useLoaderData } from "remix";
+import { json, useLoaderData, useOutletContext } from "remix";
 import { StickerCard } from "~/components/StickerCard";
+import { UploadStickerCard } from "~/components/UploadStickerCard";
 import { UserCard } from "~/components/UserCard";
+import type { RootOutletContext } from "~/root";
 import { db } from "~/utils/db.server";
 
 type LoaderData = {
@@ -44,6 +46,7 @@ export const loader: LoaderFunction = async () => {
 };
 
 export default function Index() {
+  const { user: currentUser } = useOutletContext<RootOutletContext>();
   const { users, stickers } = useLoaderData<LoaderData>();
 
   return (
@@ -60,7 +63,8 @@ export default function Index() {
         </p>
       </div>
       <p className="text-lg font-semibold my-4">recently posted stickers</p>
-      <div className="flex flex-wrap gap-8">
+      <div className="flex flex-wrap gap-x-6 gap-y-6">
+        {currentUser && <UploadStickerCard />}
         {stickers.map((sticker) => (
           <StickerCard key={sticker.id} sticker={sticker} />
         ))}

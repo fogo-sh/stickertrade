@@ -1,9 +1,11 @@
-import { json, useLoaderData } from "remix";
+import { json, useLoaderData, useOutletContext } from "remix";
 import type { LoaderFunction } from "remix";
 import invariant from "tiny-invariant";
 import type { Sticker, User } from "@prisma/client";
 import { db } from "~/utils/db.server";
 import { StickerCard } from "~/components/StickerCard";
+import { UploadStickerCard } from "~/components/UploadStickerCard";
+import type { RootOutletContext } from "~/root";
 
 type LoaderData = Pick<User, "username" | "avatarUrl"> & {
   stickers: Pick<Sticker, "id" | "name" | "imageUrl">[];
@@ -37,6 +39,7 @@ export const loader: LoaderFunction = async ({ params }) => {
 };
 
 export default function Profile() {
+  const { user: currentUser } = useOutletContext<RootOutletContext>();
   const user = useLoaderData<LoaderData>();
 
   return (
@@ -50,7 +53,8 @@ export default function Profile() {
         <h1 className="text-2xl mb-2">{user.username}</h1>
       </div>
       <p className="text-lg font-semibold my-4">stickers</p>
-      <div className="flex flex-wrap gap-x-8 gap-y-2">
+      <div className="flex flex-wrap gap-x-6 gap-y-2">
+        {currentUser?.username === user.username && <UploadStickerCard />}
         {user.stickers.map((sticker) => (
           <StickerCard
             key={sticker.id}
