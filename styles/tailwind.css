@@ -25,8 +25,12 @@ li {
   @apply text-light-500;
 }
 
-.button {
+.button-light {
   @apply border border-opacity-50 focus:border-opacity-100 hover:border-opacity-100 border-light-500 font-bold px-3 py-1 rounded;
+}
+
+.button-dark {
+  @apply border border-opacity-50 focus:border-opacity-100 hover:border-opacity-100 border-dark-500 font-bold px-3 py-1 rounded;
 }
 
 input {

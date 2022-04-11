@@ -8,9 +8,13 @@ import { UploadStickerCard } from "~/components/UploadStickerCard";
 import type { RootOutletContext } from "~/root";
 import { imageUrlHandler } from "~/utils/files.server";
 import { XCircleIcon } from "@heroicons/react/solid";
+import { Modal } from "~/components/Modal";
+import { useState } from "react";
+
+type PartialSticker = Pick<Sticker, "id" | "name" | "imageUrl">;
 
 type LoaderData = Pick<User, "username" | "avatarUrl"> & {
-  stickers: Pick<Sticker, "id" | "name" | "imageUrl">[];
+  stickers: PartialSticker[];
 };
 
 export const loader: LoaderFunction = async ({ params }) => {
@@ -49,6 +53,18 @@ export default function Profile() {
   const { user: currentUser } = useOutletContext<RootOutletContext>();
   const user = useLoaderData<LoaderData>();
 
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [activeSticker, setActiveSticker] = useState<PartialSticker | null>(
+    null
+  );
+
+  function handleRemoveClick(sticker: PartialSticker) {
+    setActiveSticker(sticker);
+    setIsModalOpen(true);
+  }
+
+  console.log({ activeSticker });
+
   return (
     <main>
       <div className="flex flex-col items-center gap-2 w-52 mt-4 mx-auto">
@@ -66,8 +82,11 @@ export default function Profile() {
           <div key={sticker.id} className="h-[15.75rem] w-48">
             {currentUser?.username === user.username && (
               <div className="relative">
-                <button className="absolute right-0 p-1">
-                  <XCircleIcon className="text-light-500 stroke-1 stroke-dark-500 h-8 w-8" />
+                <button
+                  className="absolute right-0 p-1"
+                  onClick={() => handleRemoveClick(sticker)}
+                >
+                  <XCircleIcon className="text-light-500 stroke-light-700 h-6 w-6" />
                 </button>
               </div>
             )}
@@ -78,6 +97,7 @@ export default function Profile() {
           </div>
         ))}
       </div>
+      <Modal isOpen={isModalOpen} setIsOpen={setIsModalOpen}></Modal>
     </main>
   );
 }

@@ -11,7 +11,7 @@ export const SubmitButton = ({
     <button
       type="submit"
       disabled={isSubmitting}
-      className={clsx("button", className)}
+      className={clsx("button-light", className)}
     >
       {isSubmitting ? submitting : submit}
     </button>
