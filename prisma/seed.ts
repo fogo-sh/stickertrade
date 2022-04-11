@@ -9,6 +9,8 @@ const users = [
   },
   {
     username: "david",
+    avatarUrl: "/test-data/avatars/david.webp",
+
   },
   {
     username: "mitch",
