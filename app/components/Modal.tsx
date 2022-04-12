@@ -2,18 +2,20 @@ import { Dialog, Transition } from "@headlessui/react";
 import { Fragment } from "react";
 
 export function Modal({
-  isOpen,
-  setIsOpen,
+  title,
+  children,
+  onClose,
 }: {
-  isOpen: boolean;
-  setIsOpen: Function;
+  title: string;
+  children: React.ReactNode;
+  onClose: () => void;
 }) {
   return (
-    <Transition appear show={isOpen} as={Fragment}>
+    <Transition appear show as={Fragment}>
       <Dialog
         as="div"
         className="fixed inset-0 z-10 overflow-y-auto bg-dark-500 bg-opacity-50"
-        onClose={() => setIsOpen(false)}
+        onClose={onClose}
       >
         <div className="min-h-screen px-4 text-center">
           <Dialog.Overlay className="fixed inset-0" />
@@ -26,26 +28,14 @@ export function Modal({
             &#8203;
           </span>
 
-          <div className="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle bg-light-500">
+          <div className="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle bg-light-500 transform">
             <Dialog.Title
               as="h3"
               className="text-lg font-medium leading-6 text-dark-500"
             >
               {title}
             </Dialog.Title>
-            <div className="mt-2">
-              <p className="text-sm text-dark-500">{description}</p>
-            </div>
-
-            <div className="mt-4 w-full flex justify-end">
-              <button
-                type="button"
-                className="button-dark text-dark-500"
-                onClick={() => setIsOpen(false)}
-              >
-                {}
-              </button>
-            </div>
+            {children}
           </div>
         </div>
       </Dialog>
