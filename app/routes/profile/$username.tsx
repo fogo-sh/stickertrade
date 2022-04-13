@@ -74,7 +74,7 @@ export default function Profile() {
               <div className="relative">
                 <Link to={`./remove-sticker/${sticker.id}`}>
                   <div className="absolute right-0 p-1">
-                    <XCircleIcon className="text-light-500 stroke-light-700 h-6 w-6" />
+                    <XCircleIcon className="text-light-500 stroke-dark-500 h-6 w-6" />
                   </div>
                 </Link>
               </div>
