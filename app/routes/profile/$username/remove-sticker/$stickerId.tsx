@@ -1,14 +1,23 @@
-import { ActionFunction, Form, redirect, useNavigate } from "remix";
+import { Sticker } from "@prisma/client";
+import type { Params } from "react-router";
+import { ActionFunction, json, LoaderFunction, useLoaderData } from "remix";
+import { Form, redirect, useNavigate } from "remix";
 import invariant from "tiny-invariant";
 import { Modal } from "~/components/Modal";
 import { db } from "~/utils/db.server";
 import { getUserId } from "~/utils/session.server";
 
-export const action: ActionFunction = async ({ request, params }) => {
+const ensurePermittedToRemoveSticker = async ({
+  params,
+  request,
+}: {
+  params: Params<string>;
+  request: Request;
+}) => {
   const userId = await getUserId(request);
 
   if (!userId) {
-    return redirect("/login");
+    throw redirect("/login");
   }
 
   invariant(params.stickerId, "expected params.stickerId");
@@ -16,6 +25,9 @@ export const action: ActionFunction = async ({ request, params }) => {
   const sticker = await db.sticker.findUnique({
     where: { id: params.stickerId },
     select: {
+      id: true,
+      name: true,
+      imageUrl: true,
       owner: {
         select: {
           id: true,
@@ -42,16 +54,35 @@ export const action: ActionFunction = async ({ request, params }) => {
     });
   }
 
+  return { sticker, owner: sticker.owner };
+};
+
+type LoaderData = Pick<Sticker, "name" | "imageUrl">;
+
+export const loader: LoaderFunction = async ({ request, params }) => {
+  const { sticker } = await ensurePermittedToRemoveSticker({ request, params });
+  const data: LoaderData = sticker;
+  return json(data);
+};
+
+export const action: ActionFunction = async ({ request, params }) => {
+  const { sticker, owner } = await ensurePermittedToRemoveSticker({
+    request,
+    params,
+  });
+
   await db.sticker.delete({
-    where: { id: params.stickerId },
+    where: { id: sticker.id },
   });
 
   // TODO cleanup assets within minio as well
 
-  return redirect(`/profile/${sticker.owner.username}`);
+  return redirect(`/profile/${owner.username}`);
 };
 
 export default function RemoveSticker() {
+  const sticker = useLoaderData<LoaderData>();
+
   const navigate = useNavigate();
 
   return (
@@ -61,7 +92,15 @@ export default function RemoveSticker() {
         navigate(".."); // TODO don't be relative, ensure user profile
       }}
     >
-      <Form method="post" className="mt-4 flex justify-end">
+      <div className="text-center my-6">
+        <img
+          src={sticker.imageUrl}
+          alt={`sticker of ${sticker.name}`}
+          className="mx-auto w-[16em] h-[16em] border-2 border-light-500 border-opacity-25"
+        />
+        <p className="my-1 text-md text-dark-500">{sticker.name}</p>
+      </div>
+      <Form method="post" className="flex justify-end">
         <button type="submit" className="button-dark text-dark-500">
           I'm sure, remove it
         </button>
