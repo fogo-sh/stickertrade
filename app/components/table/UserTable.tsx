@@ -7,12 +7,21 @@ import { Serialized } from "~/types";
 
 type Row = Pick<
   Serialized<User>,
-  "username" | "id" | "role" | "createdAt" | "updatedAt"
+  "avatarUrl" | "username" | "id" | "role" | "createdAt" | "updatedAt"
 >;
 
 const table = createTable<{ Row: Row }>();
 
 const defaultColumns = table.createColumns([
+  table.createDataColumn("avatarUrl", {
+    cell: (info) => (
+      <img
+        src={info.value ?? "/images/default-avatar.webp"}
+        alt="TODO"
+        className="h-16 w-16 mx-auto"
+      />
+    ),
+  }),
   table.createDataColumn("username", {
     cell: (info) => info.value,
   }),

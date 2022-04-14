@@ -18,6 +18,7 @@ import {
   ArrowCircleLeftIcon,
   ArrowCircleRightIcon,
 } from "@heroicons/react/solid";
+import { imageUrlHandler } from "~/utils/files.server";
 
 const ensureAdmin = async (request: Request) => {
   const user = await getUser(request);
@@ -56,6 +57,11 @@ export const loader: LoaderFunction = async ({ request }) => {
     users: await db.user.findMany({ take, skip: userSkip }),
     stickers: await db.sticker.findMany({ take, skip: stickerSkip }),
   };
+
+  data.stickers.map(
+    (sticker) => (sticker.imageUrl = imageUrlHandler(sticker.imageUrl))
+  );
+
   return json(data);
 };
 

@@ -57,5 +57,6 @@ export function imageUrlHandler(imageUrl: string) {
   if (imageUrl.startsWith("s3://")) {
     return `${baseS3Url}/${imageUrl.slice("s3://".length)}`;
   }
+
   return imageUrl;
 }

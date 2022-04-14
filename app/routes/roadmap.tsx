@@ -19,7 +19,6 @@ const taskList: Roadmap[] = (
     {
       title: "Admin Page 🤴",
       description: dedent`
-        - [ ] Create page
         - [ ] Methods to delete users
         - [ ] Methods to delete stickers
       `,
