@@ -27,7 +27,7 @@ export const meta: MetaFunction = () => {
   return { title: "stickertrade" };
 };
 
-type LoaderData = Pick<User, "id" | "username" | "avatarUrl"> | null;
+type LoaderData = Pick<User, "id" | "username" | "role" | "avatarUrl"> | null;
 export type RootOutletContext = { user: LoaderData };
 
 export const loader: LoaderFunction = async ({ request }) => {
@@ -53,8 +53,18 @@ function Document({
         <Links />
       </head>
       <body className="bg-dark-500 p-4 h-full">
-        <div className="mx-auto px-4 min-h-[91.5vh] max-w-7xl">
+        <div className="mx-auto px-4 min-h-[92.75vh] max-w-7xl">
           <Header user={user} error={error} />
+          <div className="flex flex-col items-center">
+            <p className="bg-red-500 text-dark-500 text-xl mx-2 mt-8 p-3">
+              <b>WARNING:</b>
+              <br />
+              this site is currently under heavy development
+              <br />
+              data created here might be reset at <b>any</b> time
+              <br />
+            </p>
+          </div>
           <div className="pt-5 pb-8">{children}</div>
         </div>
         <Footer />

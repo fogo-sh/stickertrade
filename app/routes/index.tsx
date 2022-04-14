@@ -55,18 +55,7 @@ export default function Index() {
   const { users, stickers } = useLoaderData<LoaderData>();
 
   return (
-    <>
-      <div className="flex flex-col items-center">
-        <p className="text-primary-500 text-xl mx-2 mb-1">
-          WARNING:
-          <br />
-          this site is currently in a pre-pre-pre-alpha state
-          <br />
-          while there is UI here, it is more of a proof of concept currently
-          <br />
-          <span className="opacity-50">coming soooooooon.....</span>
-        </p>
-      </div>
+    <main>
       <p className="text-lg font-semibold my-4">recently posted stickers</p>
       <div className="flex flex-wrap gap-x-6 gap-y-6">
         {stickers.map((sticker) => (
@@ -86,6 +75,6 @@ export default function Index() {
           </Link>
         ))}
       </div>
-    </>
+    </main>
   );
 }

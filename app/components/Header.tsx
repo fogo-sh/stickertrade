@@ -2,15 +2,16 @@ import { useSubmit } from "remix";
 import { Link } from "remix";
 import { ChevronDownIcon } from "@heroicons/react/solid";
 import { Menu } from "@headlessui/react";
+import clsx from "clsx";
 
 import type { User } from "@prisma/client";
-import clsx from "clsx";
+import { USER_ROLE } from "~/types";
 
 export function Header({
   user = null,
   error = false,
 }: {
-  user?: Pick<User, "username" | "avatarUrl"> | null;
+  user?: Pick<User, "username" | "avatarUrl" | "role"> | null;
   error?: boolean;
 }) {
   const submit = useSubmit();
@@ -61,6 +62,24 @@ export function Header({
                       )}
                     </Menu.Item>
                   </div>
+                  {user.role === USER_ROLE.ADMIN && (
+                    <div className="px-1 py-1 ">
+                      <Menu.Item>
+                        {({ active }) => (
+                          <Link to="/admin">
+                            <button
+                              className={clsx(
+                                { "bg-primary-400": active },
+                                "text-dark-500 group flex rounded-sm items-center w-full px-2 py-1.5 text-sm"
+                              )}
+                            >
+                              admin
+                            </button>
+                          </Link>
+                        )}
+                      </Menu.Item>
+                    </div>
+                  )}
                   <div className="px-1 py-1 ">
                     <Menu.Item>
                       {({ active }) => (

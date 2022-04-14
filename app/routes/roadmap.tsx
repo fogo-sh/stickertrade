@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { marked } from "marked";
 import type { LoaderFunction } from "remix";
 import { json, useLoaderData } from "remix";
+import dedent from "ts-dedent";
 
 type Roadmap = {
   id: number;
@@ -15,6 +16,14 @@ type LoaderData = Roadmap[];
 
 const taskList: Roadmap[] = (
   [
+    {
+      title: "Admin Page 🤴",
+      description: dedent`
+        - [ ] Create page
+        - [ ] Methods to delete users
+        - [ ] Methods to delete stickers
+      `,
+    },
     {
       title: "Edit Sticker ➕",
     },
@@ -45,6 +54,18 @@ const taskList: Roadmap[] = (
     },
     {
       title: "Opengraph Images 🖼️",
+      eventually: true,
+    },
+    {
+      title: "Toasts 🍞",
+      eventually: true,
+    },
+    {
+      title: "Sticker Image Cropping 🖼️",
+      eventually: true,
+    },
+    {
+      title: "Sticker Image Optimization 🖼️",
       eventually: true,
     },
   ] as Roadmap[]

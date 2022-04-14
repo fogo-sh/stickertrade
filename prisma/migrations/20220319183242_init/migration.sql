@@ -2,6 +2,7 @@
 CREATE TABLE "User" (
   "id" TEXT NOT NULL PRIMARY KEY,
   "username" TEXT NOT NULL,
+  "role" TEXT NOT NULL,
   "passwordHash" TEXT NOT NULL,
   "avatarUrl" TEXT,
   "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

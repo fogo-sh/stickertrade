@@ -21,7 +21,9 @@ h3,
 h4,
 h5,
 h6,
-li {
+li,
+tr,
+td {
   @apply text-light-500;
 }
 

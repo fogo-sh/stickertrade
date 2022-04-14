@@ -1,4 +1,4 @@
-import { Sticker } from "@prisma/client";
+import { Sticker, User } from "@prisma/client";
 import type { Params } from "react-router";
 import { ActionFunction, json, LoaderFunction, useLoaderData } from "remix";
 import { Form, redirect, useNavigate } from "remix";
@@ -57,7 +57,9 @@ const ensurePermittedToRemoveSticker = async ({
   return { sticker, owner: sticker.owner };
 };
 
-type LoaderData = Pick<Sticker, "name" | "imageUrl">;
+type LoaderData = Pick<Sticker, "name" | "imageUrl"> & {
+  owner: Pick<User, "username"> | null;
+};
 
 export const loader: LoaderFunction = async ({ request, params }) => {
   const { sticker } = await ensurePermittedToRemoveSticker({ request, params });
@@ -89,7 +91,11 @@ export default function RemoveSticker() {
     <Modal
       title="Remove Sticker"
       onClose={() => {
-        navigate(".."); // TODO don't be relative, ensure user profile
+        if (sticker.owner) {
+          navigate(`/profile/${sticker.owner.username}`);
+        } else {
+          navigate("/");
+        }
       }}
     >
       <div className="text-center my-6">

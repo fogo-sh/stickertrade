@@ -88,6 +88,7 @@ async function seed() {
         username: user.username,
         passwordHash: user.passwordHash,
         avatarUrl: user.avatarUrl,
+        role: user.role,
       },
     });
   }
