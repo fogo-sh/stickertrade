@@ -1,5 +1,9 @@
 import React from "react";
-import type { LinksFunction, LoaderFunction, MetaFunction } from "@remix-run/node";
+import type {
+  LinksFunction,
+  LoaderFunction,
+  MetaFunction,
+} from "@remix-run/node";
 import { json } from "@remix-run/node";
 
 import {
@@ -67,7 +71,7 @@ function Document({
               <br />
             </p>
           </div>
-          <div className="pt-5 pb-8">{children}</div>
+          <div className="pt-5 pb-8 overflow-x-scroll">{children}</div>
         </div>
         <Footer />
         <ScrollRestoration />

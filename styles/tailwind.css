@@ -27,12 +27,16 @@ td {
   @apply text-light-500;
 }
 
+.button-light, .button-dark {
+  @apply border focus:border-opacity-100 disabled:cursor-not-allowed disabled:opacity-60 hover:border-opacity-100 border-light-500 font-bold px-3 py-1 rounded;
+}
+
 .button-light {
-  @apply border border-opacity-50 focus:border-opacity-100 hover:border-opacity-100 border-light-500 font-bold px-3 py-1 rounded;
+  @apply border-light-500 border-opacity-50;
 }
 
 .button-dark {
-  @apply border border-opacity-50 focus:border-opacity-100 hover:border-opacity-100 border-dark-500 font-bold px-3 py-1 rounded;
+  @apply border-dark-500 border-opacity-50;
 }
 
 input {

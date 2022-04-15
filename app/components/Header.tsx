@@ -65,7 +65,7 @@ export function Header({
                     <div className="px-1 py-1 ">
                       <Menu.Item>
                         {({ active }) => (
-                          <Link to="/admin">
+                          <Link to="/admin/users">
                             <button
                               className={clsx(
                                 { "bg-primary-400": active },

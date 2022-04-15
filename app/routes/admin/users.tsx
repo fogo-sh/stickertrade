@@ -1,5 +1,5 @@
 import { json, LoaderFunction } from "@remix-run/node";
-import { Link, useLoaderData, useSearchParams } from "@remix-run/react";
+import { Link, Outlet, useLoaderData, useSearchParams } from "@remix-run/react";
 
 import { User } from "@prisma/client";
 import { db } from "~/utils/db.server";
@@ -11,6 +11,7 @@ import {
 } from "@heroicons/react/solid";
 import { useState } from "react";
 import { ensureAdmin } from "~/utils/perms.server";
+import { Select } from "~/components/Select";
 
 type LoaderData = Pick<
   User,
@@ -44,26 +45,46 @@ export const loader: LoaderFunction = async ({ request }) => {
   return json(data);
 };
 
-type CheckedUsers = (SerializedLoaderData[number] & { checked: boolean })[];
+export type ContextType = { checkableUsers: CheckableUsers };
+
+type CheckableUsers = (SerializedLoaderData[number] & { checked: boolean })[];
+
+export const actions = ["remove"] as const;
+const actionOptions = actions.map((action) => ({ name: action }));
 
 export default function Admin() {
   const users = useLoaderData<SerializedLoaderData>();
 
-  const [checkedUsers, setCheckedUsers] = useState<CheckedUsers>(() => {
-    return users.map((user) => ({ ...user, checked: false }));
-  });
+  // TODO when users changes, update this properly
+  const [checkableUsers, setCheckableUsers] = useState<CheckableUsers>(() =>
+    users.map((user) => ({ ...user, checked: false }))
+  );
+
+  const [selectedAction, setSelectedAction] = useState<{ name: string }>(
+    actionOptions[0]
+  );
 
   const [params] = useSearchParams();
   const page = Number(params.get("page") || "0");
 
   return (
     <>
+      <Outlet context={{ checkableUsers }} />
+
       <div className="flex gap-2 items-center justify-end">
         <p>actions for selected:</p>
+        <div className="w-[10rem]">
+          <Select
+            options={actionOptions}
+            selected={selectedAction}
+            setSelected={setSelectedAction}
+          />
+        </div>
         <Link to="remove">
-          <button className="button-light">remove</button>
+          <button className="button-light">apply</button>
         </Link>
       </div>
+
       <div className="flex gap-2 items-center">
         <p className="text-lg font-semibold">users (page {page})</p>
         {page > 0 && (
@@ -79,10 +100,10 @@ export default function Admin() {
       </div>
 
       <UserTable
-        users={checkedUsers}
-        onCheckUser={(user: CheckedUsers[number]) => {
-          setCheckedUsers((prevCheckedUsers) =>
-            prevCheckedUsers.map((checkedUser) =>
+        users={checkableUsers}
+        onCheckUser={(user: CheckableUsers[number]) => {
+          setCheckableUsers((prevCheckableUsers) =>
+            prevCheckableUsers.map((checkedUser) =>
               checkedUser.id === user.id
                 ? { ...checkedUser, checked: !checkedUser.checked }
                 : checkedUser
