@@ -1,6 +1,5 @@
-import { json, Link, LoaderFunction, Outlet, useLoaderData } from "remix";
-
-import { redirect } from "remix";
+import { json, LoaderFunction, redirect } from "@remix-run/node";
+import { Link, Outlet, useLoaderData } from "@remix-run/react";
 import { getUser } from "~/utils/session.server";
 import { USER_ROLE } from "~/types";
 

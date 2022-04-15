@@ -1,6 +1,8 @@
 import React from "react";
+import type { LinksFunction, LoaderFunction, MetaFunction } from "@remix-run/node";
+import { json } from "@remix-run/node";
+
 import {
-  json,
   Links,
   LiveReload,
   Meta,
@@ -9,8 +11,8 @@ import {
   ScrollRestoration,
   useCatch,
   useLoaderData,
-} from "remix";
-import type { LoaderFunction, MetaFunction, LinksFunction } from "remix";
+} from "@remix-run/react";
+
 import type { User } from "@prisma/client";
 
 import { getUser } from "~/utils/session.server";

@@ -1,7 +1,7 @@
 import { Sticker, User } from "@prisma/client";
 import type { Params } from "react-router";
-import { ActionFunction, json, LoaderFunction, useLoaderData } from "remix";
-import { Form, redirect, useNavigate } from "remix";
+import { ActionFunction, json, LoaderFunction, redirect } from "@remix-run/node";
+import { Form, useLoaderData, useNavigate } from "@remix-run/react";
 import invariant from "tiny-invariant";
 import { Modal } from "~/components/Modal";
 import { db } from "~/utils/db.server";

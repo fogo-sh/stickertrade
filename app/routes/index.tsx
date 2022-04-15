@@ -1,7 +1,8 @@
 import type { Sticker, User } from "@prisma/client";
 import { Link } from "react-router-dom";
-import type { LoaderFunction } from "remix";
-import { json, useLoaderData, useOutletContext } from "remix";
+import type { LoaderFunction } from "@remix-run/node";
+import { json } from "@remix-run/node";
+import { useLoaderData, useOutletContext } from "@remix-run/react";
 import { StickerCard } from "~/components/StickerCard";
 import { UploadStickerCard } from "~/components/UploadStickerCard";
 import { UserCard } from "~/components/UserCard";

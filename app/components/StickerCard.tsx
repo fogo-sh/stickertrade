@@ -1,6 +1,6 @@
-import type { Sticker, User } from "@prisma/client";
+import { Link } from "@remix-run/react";
 import clsx from "clsx";
-import { Link } from "remix";
+import type { Sticker, User } from "@prisma/client";
 
 export function StickerCard({
   sticker,

@@ -1,5 +1,4 @@
-import { useSubmit } from "remix";
-import { Link } from "remix";
+import { Link, useSubmit } from "@remix-run/react";
 import { ChevronDownIcon } from "@heroicons/react/solid";
 import { Menu } from "@headlessui/react";
 import clsx from "clsx";

@@ -1,5 +1,6 @@
-import { json, Outlet, useLoaderData, useOutletContext, Link } from "remix";
-import type { LoaderFunction } from "remix";
+import type { LoaderFunction } from "@remix-run/node";
+import { json } from "@remix-run/node";
+import { Link, Outlet, useLoaderData, useOutletContext } from "@remix-run/react";
 import invariant from "tiny-invariant";
 import type { Sticker, User } from "@prisma/client";
 import { XCircleIcon } from "@heroicons/react/solid";

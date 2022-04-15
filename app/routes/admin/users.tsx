@@ -1,10 +1,5 @@
-import {
-  json,
-  Link,
-  LoaderFunction,
-  useLoaderData,
-  useSearchParams,
-} from "remix";
+import { json, LoaderFunction } from "@remix-run/node";
+import { Link, useLoaderData, useSearchParams } from "@remix-run/react";
 
 import { User } from "@prisma/client";
 import { db } from "~/utils/db.server";
