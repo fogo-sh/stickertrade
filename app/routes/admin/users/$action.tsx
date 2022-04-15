@@ -55,11 +55,9 @@ export default function PerformAction() {
   invariant(action, "expected action");
 
   const navigate = useNavigate();
-  const { checkableUsers } = useOutletContext<ContextType>();
+  const { checkedUsers } = useOutletContext<ContextType>();
 
   const submit = useSubmit();
-
-  const checkedUsers = checkableUsers.filter(({ checked }) => checked);
 
   function handleSubmit() {
     const formData = new FormData();

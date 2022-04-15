@@ -9,7 +9,7 @@ import {
   ArrowCircleLeftIcon,
   ArrowCircleRightIcon,
 } from "@heroicons/react/solid";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ensureAdmin } from "~/utils/perms.server";
 import { Select } from "~/components/Select";
 
@@ -45,9 +45,10 @@ export const loader: LoaderFunction = async ({ request }) => {
   return json(data);
 };
 
-export type ContextType = { checkableUsers: CheckableUsers };
+type CheckableUser = SerializedLoaderData[number] & { checked: boolean };
+type CheckedUser = CheckableUser & { checked: true };
 
-type CheckableUsers = (SerializedLoaderData[number] & { checked: boolean })[];
+export type ContextType = { checkedUsers: CheckedUser[] };
 
 export const actions = ["remove"] as const;
 const actionOptions = actions.map((action) => ({ name: action }));
@@ -55,9 +56,20 @@ const actionOptions = actions.map((action) => ({ name: action }));
 export default function Admin() {
   const users = useLoaderData<SerializedLoaderData>();
 
-  // TODO when users changes, update this properly
-  const [checkableUsers, setCheckableUsers] = useState<CheckableUsers>(() =>
-    users.map((user) => ({ ...user, checked: false }))
+  const [checkedUserIds, setCheckedUserIds] = useState<string[]>([]);
+
+  const usersWithCheckedState = useMemo(
+    () =>
+      users.map((user) => ({
+        ...user,
+        checked: checkedUserIds.includes(user.id),
+      })),
+    [checkedUserIds, users]
+  );
+
+  const checkedUsers = useMemo(
+    () => users.filter((user) => checkedUserIds.includes(user.id)),
+    [checkedUserIds, users]
   );
 
   const [selectedAction, setSelectedAction] = useState<{ name: string }>(
@@ -69,7 +81,7 @@ export default function Admin() {
 
   return (
     <>
-      <Outlet context={{ checkableUsers }} />
+      <Outlet context={{ checkedUsers } as { checkedUsers: CheckedUser[] }} />
 
       <div className="flex gap-2 items-center justify-end">
         <p>actions for selected:</p>
@@ -100,15 +112,15 @@ export default function Admin() {
       </div>
 
       <UserTable
-        users={checkableUsers}
-        onCheckUser={(user: CheckableUsers[number]) => {
-          setCheckableUsers((prevCheckableUsers) =>
-            prevCheckableUsers.map((checkedUser) =>
-              checkedUser.id === user.id
-                ? { ...checkedUser, checked: !checkedUser.checked }
-                : checkedUser
-            )
-          );
+        users={usersWithCheckedState}
+        onCheckUser={(user: CheckableUser) => {
+          setCheckedUserIds((checkedUserIds) => {
+            if (checkedUserIds.includes(user.id)) {
+              return checkedUserIds.filter((id) => id !== user.id);
+            } else {
+              return [...checkedUserIds, user.id];
+            }
+          });
         }}
       />
     </>
