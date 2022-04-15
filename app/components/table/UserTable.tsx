@@ -63,7 +63,7 @@ export function UserTable({
           cell: (info) => formatDate(info.value),
         }),
       ]),
-    []
+    [onCheckUser]
   );
 
   return <Table table={table} data={users} defaultColumns={defaultColumns} />;

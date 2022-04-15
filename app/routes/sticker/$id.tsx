@@ -5,7 +5,7 @@ import invariant from "tiny-invariant";
 import { db } from "~/utils/db.server";
 import { Sticker, User } from "@prisma/client";
 import { UserCard } from "~/components/UserCard";
-import { Link } from "react-router-dom";
+import { Link } from "@remix-run/react";
 import { imageUrlHandler } from "~/utils/files.server";
 
 type LoaderData = Pick<Sticker, "name" | "imageUrl"> & {

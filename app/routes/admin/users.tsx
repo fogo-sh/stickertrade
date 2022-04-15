@@ -10,6 +10,7 @@ import {
   ArrowCircleRightIcon,
 } from "@heroicons/react/solid";
 import { useState } from "react";
+import { ensureAdmin } from "~/utils/perms.server";
 
 type LoaderData = Pick<
   User,
@@ -19,6 +20,8 @@ type LoaderData = Pick<
 type SerializedLoaderData = Serialized<LoaderData>;
 
 export const loader: LoaderFunction = async ({ request }) => {
+  await ensureAdmin(request);
+
   const url = new URL(request.url);
   const take = 30;
 
@@ -45,21 +48,22 @@ type CheckedUsers = (SerializedLoaderData[number] & { checked: boolean })[];
 
 export default function Admin() {
   const users = useLoaderData<SerializedLoaderData>();
-  console.log({ users });
 
-  const [checkedUsers, setCheckedUsers] = useState<CheckedUsers>(() =>
-    users.map((user) => ({ ...user, checked: false }))
-  );
-
-  console.log(
-    checkedUsers.map(({ username, checked }) => ({ username, checked }))
-  );
+  const [checkedUsers, setCheckedUsers] = useState<CheckedUsers>(() => {
+    return users.map((user) => ({ ...user, checked: false }));
+  });
 
   const [params] = useSearchParams();
   const page = Number(params.get("page") || "0");
 
   return (
     <>
+      <div className="flex gap-2 items-center justify-end">
+        <p>actions for selected:</p>
+        <Link to="remove">
+          <button className="button-light">remove</button>
+        </Link>
+      </div>
       <div className="flex gap-2 items-center">
         <p className="text-lg font-semibold">users (page {page})</p>
         {page > 0 && (
@@ -73,11 +77,12 @@ export default function Admin() {
           </Link>
         )}
       </div>
+
       <UserTable
         users={checkedUsers}
         onCheckUser={(user: CheckedUsers[number]) => {
-          setCheckedUsers(
-            checkedUsers.map((checkedUser) =>
+          setCheckedUsers((prevCheckedUsers) =>
+            prevCheckedUsers.map((checkedUser) =>
               checkedUser.id === user.id
                 ? { ...checkedUser, checked: !checkedUser.checked }
                 : checkedUser
