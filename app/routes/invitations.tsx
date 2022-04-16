@@ -4,7 +4,7 @@ import type { ActionFunction, LoaderFunction } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { Form, useLoaderData } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
-import { ValidatedForm } from "remix-validated-form";
+import { ValidatedForm, validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
 import { z } from "zod";
 import { HiddenFormInput } from "~/components/form/FormInput";
@@ -58,20 +58,62 @@ export const validator = withZod(
   })
 );
 
+const generateInvitation = async (userId: string) => {
+  await db.invitation.create({
+    data: {
+      fromId: userId,
+    },
+  });
+  return null;
+};
+
+const deleteInvitation = async (userId: string, formData: FormData) => {
+  const { data, error } = await validator.validate(formData);
+
+  if (error) return validationError(error);
+
+  const invitationToDelete = await db.invitation.findUnique({
+    where: { id: data.id },
+    select: { fromId: true, toId: true },
+  });
+
+  if (invitationToDelete === null) {
+    throw new Response("Not Found", {
+      status: 404,
+    });
+  }
+
+  const alreadyAccepted = invitationToDelete.toId !== null;
+  const fromIdSameAsUser = invitationToDelete.fromId === userId;
+
+  if (alreadyAccepted || !fromIdSameAsUser) {
+    throw new Response("Forbidden", {
+      status: 403,
+    });
+  }
+
+  await db.invitation.delete({ where: { id: data.id } });
+
+  return null;
+};
+
 export const action: ActionFunction = async ({ request, params }) => {
   const user = await ensureLoggedIn(request);
 
-  console.log({ user });
+  const formData = await request.formData();
+  const action = formData.get("action");
 
-  return null;
-
-  await db.invitation.create({
-    data: {
-      fromId: user.id,
-    },
-  });
-
-  return null;
+  switch (action) {
+    case "generate": {
+      return generateInvitation(user.id);
+    }
+    case "delete": {
+      return deleteInvitation(user.id, formData);
+    }
+    default: {
+      throw new Error("Unexpected action");
+    }
+  }
 };
 
 export default function Invitations() {
@@ -82,12 +124,7 @@ export default function Invitations() {
   return (
     <main className="max-w-lg mx-auto">
       <h1 className="text-2xl mb-4">invitations</h1>
-      {invitations.length === 0 && (
-        <p className="italic text-center">
-          you have sent no invitations (yet!), with {user.invitationLimit}{" "}
-          remaining
-        </p>
-      )}
+
       <div className="flex flex-col mt-4 gap-y-2">
         {invitations.map(({ id }) => (
           <div
@@ -100,21 +137,29 @@ export default function Invitations() {
               method="post"
               className="flex items-center"
             >
-              <button type="submit">
+              <button type="submit" name="action" value="delete">
                 <XCircleIcon className="text-light-500 h-6 w-6" />
               </button>
               <HiddenFormInput name="id" value={id} />
+              <HiddenFormInput name="action" value="delete" />
             </ValidatedForm>
           </div>
         ))}
-        <Form
-          method="post"
-          className="w-full h-12 rounded border border-light-500 border-opacity-40 flex p-1"
-        >
-          <button className="button-light w-full mx-auto">
-            generate invitation
-          </button>
-        </Form>
+        {remainingInvitations > 0 && (
+          <Form
+            method="post"
+            className="w-full h-12 rounded border border-light-500 border-opacity-40 flex p-1"
+          >
+            <button
+              className="button-light w-full mx-auto"
+              name="action"
+              value="generate"
+            >
+              generate invitation
+            </button>
+            <input type="hidden" name="action" value="generate" />
+          </Form>
+        )}
         {Array.from({ length: remainingInvitations - 1 }, (_, i) => (
           <div
             key={i}
@@ -122,6 +167,9 @@ export default function Invitations() {
           ></div>
         ))}
       </div>
+      <p className="italic text-center mt-2">
+        {remainingInvitations} invitations remaining
+      </p>
     </main>
   );
 }
