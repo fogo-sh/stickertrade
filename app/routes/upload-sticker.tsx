@@ -1,4 +1,10 @@
-import { ActionFunction, redirect, unstable_parseMultipartFormData, UploadHandler } from "@remix-run/node";
+import {
+  ActionFunction,
+  LoaderFunction,
+  redirect,
+  unstable_parseMultipartFormData,
+  UploadHandler,
+} from "@remix-run/node";
 import { ValidatedForm, validationError } from "remix-validated-form";
 import { withZod } from "@remix-validated-form/with-zod";
 import { zfd } from "zod-form-data";
@@ -10,6 +16,12 @@ import { v4 as uuidv4 } from "uuid";
 import { getUser } from "~/utils/session.server";
 import { db } from "~/utils/db.server";
 import mime from "mime-types";
+import { ensureLoggedIn } from "~/utils/perms.server";
+
+export const loader: LoaderFunction = async ({ request }) => {
+  await ensureLoggedIn(request);
+  return null;
+};
 
 const baseSchema = z.object({
   name: z.string().nonempty("Name is required"),

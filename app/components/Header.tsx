@@ -61,6 +61,22 @@ export function Header({
                       )}
                     </Menu.Item>
                   </div>
+                  <div className="px-1 py-1 ">
+                    <Menu.Item>
+                      {({ active }) => (
+                        <Link to="invitations">
+                          <button
+                            className={clsx(
+                              { "bg-primary-400": active },
+                              "text-dark-500 group flex rounded-sm items-center w-full px-2 py-1.5 text-sm"
+                            )}
+                          >
+                            invitations
+                          </button>
+                        </Link>
+                      )}
+                    </Menu.Item>
+                  </div>
                   {user.role === USER_ROLE.ADMIN && (
                     <div className="px-1 py-1 ">
                       <Menu.Item>

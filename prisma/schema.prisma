@@ -10,14 +10,18 @@ datasource db {
 // Possible roles: "USER", "ADMIN"
 
 model User {
-  id           String    @id @default(uuid())
-  username     String    @unique
-  role         String    @default("USER")
-  passwordHash String
-  avatarUrl    String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  stickers     Sticker[]
+  id                 String       @id @default(uuid())
+  username           String       @unique
+  role               String       @default("USER")
+  passwordHash       String
+  avatarUrl          String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  stickers           Sticker[]
+  invitationsSent    Invitation[] @relation("FromUser")
+  receivedInvitation Invitation?  @relation("ToUser", fields: [invitationId], references: [id], onDelete: SetNull)
+  invitationLimit    Int          @default(10)
+  invitationId       String?      @unique
 }
 
 model Sticker {
@@ -28,4 +32,20 @@ model Sticker {
   updatedAt DateTime @updatedAt
   ownerId   String?
   owner     User?    @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+}
+
+model Invitation {
+  id        String   @id @default(uuid())
+  fromId    String?
+  from      User?    @relation("FromUser", fields: [fromId], references: [id], onDelete: SetNull)
+  toId      String?
+  to        User?    @relation("ToUser")
+  message   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Config {
+  id                 Int     @id @default(1) // TODO in migration check if one
+  invitationsEnabled Boolean
 }

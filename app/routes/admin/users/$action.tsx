@@ -1,4 +1,5 @@
-import { ActionFunction, LoaderFunction, redirect } from "@remix-run/node";
+import type { ActionFunction, LoaderFunction } from "@remix-run/node";
+import { redirect } from "@remix-run/node";
 import {
   useNavigate,
   useOutletContext,
@@ -11,7 +12,8 @@ import { Modal } from "~/components/Modal";
 import { UserCard } from "~/components/UserCard";
 import { db } from "~/utils/db.server";
 import { ensureAdmin } from "~/utils/perms.server";
-import { actions, ContextType } from "../users";
+import type { ContextType } from "../users";
+import { actions } from "../users";
 
 export const loader: LoaderFunction = async ({ request, params }) => {
   invariant(params.action, "expected params.action");

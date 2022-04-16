@@ -67,6 +67,13 @@ export default function Admin() {
     [checkedUserIds, users]
   );
 
+  /*
+    TODO instead of filtering out users, when a user is checked
+    they should be added to a list of checked users, such that
+    when you go from one page to another you don't lose your
+    previously checked users
+  */
+
   const checkedUsers = useMemo(
     () => users.filter((user) => checkedUserIds.includes(user.id)),
     [checkedUserIds, users]

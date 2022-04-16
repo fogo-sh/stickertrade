@@ -19,22 +19,43 @@ const taskList: Roadmap[] = (
   [
     {
       title: "Admin Page 🤴",
+      focus: true,
       description: dedent`
-        - [ ] Methods to delete users
         - [ ] Methods to delete stickers
+        - [ ] Refine table interactions / plumbing
+      `,
+    },
+    {
+      title: "User invitations 👋",
+      focus: true,
+      description: dedent`
+        - [ ] Planning
+        - [ ] Invitation page UI
+        - [ ] Invitation page mocked up
+        - [ ] Invitation schema planned
+        - [ ] Invitation schema implemented
       `,
     },
     {
       title: "Edit Sticker ➕",
+      eventually: true,
     },
     {
       title: "Users rough location 📍",
+      eventually: true,
     },
     {
       title: "Edit profile page 👤",
+      eventually: true,
     },
     {
-      title: "User invitations 👋",
+      title: "Social associations 🙋‍♂️",
+      eventually: true,
+      description: dedent`
+        - [ ] Discord association (oauth?)
+        - [ ] Twitter association (oauth?)
+        - [ ] Disassociation
+      `,
     },
     {
       title: "Events 📅",
@@ -51,6 +72,15 @@ const taskList: Roadmap[] = (
     {
       title: "Trading 💱",
       eventually: true,
+    },
+    {
+      title: "Dedicated sticker page 🖼️",
+      eventually: true,
+      description: dedent`
+        - [ ] Paginated list of stickers
+        - [ ] Searching
+        - [ ] Filters
+      `,
     },
     {
       title: "Opengraph Images 🖼️",

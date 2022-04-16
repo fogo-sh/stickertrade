@@ -27,3 +27,14 @@ export const FormInput = ({
     </div>
   );
 };
+
+export const HiddenFormInput = ({
+  name,
+  value,
+}: {
+  name: string;
+  value: string;
+}) => {
+  const { getInputProps } = useField(name);
+  return <input {...getInputProps({ id: name, type: "hidden", value })} />;
+};
