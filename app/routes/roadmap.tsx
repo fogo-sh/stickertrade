@@ -33,17 +33,19 @@ const taskList: Roadmap[] = (
         - [x] Invitation page mocked up
         - [x] Invitation schema planned
         - [x] Invitation schema implemented
+        - [x] Test for edge cases
         - [ ] Cleanup UI
         - [ ] Cleanup Implementation
-        - [ ] Test for edge cases
       `,
     },
     {
       title: "Testing 🧪",
       focus: true,
       description: dedent`
-        - [x] vitest setup for unit testing
-        - [ ] cypress setup for integration testing
+        - [x] vitest setup for backend integration testing
+        - [ ] tested invitations
+        - [ ] tested login
+        - [ ] cypress setup for e2e testing
       `,
     },
     {

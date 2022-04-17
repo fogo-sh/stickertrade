@@ -146,7 +146,10 @@ describe("deleteInvitation", () => {
   });
 
   test("can delete invitation", async () => {
-    expect(true).toBe(true);
+    const user = await generateUser();
+    const invitation = await generateInvitation(user);
+    expect(await deleteInvitation(user.id, invitation)).toBeNull();
+    expect(await db.invitation.count()).toBe(0);
   });
 
   test("can't delete invitation that you didn't create", async () => {
