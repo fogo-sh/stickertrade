@@ -2,6 +2,7 @@ import invariant from "tiny-invariant";
 import faker from "@faker-js/faker";
 import {
   acceptInvitation,
+  deleteInvitation,
   generateInvitation,
 } from "~/utils/invitations.server";
 import { db } from "~/utils/db.server";
@@ -133,5 +134,41 @@ describe("acceptInvitation", () => {
       acceptInvitation(freshInvitation, "user", "password")
     );
     expect(await response.text()).toBe("sender of invitation deleted");
+  });
+});
+
+describe("deleteInvitation", () => {
+  test("can't delete invitation that doesn't exist", async () => {
+    const response = await getError<Response>(async () =>
+      deleteInvitation("wew", null)
+    );
+    expect(await response.text()).toBe("invitation not found");
+  });
+
+  test("can delete invitation", async () => {
+    expect(true).toBe(true);
+  });
+
+  test("can't delete invitation that you didn't create", async () => {
+    const userA = await generateUser();
+    const invitation = await generateInvitation(userA);
+
+    const userB = await generateUser();
+
+    const response = await getError<Response>(async () =>
+      deleteInvitation(userB.id, invitation)
+    );
+    expect(await response.text()).toBe("can't remove invitation");
+  });
+
+  test("can't delete accepted invitation", async () => {
+    const user = await generateUser();
+    const invitation = await generateInvitation(user);
+    await acceptInvitation(invitation, "user", "password");
+
+    const response = await getError<Response>(async () =>
+      deleteInvitation(user.id, invitation)
+    );
+    expect(await response.text()).toBe("can't remove invitation");
   });
 });
