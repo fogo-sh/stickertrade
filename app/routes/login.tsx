@@ -6,16 +6,20 @@ import { FormInput } from "~/components/form/FormInput";
 import { SubmitButton } from "~/components/form/SubmitButton";
 import { createUserSession, login } from "~/utils/session.server";
 
+// TODO share validation with login somewhat
+// TODO check database for existing user
 export const validator = withZod(
   z.object({
     username: z
       .string()
       .nonempty("Username is required")
-      .min(3, { message: "Username must be at least 3 characters" }),
+      .min(3, { message: "Username must be at least 3 characters" })
+      .max(16, { message: "Username can't be more than 16 characters" }),
     password: z
       .string()
       .nonempty("Password is required")
-      .min(6, { message: "Password must be at least 6 characters" }),
+      .min(6, { message: "Password must be at least 6 characters" })
+      .max(32, { message: "Password can't be more than 32 characters" }),
   })
 );
 
@@ -53,8 +57,8 @@ export default function Index() {
         <FormInput name="password" label="password" type="password" />
         <SubmitButton
           className="mt-3"
-          submit="Login"
-          submitting="Logging in..."
+          submit="login"
+          submitting="logging in..."
         />
       </ValidatedForm>
     </main>

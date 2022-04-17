@@ -20,8 +20,8 @@ model User {
   stickers           Sticker[]
   invitationsSent    Invitation[] @relation("FromUser")
   receivedInvitation Invitation?  @relation("ToUser", fields: [invitationId], references: [id], onDelete: SetNull)
-  invitationLimit    Int          @default(10)
   invitationId       String?      @unique
+  invitationLimit    Int          @default(10)
 }
 
 model Sticker {
@@ -34,11 +34,11 @@ model Sticker {
   owner     User?    @relation(fields: [ownerId], references: [id], onDelete: SetNull)
 }
 
+// TODO accepted at date
 model Invitation {
   id        String   @id @default(uuid())
   fromId    String?
   from      User?    @relation("FromUser", fields: [fromId], references: [id], onDelete: SetNull)
-  toId      String?
   to        User?    @relation("ToUser")
   message   String?
   createdAt DateTime @default(now())

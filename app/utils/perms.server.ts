@@ -1,6 +1,15 @@
 import { redirect } from "@remix-run/node";
-import { getUser } from "~/utils/session.server";
-import { USER_ROLE } from "~/types";
+import bcrypt from "bcryptjs";
+import { UserRoles } from "~/types";
+import { getUser, getUserId } from "~/utils/session.server";
+
+export const ensureLoggedOut = async (request: Request) => {
+  const userId = await getUserId(request);
+
+  if (userId) {
+    throw redirect("/"); // TODO toast something to inform of the redirection
+  }
+};
 
 export const ensureLoggedIn = async (request: Request) => {
   const user = await getUser(request);
@@ -15,7 +24,7 @@ export const ensureLoggedIn = async (request: Request) => {
 export const ensureAdmin = async (request: Request) => {
   const user = await ensureLoggedIn(request);
 
-  if (user.role !== USER_ROLE.ADMIN) {
+  if (user.role !== UserRoles.Admin) {
     throw new Response("Forbidden", {
       status: 403,
     });
@@ -23,3 +32,7 @@ export const ensureAdmin = async (request: Request) => {
 
   return user;
 };
+
+const salt = bcrypt.genSaltSync(10);
+
+export const hash = (password: string) => bcrypt.hash(password, salt);

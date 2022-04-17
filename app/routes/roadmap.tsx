@@ -19,7 +19,6 @@ const taskList: Roadmap[] = (
   [
     {
       title: "Admin Page 🤴",
-      focus: true,
       description: dedent`
         - [ ] Methods to delete stickers
         - [ ] Refine table interactions / plumbing
@@ -29,11 +28,22 @@ const taskList: Roadmap[] = (
       title: "User invitations 👋",
       focus: true,
       description: dedent`
-        - [ ] Planning
-        - [ ] Invitation page UI
-        - [ ] Invitation page mocked up
-        - [ ] Invitation schema planned
-        - [ ] Invitation schema implemented
+        - [x] Planning
+        - [x] Invitation page UI
+        - [x] Invitation page mocked up
+        - [x] Invitation schema planned
+        - [x] Invitation schema implemented
+        - [ ] Cleanup UI
+        - [ ] Cleanup Implementation
+        - [ ] Test for edge cases
+      `,
+    },
+    {
+      title: "Testing 🧪",
+      focus: true,
+      description: dedent`
+        - [x] vitest setup for unit testing
+        - [ ] cypress setup for integration testing
       `,
     },
     {
@@ -96,6 +106,15 @@ const taskList: Roadmap[] = (
     },
     {
       title: "Sticker Image Optimization 🖼️",
+      eventually: true,
+    },
+    {
+      title: "Accessibility Audit 🧐",
+      description: dedent`
+        - [ ] Color contrast review
+        - [ ] Axe Plugin
+        - [ ] Screen reader review
+      `,
       eventually: true,
     },
   ] as Roadmap[]

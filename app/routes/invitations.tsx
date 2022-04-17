@@ -9,6 +9,10 @@ import invariant from "tiny-invariant";
 import { z } from "zod";
 import { HiddenFormInput } from "~/components/form/FormInput";
 import { db } from "~/utils/db.server";
+import {
+  deleteInvitation,
+  generateInvitation,
+} from "~/utils/invitations.server";
 import { ensureLoggedIn } from "~/utils/perms.server";
 
 type LoaderData = {
@@ -58,41 +62,17 @@ export const validator = withZod(
   })
 );
 
-const generateInvitation = async (userId: string) => {
-  await db.invitation.create({
-    data: {
-      fromId: userId,
-    },
-  });
-  return null;
-};
-
-const deleteInvitation = async (userId: string, formData: FormData) => {
+const handleDeleteInvitation = async (userId: string, formData: FormData) => {
   const { data, error } = await validator.validate(formData);
 
   if (error) return validationError(error);
 
-  const invitationToDelete = await db.invitation.findUnique({
+  const invitation = await db.invitation.findUnique({
     where: { id: data.id },
-    select: { fromId: true, toId: true },
+    select: { id: true, fromId: true },
   });
 
-  if (invitationToDelete === null) {
-    throw new Response("Not Found", {
-      status: 404,
-    });
-  }
-
-  const alreadyAccepted = invitationToDelete.toId !== null;
-  const fromIdSameAsUser = invitationToDelete.fromId === userId;
-
-  if (alreadyAccepted || !fromIdSameAsUser) {
-    throw new Response("Forbidden", {
-      status: 403,
-    });
-  }
-
-  await db.invitation.delete({ where: { id: data.id } });
+  await deleteInvitation(userId, invitation);
 
   return null;
 };
@@ -105,10 +85,10 @@ export const action: ActionFunction = async ({ request, params }) => {
 
   switch (action) {
     case "generate": {
-      return generateInvitation(user.id);
+      return generateInvitation(user);
     }
     case "delete": {
-      return deleteInvitation(user.id, formData);
+      return handleDeleteInvitation(user.id, formData);
     }
     default: {
       throw new Error("Unexpected action");

@@ -19,3 +19,12 @@ if (process.env.NODE_ENV === "production") {
   }
   db = global.__db;
 }
+
+if (process.env.NODE_ENV === "test") {
+  beforeAll(async () => {
+    await db.user.deleteMany();
+    await db.sticker.deleteMany();
+    await db.invitation.deleteMany();
+    await db.config.deleteMany();
+  });
+}

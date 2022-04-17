@@ -72,6 +72,7 @@ export default function Profile() {
         <h1 className="text-2xl mb-2">{user.username}</h1>
       </div>
       <p className="text-lg font-semibold my-4">stickers</p>
+      {user.stickers.length === 0 && <p className="italic mb-3">no stickers</p>}
       <div className="flex flex-wrap gap-x-6 gap-y-2">
         {currentUser?.username === user.username && <UploadStickerCard />}
         {user.stickers.map((sticker) => (

@@ -71,7 +71,7 @@ function Document({
               <br />
             </p>
           </div>
-          <div className="pt-5 pb-8 overflow-x-scroll">{children}</div>
+          <div className="pt-5 pb-8">{children}</div>
         </div>
         <Footer />
         <ScrollRestoration />

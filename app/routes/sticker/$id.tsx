@@ -2,10 +2,10 @@ import type { LoaderFunction } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import invariant from "tiny-invariant";
-import { db } from "~/utils/db.server";
-import { Sticker, User } from "@prisma/client";
-import { UserCard } from "~/components/UserCard";
 import { Link } from "@remix-run/react";
+import { db } from "~/utils/db.server";
+import type { Sticker, User } from "@prisma/client";
+import { UserCard } from "~/components/UserCard";
 import { imageUrlHandler } from "~/utils/files.server";
 
 type LoaderData = Pick<Sticker, "name" | "imageUrl"> & {
