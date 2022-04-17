@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { UserRoles } from "~/types";
 
 const salt = bcrypt.genSaltSync(10);
 const defaultPassword = "password";
@@ -8,25 +9,22 @@ const db = new PrismaClient();
 
 const users = [
   {
-    username: "jack",
-    role: "ADMIN",
-    avatarUrl: "/test-data/avatars/jack.webp",
-    passwordHash: bcrypt.hashSync(defaultPassword, salt),
-  },
-  {
     username: "david",
     avatarUrl: "/test-data/avatars/david.webp",
     passwordHash: bcrypt.hashSync(defaultPassword, salt),
+    role: UserRoles.User,
   },
   {
     username: "mitch",
     avatarUrl: "/test-data/avatars/mitch.webp",
     passwordHash: bcrypt.hashSync(defaultPassword, salt),
+    role: UserRoles.User,
   },
   {
     username: "ethan",
     avatarUrl: "/test-data/avatars/ethan.webp",
     passwordHash: bcrypt.hashSync(defaultPassword, salt),
+    role: UserRoles.User,
   },
 ];
 
@@ -80,15 +78,27 @@ const stickers: Sticker[] = [
 ];
 
 async function seed() {
+  const rootUser = await db.user.create({
+    data: {
+      username: "jack",
+      role: UserRoles.Admin,
+      avatarUrl: "/test-data/avatars/jack.webp",
+      passwordHash: bcrypt.hashSync(defaultPassword, salt),
+    },
+  });
+
   for (const user of users) {
-    await db.user.upsert({
-      where: { username: user.username },
-      update: {},
-      create: {
-        username: user.username,
-        passwordHash: user.passwordHash,
-        avatarUrl: user.avatarUrl,
-        role: user.role,
+    await db.invitation.create({
+      data: {
+        fromId: rootUser.id,
+        to: {
+          create: {
+            username: user.username,
+            passwordHash: user.passwordHash,
+            avatarUrl: user.avatarUrl,
+            role: user.role,
+          },
+        },
       },
     });
   }

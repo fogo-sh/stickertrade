@@ -18,13 +18,6 @@ type LoaderData = Roadmap[];
 const taskList: Roadmap[] = (
   [
     {
-      title: "Admin Page 🤴",
-      description: dedent`
-        - [ ] Methods to delete stickers
-        - [ ] Refine table interactions / plumbing
-      `,
-    },
-    {
       title: "User invitations 👋",
       focus: true,
       description: dedent`
@@ -36,6 +29,13 @@ const taskList: Roadmap[] = (
         - [x] Test for edge cases
         - [ ] Cleanup UI
         - [ ] Cleanup Implementation
+      `,
+    },
+    {
+      title: "Admin Page 🤴",
+      description: dedent`
+        - [ ] Methods to delete stickers
+        - [ ] Refine table interactions / plumbing
       `,
     },
     {

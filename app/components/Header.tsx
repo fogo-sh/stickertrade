@@ -4,7 +4,7 @@ import { Menu } from "@headlessui/react";
 import clsx from "clsx";
 
 import type { User } from "@prisma/client";
-import { USER_ROLE } from "~/types";
+import { UserRoles } from "~/types";
 
 export function Header({
   user = null,
@@ -77,7 +77,7 @@ export function Header({
                       )}
                     </Menu.Item>
                   </div>
-                  {user.role === USER_ROLE.ADMIN && (
+                  {user.role === UserRoles.Admin && (
                     <div className="px-1 py-1 ">
                       <Menu.Item>
                         {({ active }) => (

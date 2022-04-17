@@ -7,7 +7,7 @@ import invariant from "tiny-invariant";
 import type { Invitation, User } from "@prisma/client";
 import type { Serialized } from "~/types";
 import { db } from "~/utils/db.server";
-import { ensureLoggedOut, hash } from "~/utils/perms.server";
+import { ensureLoggedOut } from "~/utils/perms.server";
 import { withZod } from "@remix-validated-form/with-zod";
 import { z } from "zod";
 import { ValidatedForm, validationError } from "remix-validated-form";

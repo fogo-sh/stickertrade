@@ -4,10 +4,12 @@ import type { ActionFunction, LoaderFunction } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { Form, useLoaderData } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
+import { formatDistance, parseISO } from "date-fns";
 import { ValidatedForm, validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
 import { z } from "zod";
 import { HiddenFormInput } from "~/components/form/FormInput";
+import { Serialized } from "~/types";
 import { db } from "~/utils/db.server";
 import {
   deleteInvitation,
@@ -17,7 +19,7 @@ import { ensureLoggedIn } from "~/utils/perms.server";
 
 type LoaderData = {
   invitations: (Pick<Invitation, "id" | "message"> & {
-    to: Pick<User, "username" | "avatarUrl"> | null;
+    to: Pick<User, "username" | "avatarUrl" | "createdAt"> | null;
   })[];
   user: Pick<User, "invitationLimit">;
 };
@@ -36,6 +38,7 @@ export const loader: LoaderFunction = async ({ request }) => {
         select: {
           username: true,
           avatarUrl: true,
+          createdAt: true,
         },
       },
     },
@@ -97,7 +100,7 @@ export const action: ActionFunction = async ({ request, params }) => {
 };
 
 export default function Invitations() {
-  const { user, invitations } = useLoaderData<LoaderData>();
+  const { user, invitations } = useLoaderData<Serialized<LoaderData>>();
 
   const remainingInvitations = user.invitationLimit - invitations.length;
 
@@ -106,23 +109,42 @@ export default function Invitations() {
       <h1 className="text-2xl mb-4">invitations</h1>
 
       <div className="flex flex-col mt-4 gap-y-2">
-        {invitations.map(({ id }) => (
+        {invitations.map(({ id, to }) => (
           <div
             key={id}
             className="w-full h-12 rounded border border-light-500 border-opacity-40 flex items-center justify-between px-2"
           >
-            <p>{id}</p>
-            <ValidatedForm
-              validator={validator}
-              method="post"
-              className="flex items-center"
-            >
-              <button type="submit" name="action" value="delete">
-                <XCircleIcon className="text-light-500 h-6 w-6" />
-              </button>
-              <HiddenFormInput name="id" value={id} />
-              <HiddenFormInput name="action" value="delete" />
-            </ValidatedForm>
+            {to === null ? (
+              <>
+                <p>{id}</p>
+                <ValidatedForm
+                  validator={validator}
+                  method="post"
+                  className="flex items-center"
+                >
+                  <button type="submit" name="action" value="delete">
+                    <XCircleIcon className="text-light-500 h-6 w-6" />
+                  </button>
+                  <HiddenFormInput name="id" value={id} />
+                  <HiddenFormInput name="action" value="delete" />
+                </ValidatedForm>
+              </>
+            ) : (
+              <div className="flex gap-3 w-full justify-center">
+                <img
+                  className="w-[1.5em] rounded-full"
+                  src={to.avatarUrl ?? "/images/default-avatar.webp"}
+                  alt={to.username}
+                />
+                <p>
+                  {to.username}{" "}
+                  <span className="opacity-50">
+                    accepted{" "}
+                    {formatDistance(new Date(), parseISO(to.createdAt))} ago
+                  </span>
+                </p>
+              </div>
+            )}
           </div>
         ))}
         {remainingInvitations > 0 && (
