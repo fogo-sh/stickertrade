@@ -2,14 +2,15 @@ import { XCircleIcon } from "@heroicons/react/solid";
 import type { Invitation, User } from "@prisma/client";
 import type { ActionFunction, LoaderFunction } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { Form, useLoaderData } from "@remix-run/react";
+import { Form, Link, useLoaderData } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
 import { formatDistance, parseISO } from "date-fns";
 import { ValidatedForm, validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
 import { z } from "zod";
 import { HiddenFormInput } from "~/components/form/FormInput";
-import { Serialized } from "~/types";
+import { config } from "~/consts";
+import type { Serialized } from "~/types";
 import { db } from "~/utils/db.server";
 import {
   deleteInvitation,
@@ -20,6 +21,7 @@ import { ensureLoggedIn } from "~/utils/perms.server";
 type LoaderData = {
   invitations: (Pick<Invitation, "id" | "message"> & {
     to: Pick<User, "username" | "avatarUrl" | "createdAt"> | null;
+    url: string;
   })[];
   user: Pick<User, "invitationLimit">;
 };
@@ -53,7 +55,10 @@ export const loader: LoaderFunction = async ({ request }) => {
   invariant(user, "user not found");
 
   const data: LoaderData = {
-    invitations,
+    invitations: invitations.map((invitation) => ({
+      ...invitation,
+      url: `${config.site.urlBase}/invitation/${invitation.id}`,
+    })),
     user,
   };
   return json(data);
@@ -109,14 +114,14 @@ export default function Invitations() {
       <h1 className="text-2xl mb-4">invitations</h1>
 
       <div className="flex flex-col mt-4 gap-y-2">
-        {invitations.map(({ id, to }) => (
+        {invitations.map(({ id, url, to }) => (
           <div
             key={id}
             className="w-full h-12 rounded border border-light-500 border-opacity-40 flex items-center justify-between px-2"
           >
             {to === null ? (
               <>
-                <p>{id}</p>
+                <input className="w-full mr-1.5" disabled value={url} />
                 <ValidatedForm
                   validator={validator}
                   method="post"
@@ -130,20 +135,22 @@ export default function Invitations() {
                 </ValidatedForm>
               </>
             ) : (
-              <div className="flex gap-3 w-full justify-center">
-                <img
-                  className="w-[1.5em] rounded-full"
-                  src={to.avatarUrl ?? "/images/default-avatar.webp"}
-                  alt={to.username}
-                />
-                <p>
-                  {to.username}{" "}
-                  <span className="opacity-50">
-                    accepted{" "}
-                    {formatDistance(new Date(), parseISO(to.createdAt))} ago
-                  </span>
-                </p>
-              </div>
+              <Link to={`/profile/${to.username}`} className="w-full">
+                <div className="flex gap-3 w-full justify-center">
+                  <img
+                    className="w-[1.5em] rounded-full"
+                    src={to.avatarUrl ?? "/images/default-avatar.webp"}
+                    alt={to.username}
+                  />
+                  <p>
+                    {to.username}{" "}
+                    <span className="opacity-50">
+                      accepted{" "}
+                      {formatDistance(new Date(), parseISO(to.createdAt))} ago
+                    </span>
+                  </p>
+                </div>
+              </Link>
             )}
           </div>
         ))}

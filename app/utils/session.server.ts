@@ -1,5 +1,6 @@
 import { createCookieSessionStorage, redirect } from "@remix-run/node";
 import bcrypt from "bcryptjs";
+import { config } from "~/consts";
 import { db } from "./db.server";
 
 type LoginForm = {
@@ -69,16 +70,15 @@ export async function getUser(request: Request) {
   }
 }
 
-const sessionSecret = process.env.SESSION_SECRET;
-if (!sessionSecret) {
-  throw new Error("SESSION_SECRET must be set");
+if (!config.site.sessionSecret) {
+  throw new Error("SITE_SESSION_SECRET must be set");
 }
 
 const storage = createCookieSessionStorage({
   cookie: {
     name: "RJ_session",
     secure: process.env.NODE_ENV === "production",
-    secrets: [sessionSecret],
+    secrets: [config.site.sessionSecret],
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24 * 30,

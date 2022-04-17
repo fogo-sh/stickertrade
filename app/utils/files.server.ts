@@ -1,5 +1,6 @@
 import type { Readable } from "stream";
 import * as Minio from "minio";
+import { config } from "~/consts";
 
 export const buckets = Object.freeze({
   stickers: "stickers",
@@ -21,15 +22,7 @@ const publicBucketPolicy = (bucketName: BucketName) => ({
   ],
 });
 
-const baseS3Url = process.env.BASE_S3_URL ?? "http://localhost:9000";
-
-const minioClient = new Minio.Client({
-  endPoint: process.env.MINIO_ENDPOINT ?? "localhost",
-  port: 9000,
-  useSSL: false,
-  accessKey: process.env.MINIO_ACCESS_KEY ?? "minioadmin",
-  secretKey: process.env.MINIO_SECRET_KEY ?? "minioadmin",
-});
+const minioClient = new Minio.Client(config.minio);
 
 const ensureBuckets = async () => {
   const stickersBucketExists = await minioClient.bucketExists(buckets.stickers);
@@ -55,7 +48,7 @@ export async function uploadImage(
 
 export function imageUrlHandler(imageUrl: string) {
   if (imageUrl.startsWith("s3://")) {
-    return `${baseS3Url}/${imageUrl.slice("s3://".length)}`;
+    return `${config.site.baseS3Url}/${imageUrl.slice("s3://".length)}`;
   }
 
   return imageUrl;
