@@ -69,13 +69,22 @@ export const validator = withZod(
       .nonempty("Password is required")
       .min(6, { message: "Password must be at least 6 characters" })
       .max(32, { message: "Password can't be more than 32 characters" }),
+    confirmPassword: z
+      .string()
+      .nonempty("Confirm password is required")
+      .min(6, { message: "Confirm password must be at least 6 characters" })
+      .max(32, {
+        message: "Confirm password can't be more than 32 characters",
+      }),
   })
 );
 
 export const action: ActionFunction = async ({ request, params }) => {
   await ensureLoggedOut(request);
 
-  const { data, error } = await validator.validate(await request.formData());
+  const { formId, data, error } = await validator.validate(
+    await request.formData()
+  );
 
   if (error) return validationError(error);
 
@@ -83,6 +92,18 @@ export const action: ActionFunction = async ({ request, params }) => {
     where: { id: params.id },
     select: { id: true, fromId: true },
   });
+
+  if (data.password !== data.confirmPassword) {
+    return validationError(
+      {
+        fieldErrors: {
+          confirmPassword: "Passwords don't match",
+        },
+        formId: formId,
+      },
+      data
+    );
+  }
 
   await acceptInvitation(invitation, data.username, data.password);
 
@@ -114,6 +135,11 @@ export default function AcceptInvitation() {
         <ValidatedForm validator={validator} method="post">
           <FormInput name="username" label="create username" />
           <FormInput name="password" label="set password" type="password" />
+          <FormInput
+            name="confirmPassword"
+            label="confirm password"
+            type="password"
+          />
           <SubmitButton
             className="mt-3"
             submit="accept invitation"
