@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 
-let db: PrismaClient;
+export let db: PrismaClient;
 
 declare global {
   var __db: PrismaClient | undefined;
@@ -20,4 +20,11 @@ if (process.env.NODE_ENV === "production") {
   db = global.__db;
 }
 
-export { db };
+if (process.env.NODE_ENV === "test") {
+  beforeAll(async () => {
+    await db.user.deleteMany();
+    await db.sticker.deleteMany();
+    await db.invitation.deleteMany();
+    await db.config.deleteMany();
+  });
+}

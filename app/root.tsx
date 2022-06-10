@@ -1,5 +1,12 @@
+import React from "react";
+import type {
+  LinksFunction,
+  LoaderFunction,
+  MetaFunction,
+} from "@remix-run/node";
+import { json } from "@remix-run/node";
+
 import {
-  Link,
   Links,
   LiveReload,
   Meta,
@@ -7,11 +14,15 @@ import {
   Scripts,
   ScrollRestoration,
   useCatch,
-} from "remix";
-import type { MetaFunction, LinksFunction } from "remix";
+  useLoaderData,
+} from "@remix-run/react";
 
-import tailwindStyles from "./tailwind.css";
-import React from "react";
+import type { User } from "@prisma/client";
+
+import { getUser } from "~/utils/session.server";
+import { Header } from "~/components/Header";
+import { Footer } from "~/components/Footer";
+import tailwindStyles from "~/tailwind.css";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: tailwindStyles },
@@ -22,7 +33,23 @@ export const meta: MetaFunction = () => {
   return { title: "stickertrade" };
 };
 
-function Document({ children }: { children: React.ReactNode }) {
+type LoaderData = Pick<User, "id" | "username" | "role" | "avatarUrl"> | null;
+export type RootOutletContext = { user: LoaderData };
+
+export const loader: LoaderFunction = async ({ request }) => {
+  const data: LoaderData = await getUser(request);
+  return json(data);
+};
+
+function Document({
+  user = null,
+  error = false,
+  children,
+}: {
+  user?: LoaderData;
+  error?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en" className="h-full">
       <head>
@@ -32,39 +59,21 @@ function Document({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body className="bg-dark-500 p-4 h-full">
-        <div className="mx-auto px-4 min-h-[91.5vh] max-w-7xl">
-          <header className="border-b border-light p-2 flex justify-between max-w-[36rem] mx-auto">
-            <Link to="/" className="flex items-center gap-2">
-              <img src="/favicon.svg" alt="stickertrade logo" className="h-4" />
-              <h1>stickertrade</h1>
-            </Link>
-            <div className="flex flex-col gap-4">
-              <Link to="/login">
-                <h1>login</h1>
-              </Link>
-            </div>
-          </header>
+        <div className="mx-auto px-4 min-h-[92.75vh] max-w-7xl">
+          <Header user={user} error={error} />
+          <div className="flex flex-col items-center">
+            <p className="bg-red-500 text-dark-500 text-xl mx-2 mt-8 p-3">
+              <b>WARNING:</b>
+              <br />
+              this site is currently under heavy development
+              <br />
+              data created here might be reset at <b>any</b> time
+              <br />
+            </p>
+          </div>
           <div className="pt-5 pb-8">{children}</div>
         </div>
-        <footer className="mb-2 border-t mx-auto max-w-[36rem] border-t-light-500">
-          <div className="flex items-center gap-4 p-2 justify-between">
-            <Link to="/" className="flex items-center gap-2">
-              <img src="/favicon.svg" alt="stickertrade logo" className="h-4" />
-              <h1>stickertrade</h1>
-            </Link>
-            <div className="flex gap-4">
-              <Link to="/roadmap">
-                <h1>roadmap</h1>
-              </Link>
-              <Link to="/brand">
-                <h1>brand</h1>
-              </Link>
-              <Link to="/dev-logs">
-                <h1>dev logs</h1>
-              </Link>
-            </div>
-          </div>
-        </footer>
+        <Footer />
         <ScrollRestoration />
         <Scripts />
         <LiveReload />
@@ -74,19 +83,23 @@ function Document({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const user = useLoaderData<LoaderData>();
+
   return (
-    <Document>
-      <Outlet />
+    <Document user={user}>
+      <Outlet context={{ user } as RootOutletContext} />
     </Document>
   );
 }
 
 export function ErrorBoundary({ error }: { error: Error }) {
   return (
-    <Document>
+    <Document error={true}>
       <h1 className="text-primary-500">Oops, something went wrong!</h1>
-      <div className="px-3 py-2 border rounded-md mt-2 bg-light-500">
-        <pre className="text-dark-500 font-semibold">{error.message}</pre>
+      <div className="px-3 py-2 border rounded-md  mt-4 bg-light-500">
+        <pre className="text-dark-500 font-semibold whitespace-pre-wrap">
+          {error.message}
+        </pre>
       </div>
     </Document>
   );
@@ -96,7 +109,7 @@ export function CatchBoundary() {
   const caught = useCatch();
 
   return (
-    <Document>
+    <Document error={true}>
       <h1 className="text-primary-500 text-3xl text-center my-2">
         {caught.status} {caught.statusText}
       </h1>

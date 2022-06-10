@@ -1,5 +1,6 @@
-import type { LoaderFunction } from "remix";
-import { json, Link, useLoaderData } from "remix";
+import type { LoaderFunction } from "@remix-run/node";
+import { json } from "@remix-run/node";
+import { Link, useLoaderData } from "@remix-run/react";
 
 import { getDevLogs } from "~/data/dev-logs.server";
 import type { DevLog } from "~/data/dev-logs.server";
@@ -16,7 +17,7 @@ export default function DevLogs() {
 
   return (
     <main className="max-w-lg mx-auto">
-      <h1 className="text-2xl mb-4">dev-logs</h1>
+      <h1 className="text-2xl mb-4">dev logs</h1>
       <div className="markdown">
         <p>a collection of development logs regarding stickertrade.ca</p>
         <p>
@@ -24,7 +25,7 @@ export default function DevLogs() {
           <a href="/dev-logs.atom">atom</a> - <a href="/dev-logs.json">json</a>
         </p>
         {devLogs.map((devLog) => (
-          <Link key={devLog.slug} to={devLog.slug}>
+          <Link key={devLog.slug} to={devLog.slug} className="hover:underline">
             <div className="flex justify-between">
               <div>{devLog.title}</div>
               <div>{devLog.dateString}</div>

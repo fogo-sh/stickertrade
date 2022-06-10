@@ -7,6 +7,10 @@ const jack = {
   link: "https://jackharrhy.dev",
 };
 
+const firstDevLog = devLogs.sort(
+  ({ date: a }, { date: b }) => b.getTime() - a.getTime()
+)[0];
+
 export const feed = new Feed({
   title: "stickertrade.ca - dev logs",
   description: "a collection of development logs regarding stickertrade.ca",
@@ -14,7 +18,7 @@ export const feed = new Feed({
   link: "https://stickertrade.ca/dev-logs",
   language: "en",
   favicon: "http://stickertrade.ca/favicon.svg",
-  updated: new Date(2022, 1, 1), // TODO make the time of the latest blog post
+  updated: firstDevLog.date,
   copyright: `All rights reserved ${new Date().getFullYear()}, Jack Harrhy`,
   feedLinks: {
     rss: "https://stickertrade.ca/dev-logs.rss",
@@ -31,7 +35,6 @@ devLogs.forEach((devLog) => {
     title: devLog.title,
     id: url,
     link: url,
-    content: devLog.html,
     author: [jack],
     contributor: [],
     date: devLog.date,

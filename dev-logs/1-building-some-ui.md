@@ -7,7 +7,7 @@ Things are starting to take shape!
 
 As of the creation of this article, the website currently looks like this:
 
-<img src="/images/dev-logs/1/current-homepage.webp" alt="TODO">
+<img src="/images/dev-logs/1/current-homepage.webp" alt="Current image of the homepage, with a basic header visible, notice on the front of the page explaining the site is a work in progress, a list of 'recently posted stickers', and 'active users'">
 
 This is the bulk of what I think the homepage should display at first glance: recently posted stickers, and recently active users.
 
@@ -17,13 +17,13 @@ This is the bulk of what I think the homepage should display at first glance: re
 
 To get to this point, I had planned to learn a bit of [Figma](https://figma.com) to build out the UI, making it to the point of recreating what I had completed by the last post:
 
-<img src="/images/dev-logs/1/figma-homepage.webp" alt="TODO">
+<img src="/images/dev-logs/1/figma-homepage.webp" alt="Work in progress implementation of the homepage built using Figma">
 
 Which as you can see, wasn't very much.
 
 I had also spent some time copying over my work-in-progress color theme to its own space within the Figma document, which came out quite pleasing:
 
-<img src="/images/dev-logs/1/figma-colors.webp" alt="TODO">
+<img src="/images/dev-logs/1/figma-colors.webp" alt="Branding colors layed out neatly within figma, with the names of each color from the theme beneath each block of color">
 
 But, faced with a blank canvas to then build the remainder of the UI, I didn't feel like I wanted to keep using Figma, simply because it was time consuming to get everything nice and aligned.
 
@@ -45,7 +45,7 @@ Now while I have pens and pencils to whip out and actually draw this up physical
 
 Within about ten minutes, I had produced most of the following:
 
-<img src="/images/dev-logs/1/excalidraw-homepage.webp" alt="TODO">
+<img src="/images/dev-logs/1/excalidraw-homepage.webp" alt="Version of the homepage made using Excalidraw, which has a whiteboard drawn look to them, with everything layed out (header, content, and footer)">
 
 Building this took no time, since I didn't have to worry about:
 
@@ -99,7 +99,7 @@ export function UserCard({ user }: { user: User }) {
 
 Above I have sections of the `UserCard` component, its job is to render the following UI:
 
-<img src="/images/dev-logs/1/user-card.webp" alt="TODO">
+<img src="/images/dev-logs/1/user-card.webp" alt="UserCard visually displayed, with Jack's avatar and username used to populate it">
 
 As you can see, I'm using TypeScript, but whats special in the above code is that I'm importing the `User` type directly from the `@prisma/client` package.
 
@@ -201,11 +201,11 @@ I'm _not_, this is the beauty of the setup Remix gives you.
 
 As you can see, here is some actual data coming back from the initial `/` request:
 
-<img src="/images/dev-logs/1/dev-tools-html.webp" alt="TODO">
+<img src="/images/dev-logs/1/dev-tools-html.webp" alt="Firefox dev tools open, showing the HTML returned from the first request, within the view is actual data coming back within the HTML">
 
 And after navigating away from the page, and returning, the following request is made:
 
-<img src="/images/dev-logs/1/dev-tools-json.webp" alt="TODO">
+<img src="/images/dev-logs/1/dev-tools-json.webp" alt="Firefox dev tools open, showing the JSON returned from a subsequent request, without any markup">
 
 This was magic to me (I think mostly because I had never digged into Next.js before, which AFAIK gives you a similar structure), and I am a huge fan.
 

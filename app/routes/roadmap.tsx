@@ -1,7 +1,8 @@
 import clsx from "clsx";
 import { marked } from "marked";
-import type { LoaderFunction } from "remix";
-import { json, useLoaderData } from "remix";
+import type { LoaderFunction } from "@remix-run/node";
+import { json } from "@remix-run/node";
+import { useLoaderData } from "@remix-run/react";
 import dedent from "ts-dedent";
 
 type Roadmap = {
@@ -17,31 +18,56 @@ type LoaderData = Roadmap[];
 const taskList: Roadmap[] = (
   [
     {
-      title: "Login page 👤",
+      title: "User invitations 👋",
+      focus: true,
+      description: dedent`
+        - [x] Planning
+        - [x] Invitation page UI
+        - [x] Invitation page mocked up
+        - [x] Invitation schema planned
+        - [x] Invitation schema implemented
+        - [x] Test for edge cases
+        - [ ] Cleanup UI
+        - [ ] Cleanup Implementation
+      `,
     },
     {
-      title: "Login that works ✅️👤",
+      title: "Admin Page 🤴",
+      description: dedent`
+        - [ ] Methods to delete stickers
+        - [ ] Refine table interactions / plumbing
+      `,
     },
     {
-      title: "Logout 👋👤",
-    },
-    {
-      title: "Create Sticker ➕",
+      title: "Testing 🧪",
+      focus: true,
+      description: dedent`
+        - [x] vitest setup for backend integration testing
+        - [ ] tested invitations
+        - [ ] tested login
+        - [ ] cypress setup for e2e testing
+      `,
     },
     {
       title: "Edit Sticker ➕",
+      eventually: true,
     },
     {
       title: "Users rough location 📍",
       eventually: true,
     },
     {
-      title: "Profile page 👤",
+      title: "Edit profile page 👤",
       eventually: true,
     },
     {
-      title: "Edit profile page 👤",
+      title: "Social associations 🙋‍♂️",
       eventually: true,
+      description: dedent`
+        - [ ] Discord association (oauth?)
+        - [ ] Twitter association (oauth?)
+        - [ ] Disassociation
+      `,
     },
     {
       title: "Events 📅",
@@ -60,7 +86,38 @@ const taskList: Roadmap[] = (
       eventually: true,
     },
     {
+      title: "Dedicated sticker page 🖼️",
+      eventually: true,
+      description: dedent`
+        - [ ] Paginated list of stickers
+        - [ ] Searching
+        - [ ] Filters
+      `,
+    },
+    {
       title: "Opengraph Images 🖼️",
+      eventually: true,
+    },
+    {
+      title: "Toasts 🍞",
+      eventually: true,
+    },
+    {
+      title: "Sticker Image Cropping 🖼️",
+      eventually: true,
+    },
+    {
+      title: "Sticker Image Optimization 🖼️",
+      eventually: true,
+    },
+    {
+      title: "Accessibility Audit 🧐",
+      description: dedent`
+        - [ ] Color contrast review
+        - [ ] Axe Plugin
+        - [ ] Screen reader review
+      `,
+      eventually: true,
     },
   ] as Roadmap[]
 ).map((task, index) => ({

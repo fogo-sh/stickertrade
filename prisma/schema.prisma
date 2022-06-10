@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,13 +7,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Possible roles: "USER", "ADMIN"
+
 model User {
-  id        String    @id @default(uuid())
-  username  String    @unique
-  avatarUrl String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  stickers  Sticker[]
+  id                 String       @id @default(uuid())
+  username           String       @unique
+  role               String       @default("USER")
+  passwordHash       String
+  avatarUrl          String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  stickers           Sticker[]
+  invitationsSent    Invitation[] @relation("FromUser")
+  receivedInvitation Invitation?  @relation("ToUser", fields: [invitationId], references: [id], onDelete: SetNull)
+  invitationId       String?      @unique
+  invitationLimit    Int          @default(10)
 }
 
 model Sticker {
@@ -27,4 +32,20 @@ model Sticker {
   updatedAt DateTime @updatedAt
   ownerId   String?
   owner     User?    @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+}
+
+// TODO accepted at date
+model Invitation {
+  id        String   @id @default(uuid())
+  fromId    String?
+  from      User?    @relation("FromUser", fields: [fromId], references: [id], onDelete: SetNull)
+  to        User?    @relation("ToUser")
+  message   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Config {
+  id                 Int     @id @default(1) // TODO in migration check if one
+  invitationsEnabled Boolean
 }

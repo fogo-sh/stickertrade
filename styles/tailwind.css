@@ -12,18 +12,45 @@ p,
 a,
 pre,
 code,
+label,
+button,
+span,
 h1,
 h2,
 h3,
 h4,
 h5,
 h6,
-li {
+li,
+tr,
+td {
   @apply text-light-500;
 }
 
-a:hover {
-  @apply text-light-700 underline;
+.button-light, .button-dark {
+  @apply border focus:border-opacity-100 disabled:cursor-not-allowed disabled:opacity-60 hover:border-opacity-100 border-light-500 font-bold px-3 py-1 rounded;
+}
+
+.button-light {
+  @apply border-light-500 border-opacity-50;
+}
+
+.button-dark {
+  @apply border-dark-500 border-opacity-50;
+}
+
+input {
+  @apply bg-dark-500 border border-light-500 border-opacity-50 focus:border-opacity-100 hover:border-opacity-100 text-light-500 px-2 py-1;
+}
+
+a:hover,
+a:focus {
+  @apply text-light-500;
+}
+
+.button-a:hover,
+.button-a:focus {
+  @apply text-light-500 underline;
 }
 
 h1 {
@@ -59,7 +86,8 @@ h3 {
   @apply text-secondary-500;
 }
 
-.markdown img {
+.markdown img,
+.markdown video {
   @apply border-2 border-light-500 my-4 rounded-sm;
 }
 
