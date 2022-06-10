@@ -13,7 +13,8 @@ type LoaderData = Pick<Sticker, "name" | "imageUrl"> & {
 };
 
 export const loader: LoaderFunction = async ({ params }) => {
-  invariant(params.id, "expected params.username");
+  invariant(params.id, "expected params.id");
+
   const sticker = await db.sticker.findUnique({
     where: { id: params.id },
     select: {
