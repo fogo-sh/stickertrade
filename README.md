@@ -1,7 +1,5 @@
 # stickertrade
 
-## NOTE: currently `main` is set to _not_ deploy to ghcr.io, that will change once things are stable
-
 https://stickertrade.ca
 
 ## Development
