@@ -1,9 +1,10 @@
-import { json, LoaderFunction } from "@remix-run/node";
+import { json } from "@remix-run/node";
+import type { LoaderFunction } from "@remix-run/node";
 import { Link, Outlet, useLoaderData, useSearchParams } from "@remix-run/react";
 
-import { User } from "@prisma/client";
+import type { User } from "@prisma/client";
 import { db } from "~/utils/db.server";
-import { Serialized } from "~/types";
+import type { Serialized } from "~/types";
 import { UserTable } from "~/components/table/UserTable";
 import {
   ArrowCircleLeftIcon,

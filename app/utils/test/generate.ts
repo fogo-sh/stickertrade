@@ -1,4 +1,4 @@
-import faker from "@faker-js/faker";
+import { faker } from "@faker-js/faker";
 import { UserRoles } from "~/types";
 import { db } from "~/utils/db.server";
 import { hash } from "~/utils/perms.server";

@@ -1,9 +1,10 @@
-import { json, LoaderFunction } from "@remix-run/node";
+import { json } from "@remix-run/node";
+import type { LoaderFunction } from "@remix-run/node";
 import { Link, useLoaderData, useSearchParams } from "@remix-run/react";
 
-import { Sticker } from "@prisma/client";
+import type { Sticker } from "@prisma/client";
+import type { Serialized } from "~/types";
 import { db } from "~/utils/db.server";
-import { Serialized } from "~/types";
 import {
   ArrowCircleLeftIcon,
   ArrowCircleRightIcon,

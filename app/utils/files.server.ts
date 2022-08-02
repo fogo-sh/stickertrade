@@ -39,11 +39,11 @@ const ensureBuckets = async () => {
 ensureBuckets();
 
 export async function uploadImage(
-  fileStream: Readable,
+  data: string | Readable | Buffer,
   bucketName: BucketName,
   fileName: string
 ) {
-  return await minioClient.putObject(bucketName, fileName, fileStream);
+  return await minioClient.putObject(bucketName, fileName, data);
 }
 
 export function imageUrlHandler(imageUrl: string) {
