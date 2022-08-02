@@ -4,26 +4,28 @@ import type { ActionFunction, LoaderFunction } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { Form, Link, useLoaderData } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
+import clsx from "clsx";
 import { formatDistance, parseISO } from "date-fns";
 import { ValidatedForm, validationError } from "remix-validated-form";
 import invariant from "tiny-invariant";
 import { z } from "zod";
 import { HiddenFormInput } from "~/components/form/FormInput";
 import { config } from "~/consts";
-import type { Serialized } from "~/types";
+import { Serialized, UserRoles } from "~/types";
 import { db } from "~/utils/db.server";
 import {
   deleteInvitation,
   generateInvitation,
 } from "~/utils/invitations.server";
-import { ensureLoggedIn } from "~/utils/perms.server";
+import { ensureLoggedIn, ensureAdmin } from "~/utils/perms.server";
 
 type LoaderData = {
   invitations: (Pick<Invitation, "id" | "message"> & {
     to: Pick<User, "username" | "avatarUrl" | "createdAt"> | null;
     url: string;
   })[];
-  user: Pick<User, "invitationLimit">;
+  user: Pick<User, "invitationLimit" | "role">;
+  config: { invitationsEnabled: boolean };
 };
 
 export const loader: LoaderFunction = async ({ request }) => {
@@ -50,9 +52,13 @@ export const loader: LoaderFunction = async ({ request }) => {
     where: { id: userFromSession.id },
     select: {
       invitationLimit: true,
+      role: true,
     },
   });
   invariant(user, "user not found");
+
+  const { invitationsEnabled } =
+    (await db.config.findFirst()) ?? config.defaultDbConfig;
 
   const data: LoaderData = {
     invitations: invitations.map((invitation) => ({
@@ -60,7 +66,9 @@ export const loader: LoaderFunction = async ({ request }) => {
       url: `${config.site.urlBase}/invitation/${invitation.id}`,
     })),
     user,
+    config: { invitationsEnabled },
   };
+
   return json(data);
 };
 
@@ -85,8 +93,15 @@ const handleDeleteInvitation = async (userId: string, formData: FormData) => {
   return null;
 };
 
-export const action: ActionFunction = async ({ request, params }) => {
+export const action: ActionFunction = async ({ request }) => {
   const user = await ensureLoggedIn(request);
+
+  const { invitationsEnabled } =
+    (await db.config.findFirst()) ?? config.defaultDbConfig;
+
+  if (!invitationsEnabled) {
+    await ensureAdmin(request);
+  }
 
   const formData = await request.formData();
   const action = formData.get("action");
@@ -105,7 +120,13 @@ export const action: ActionFunction = async ({ request, params }) => {
 };
 
 export default function Invitations() {
-  const { user, invitations } = useLoaderData<Serialized<LoaderData>>();
+  const {
+    user,
+    invitations,
+    config: { invitationsEnabled },
+  } = useLoaderData<Serialized<LoaderData>>();
+
+  const isAdmin = user.role === UserRoles.Admin;
 
   const remainingInvitations = user.invitationLimit - invitations.length;
 
@@ -113,7 +134,23 @@ export default function Invitations() {
     <main className="max-w-lg mx-auto">
       <h1 className="text-2xl mb-4">invitations</h1>
 
-      <div className="flex flex-col mt-4 gap-y-2">
+      {!invitationsEnabled && (
+        <>
+          <h1 className="text-lg text-primary-500 text-center">
+            invitations are currently disabled site-wide
+          </h1>
+          {isAdmin && (
+            <p className="italic text-primary-400 text-center">
+              but you're an admin, so you're gucci
+            </p>
+          )}
+        </>
+      )}
+      <div
+        className={clsx("flex flex-col mt-4 gap-y-2", {
+          "opacity-50 pointer-events-none": !invitationsEnabled && !isAdmin,
+        })}
+      >
         {invitations.map(({ id, url, to }) => (
           <div
             key={id}

@@ -12,7 +12,10 @@ const site = {
   urlBase: process.env.SITE_URL_BASE ?? "http://localhost:3000",
 };
 
+const defaultDbConfig = { invitationsEnabled: true };
+
 export const config = {
   minio,
   site,
+  defaultDbConfig,
 };

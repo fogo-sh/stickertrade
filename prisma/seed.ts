@@ -78,6 +78,12 @@ const stickers: Sticker[] = [
 ];
 
 async function seed() {
+  await db.config.create({
+    data: {
+      invitationsEnabled: true,
+    },
+  });
+
   const rootUser = await db.user.create({
     data: {
       username: "jack",
