@@ -29,7 +29,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 };
 
 const baseSchema = z.object({
-  name: z.string(),
+  name: z.string().max(60),
 });
 
 const clientValidator = withZod(

@@ -46,7 +46,7 @@ export default function StickerPage() {
 
   return (
     <main className="max-w-lg mx-auto">
-      <div className="flex flex-col items-center gap-2 w-64 mt-4 mx-auto">
+      <div className="flex flex-col items-center gap-2 mt-4 mx-auto">
         <img
           className="w-full border-2 border-light-500 border-opacity-25"
           src={sticker.imageUrl}

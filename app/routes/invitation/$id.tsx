@@ -61,17 +61,14 @@ export const validator = withZod(
   z.object({
     username: z
       .string()
-      .nonempty("Username is required")
       .min(3, { message: "Username must be at least 3 characters" })
       .max(16, { message: "Username can't be more than 16 characters" }),
     password: z
       .string()
-      .nonempty("Password is required")
       .min(6, { message: "Password must be at least 6 characters" })
       .max(32, { message: "Password can't be more than 32 characters" }),
     confirmPassword: z
       .string()
-      .nonempty("Confirm password is required")
       .min(6, { message: "Confirm password must be at least 6 characters" })
       .max(32, {
         message: "Confirm password can't be more than 32 characters",

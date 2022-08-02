@@ -19,7 +19,7 @@ export function StickerCard({
           alt={`sticker of ${sticker.name}`}
           className="w-[12em] h-[12em] border-2 border-light-500 border-opacity-25 object-cover"
         />
-        <p className="my-1 text-md">{sticker.name}</p>
+        <p className="my-1 text-md truncate max-w-[12em]">{sticker.name}</p>
       </Link>
       {showOwner && (
         <Link
