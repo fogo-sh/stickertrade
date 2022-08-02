@@ -1,8 +1,7 @@
-import {
+import { redirect, unstable_parseMultipartFormData } from "@remix-run/node";
+import type {
   ActionFunction,
   LoaderFunction,
-  redirect,
-  unstable_parseMultipartFormData,
   UploadHandler,
 } from "@remix-run/node";
 import { ValidatedForm, validationError } from "remix-validated-form";
@@ -17,6 +16,7 @@ import { getUser } from "~/utils/session.server";
 import { db } from "~/utils/db.server";
 import mime from "mime-types";
 import { ensureLoggedIn } from "~/utils/perms.server";
+import { Readable } from "stream";
 
 export const loader: LoaderFunction = async ({ request }) => {
   await ensureLoggedIn(request);
@@ -24,7 +24,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 };
 
 const baseSchema = z.object({
-  name: z.string().nonempty("Name is required"),
+  name: z.string(),
 });
 
 const clientValidator = withZod(
@@ -56,14 +56,13 @@ export const action: ActionFunction = async ({ request }) => {
 
   const id = uuidv4();
 
-  const uploadHandler: UploadHandler = async ({ name, stream, mimetype }) => {
+  const uploadHandler: UploadHandler = async ({ name, data, contentType }) => {
     if (name !== "image") {
-      stream.resume();
-      return;
+      return data.toString();
     }
-    const extension = mime.extension(mimetype);
+    const extension = mime.extension(contentType);
     const filename = `${id}.${extension}`;
-    await uploadImage(stream, buckets.stickers, filename);
+    await uploadImage(Readable.from(data), buckets.stickers, filename);
     return `s3://stickers/${filename}`;
   };
 

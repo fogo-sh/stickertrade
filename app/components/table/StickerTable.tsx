@@ -1,8 +1,8 @@
-import { createTable } from "@tanstack/react-table";
+import { createColumnHelper } from "@tanstack/react-table";
 
 import type { Sticker } from "@prisma/client";
 import { Table } from "./Table";
-import { Serialized } from "~/types";
+import type { Serialized } from "~/types";
 import { formatDate } from "./tableUtils";
 
 type Row = Pick<
@@ -10,30 +10,28 @@ type Row = Pick<
   "imageUrl" | "name" | "id" | "createdAt" | "updatedAt"
 >;
 
-const table = createTable<{ Row: Row }>();
+const columnHelper = createColumnHelper<Row>();
 
-const defaultColumns = table.createColumns([
-  table.createDataColumn("imageUrl", {
+const columns = [
+  columnHelper.accessor("imageUrl", {
     cell: (info) => (
-      <img src={info.value} alt="TODO" className="h-16 w-16 mx-auto" />
+      <img src={info.getValue()} alt="TODO" className="h-16 w-16 mx-auto" />
     ),
   }),
-  table.createDataColumn("name", {
-    cell: (info) => info.value,
+  columnHelper.accessor("name", {
+    cell: (info) => info.getValue(),
   }),
-  table.createDataColumn("id", {
-    cell: (info) => info.value,
+  columnHelper.accessor("id", {
+    cell: (info) => info.getValue(),
   }),
-  table.createDataColumn("createdAt", {
-    cell: (info) => formatDate(info.value),
+  columnHelper.accessor("createdAt", {
+    cell: (info) => formatDate(info.getValue()),
   }),
-  table.createDataColumn("updatedAt", {
-    cell: (info) => formatDate(info.value),
+  columnHelper.accessor("updatedAt", {
+    cell: (info) => formatDate(info.getValue()),
   }),
-]);
+];
 
 export function StickerTable({ stickers }: { stickers: Row[] }) {
-  return (
-    <Table table={table} data={stickers} defaultColumns={defaultColumns} />
-  );
+  return <Table data={stickers} columns={columns} />;
 }

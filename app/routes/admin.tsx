@@ -1,4 +1,4 @@
-import { LoaderFunction } from "@remix-run/node";
+import type { LoaderFunction } from "@remix-run/node";
 import { Link, Outlet } from "@remix-run/react";
 import { ensureAdmin } from "~/utils/perms.server";
 

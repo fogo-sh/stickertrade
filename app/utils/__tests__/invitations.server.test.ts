@@ -1,5 +1,5 @@
 import invariant from "tiny-invariant";
-import faker from "@faker-js/faker";
+import { faker } from "@faker-js/faker";
 import {
   acceptInvitation,
   deleteInvitation,

@@ -1,55 +1,48 @@
-import React from "react";
-import { useTable } from "@tanstack/react-table";
-import type { Table as ReactTable } from "@tanstack/react-table";
+import {
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
 
 // TODO fix usage of any
-export function Table({
-  table,
-  data,
-  defaultColumns,
-}: {
-  table: ReactTable<any>;
-  data: any;
-  defaultColumns: any;
-}) {
-  const [columns] = React.useState<typeof defaultColumns>(() => [
-    ...defaultColumns,
-  ]);
-
-  const instance = useTable(table, {
+export function Table({ data, columns }: { data: any; columns: any }) {
+  const table = useReactTable({
     data,
     columns,
+    getCoreRowModel: getCoreRowModel(),
   });
 
   return (
     <div className="p-2">
-      <table
-        {...instance.getTableProps()}
-        className="w-full border border-light-500 border-opacity-50"
-      >
+      <table className="w-full border border-light-500 border-opacity-50">
         <thead>
-          {instance.getHeaderGroups().map((headerGroup) => (
-            <tr {...headerGroup.getHeaderGroupProps()}>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                <th {...header.getHeaderProps()} className="px-2 py-1">
-                  {header.isPlaceholder ? null : header.renderHeader()}
+                <th key={header.id} className="px-2 py-1">
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                 </th>
               ))}
             </tr>
           ))}
         </thead>
-        <tbody {...instance.getTableBodyProps()}>
-          {instance.getRowModel().rows.map((row) => (
+        <tbody>
+          {table.getRowModel().rows.map((row) => (
             <tr
-              {...row.getRowProps()}
+              key={row.id}
               className="border-t border-light-500 border-opacity-50"
             >
               {row.getVisibleCells().map((cell) => (
                 <td
-                  {...cell.getCellProps()}
+                  key={cell.id}
                   className="px-2 py-1 border-l border-light-500 border-opacity-50"
                 >
-                  {cell.renderCell()}
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>
               ))}
             </tr>
