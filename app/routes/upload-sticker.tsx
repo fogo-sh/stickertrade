@@ -1,4 +1,9 @@
-import { redirect, unstable_parseMultipartFormData } from "@remix-run/node";
+import {
+  redirect,
+  unstable_composeUploadHandlers,
+  unstable_createMemoryUploadHandler,
+  unstable_parseMultipartFormData,
+} from "@remix-run/node";
 import type {
   ActionFunction,
   LoaderFunction,
@@ -56,15 +61,24 @@ export const action: ActionFunction = async ({ request }) => {
 
   const id = uuidv4();
 
-  const uploadHandler: UploadHandler = async ({ name, data, contentType }) => {
+  const fileUploadHandler: UploadHandler = async ({
+    name,
+    data,
+    contentType,
+  }) => {
     if (name !== "image") {
-      return data.toString();
+      return;
     }
     const extension = mime.extension(contentType);
     const filename = `${id}.${extension}`;
     await uploadImage(Readable.from(data), buckets.stickers, filename);
     return `s3://stickers/${filename}`;
   };
+
+  const uploadHandler = unstable_composeUploadHandlers(
+    fileUploadHandler,
+    unstable_createMemoryUploadHandler()
+  );
 
   const formData = await unstable_parseMultipartFormData(
     request,
