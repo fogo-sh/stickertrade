@@ -15,7 +15,11 @@ const columnHelper = createColumnHelper<Row>();
 const columns = [
   columnHelper.accessor("imageUrl", {
     cell: (info) => (
-      <img src={info.getValue()} alt="TODO" className="h-16 w-16 mx-auto" />
+      <img
+        src={info.getValue()}
+        alt="TODO"
+        className="h-16 w-16 mx-auto object-cover"
+      />
     ),
   }),
   columnHelper.accessor("name", {

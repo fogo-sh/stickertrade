@@ -11,7 +11,8 @@ import invariant from "tiny-invariant";
 import { z } from "zod";
 import { HiddenFormInput } from "~/components/form/FormInput";
 import { config } from "~/consts";
-import { Serialized, UserRoles } from "~/types";
+import { UserRoles } from "~/types";
+import type { Serialized } from "~/types";
 import { db } from "~/utils/db.server";
 import {
   deleteInvitation,
@@ -175,7 +176,7 @@ export default function Invitations() {
               <Link to={`/profile/${to.username}`} className="w-full">
                 <div className="flex gap-3 w-full justify-center">
                   <img
-                    className="w-[1.5em] rounded-full"
+                    className="w-[1.5em] rounded-full object-cover"
                     src={to.avatarUrl ?? "/images/default-avatar.webp"}
                     alt={to.username}
                   />

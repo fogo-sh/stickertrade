@@ -104,7 +104,7 @@ export default function RemoveSticker() {
         <img
           src={sticker.imageUrl}
           alt={`sticker of ${sticker.name}`}
-          className="mx-auto w-[16em] h-[16em] border-2 border-light-500 border-opacity-25"
+          className="mx-auto w-[16em] h-[16em] border-2 border-light-500 border-opacity-25 object-cover"
         />
         <p className="my-1 text-md text-dark-500">{sticker.name}</p>
       </div>

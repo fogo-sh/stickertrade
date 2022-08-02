@@ -10,7 +10,7 @@ export function UserCard({ user, dark = false }: UserCardProps) {
   return (
     <div className="flex items-center gap-4">
       <img
-        className="w-[3em] rounded-full"
+        className="w-[3em] rounded-full object-cover"
         src={user.avatarUrl ?? "/images/default-avatar.webp"}
         alt={user.username}
       />

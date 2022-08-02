@@ -122,7 +122,7 @@ export default function AcceptInvitation() {
       </h1>
       <div className="flex items-center justify-center gap-2 my-4 mx-auto">
         <img
-          className="w-[1.5em] rounded-full"
+          className="w-[1.5em] rounded-full object-cover"
           src={invitation.from.avatarUrl ?? "/images/default-avatar.webp"}
           alt={invitation.from.username}
         />

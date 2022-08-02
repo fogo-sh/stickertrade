@@ -41,7 +41,7 @@ export function UserTable({
           <img
             src={info.getValue() ?? "/images/default-avatar.webp"}
             alt="TODO"
-            className="h-16 w-16 mx-auto"
+            className="h-16 w-16 mx-auto object-cover"
           />
         ),
       }),

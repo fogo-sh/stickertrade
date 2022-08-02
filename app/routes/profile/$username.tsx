@@ -65,7 +65,7 @@ export default function Profile() {
       <Outlet />
       <div className="flex flex-col items-center gap-2 w-52 mt-4 mx-auto">
         <img
-          className="w-[6em] rounded-full"
+          className="w-[6em] rounded-full object-cover"
           src={user.avatarUrl ?? "/images/default-avatar.webp"}
           alt={user.username}
         />

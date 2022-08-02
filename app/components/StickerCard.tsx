@@ -17,7 +17,7 @@ export function StickerCard({
         <img
           src={sticker.imageUrl}
           alt={`sticker of ${sticker.name}`}
-          className="w-[12em] h-[12em] border-2 border-light-500 border-opacity-25"
+          className="w-[12em] h-[12em] border-2 border-light-500 border-opacity-25 object-cover"
         />
         <p className="my-1 text-md">{sticker.name}</p>
       </Link>
@@ -36,7 +36,7 @@ export function StickerCard({
             )}
           >
             <img
-              className="w-[1.5em] h-[1.5em] rounded-full"
+              className="w-[1.5em] h-[1.5em] rounded-full object-cover"
               src={sticker.owner?.avatarUrl ?? "/images/default-avatar.webp"}
               alt={sticker.owner?.username ?? "deleted user"}
             />
