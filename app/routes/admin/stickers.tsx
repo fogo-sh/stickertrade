@@ -34,6 +34,9 @@ export const loader: LoaderFunction = async ({ request }) => {
       include: {
         owner: { select: { id: true, username: true, avatarUrl: true } },
       },
+      orderBy: {
+        updatedAt: "asc",
+      },
     })
   ).map((sticker) => ({
     ...sticker,

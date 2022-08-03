@@ -41,6 +41,9 @@ export const loader: LoaderFunction = async ({ request }) => {
       createdAt: true,
       updatedAt: true,
     },
+    orderBy: {
+      updatedAt: "asc",
+    },
   });
 
   return json(data);
