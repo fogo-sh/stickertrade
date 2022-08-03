@@ -77,12 +77,15 @@ export const action: ActionFunction = async ({ request }) => {
 
     const extension = mime.extension(contentType);
     const filename = `${id}.${extension}`;
-    await uploadImage(
+    const success = await uploadImage(
       Readable.from(data),
       buckets.stickers,
       filename,
       contentType
     );
+    if (!success) {
+      throw new Error("Upload failed");
+    }
     return `s3://stickers/${filename}`;
   };
 

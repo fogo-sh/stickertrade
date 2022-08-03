@@ -18,6 +18,7 @@ const site = {
       mime.lookup("jpg"),
       mime.lookup("jpeg"),
     ],
+    maxFileSizeBytes: 10000000,
   },
 };
 

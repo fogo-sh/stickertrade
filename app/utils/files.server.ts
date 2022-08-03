@@ -1,6 +1,7 @@
 import type { Readable } from "stream";
 import * as Minio from "minio";
 import { config } from "~/consts";
+import { PassThrough } from "stream";
 
 export const buckets = Object.freeze({
   stickers: "stickers",
@@ -39,14 +40,47 @@ const ensureBuckets = async () => {
 ensureBuckets();
 
 export async function uploadImage(
-  data: string | Readable | Buffer,
+  stream: Readable,
   bucketName: BucketName,
   fileName: string,
   contentType: string
 ) {
-  return await minioClient.putObject(bucketName, fileName, data, {
+  const passThrough = new PassThrough();
+
+  const sizeChecker = new Promise<void>((resolve, reject) => {
+    stream.pipe(passThrough);
+
+    let bytes = 0;
+    passThrough.on("data", (chunk) => {
+      if (Buffer.isBuffer(chunk)) {
+        bytes += Buffer.byteLength(chunk);
+      }
+      if (bytes > config.site.files.maxFileSizeBytes) {
+        passThrough.destroy();
+        stream.destroy();
+        reject(new Error("Filesize too large"));
+      }
+    });
+
+    passThrough.on("end", () => {
+      resolve();
+    });
+  });
+
+  const objectPutter = minioClient.putObject(bucketName, fileName, stream, {
     "Content-Type": contentType,
   });
+
+  try {
+    await Promise.all([sizeChecker, objectPutter]);
+  } catch (error) {
+    if (error instanceof Error && error.message === "Filesize too large") {
+      return false;
+    }
+    throw error;
+  }
+
+  return true;
 }
 
 export function imageUrlHandler(imageUrl: string) {

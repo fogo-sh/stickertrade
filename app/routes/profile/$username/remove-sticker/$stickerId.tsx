@@ -8,6 +8,7 @@ import invariant from "tiny-invariant";
 import { Modal } from "~/components/Modal";
 import { db } from "~/utils/db.server";
 import { getUserId } from "~/utils/session.server";
+import { imageUrlHandler } from "~/utils/files.server";
 
 const ensurePermittedToRemoveSticker = async ({
   params,
@@ -65,7 +66,10 @@ type LoaderData = Pick<Sticker, "name" | "imageUrl"> & {
 
 export const loader: LoaderFunction = async ({ request, params }) => {
   const { sticker } = await ensurePermittedToRemoveSticker({ request, params });
-  const data: LoaderData = sticker;
+  const data: LoaderData = {
+    ...sticker,
+    imageUrl: imageUrlHandler(sticker.imageUrl),
+  };
   return json(data);
 };
 

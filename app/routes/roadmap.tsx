@@ -18,20 +18,6 @@ type LoaderData = Roadmap[];
 const taskList: Roadmap[] = (
   [
     {
-      title: "User invitations 👋",
-      focus: true,
-      description: dedent`
-        - [x] Planning
-        - [x] Invitation page UI
-        - [x] Invitation page mocked up
-        - [x] Invitation schema planned
-        - [x] Invitation schema implemented
-        - [x] Test for edge cases
-        - [ ] Cleanup UI
-        - [ ] Cleanup Implementation
-      `,
-    },
-    {
       title: "Admin Page 🤴",
       description: dedent`
         - [ ] Methods to delete stickers
@@ -47,6 +33,20 @@ const taskList: Roadmap[] = (
         - [ ] tested login
         - [ ] cypress setup for e2e testing
       `,
+    },
+    {
+      title: "Users Search 👤",
+    },
+    {
+      title: "Dedicated stickers page 🖼️",
+      description: dedent`
+        - [ ] Paginated list of stickers
+        - [ ] Searching
+        - [ ] Filters
+      `,
+    },
+    {
+      title: "Friends 👪",
     },
     {
       title: "Edit Sticker ➕",
@@ -84,15 +84,6 @@ const taskList: Roadmap[] = (
     {
       title: "Trading 💱",
       eventually: true,
-    },
-    {
-      title: "Dedicated sticker page 🖼️",
-      eventually: true,
-      description: dedent`
-        - [ ] Paginated list of stickers
-        - [ ] Searching
-        - [ ] Filters
-      `,
     },
     {
       title: "Opengraph Images 🖼️",
