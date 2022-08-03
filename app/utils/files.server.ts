@@ -70,9 +70,9 @@ export async function uploadImage(
 
   let resizer;
   if (fileTypes.jpg.includes(contentType)) {
-    resizer = sharp().jpeg({ mozjpeg: true, quality: 60 });
+    resizer = sharp().withMetadata().jpeg({ mozjpeg: true, quality: 60 });
   } else {
-    resizer = sharp().png({ compressionLevel: 6, quality: 60 });
+    resizer = sharp().withMetadata().png({ compressionLevel: 6, quality: 60 });
   }
 
   const objectPutter = minioClient.putObject(
