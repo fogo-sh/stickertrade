@@ -1,5 +1,10 @@
 import mime from "mime-types";
 
+export const fileTypes = {
+  png: [mime.lookup("png")],
+  jpg: [mime.lookup("jpg"), mime.lookup("jpeg")],
+};
+
 const minio = {
   endPoint: process.env.MINIO_ENDPOINT ?? "localhost",
   port: Number(process.env.MINIO_PORT ?? 9000),
@@ -13,11 +18,7 @@ const site = {
   sessionSecret: process.env.SITE_SESSION_SECRET ?? "session-secret",
   urlBase: process.env.SITE_URL_BASE ?? "http://localhost:3000",
   files: {
-    allowedFilesTypes: [
-      mime.lookup("png"),
-      mime.lookup("jpg"),
-      mime.lookup("jpeg"),
-    ],
+    allowedFilesTypes: [...fileTypes.png, ...fileTypes.jpg],
     maxFileSizeBytes: 10000000,
   },
 };

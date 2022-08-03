@@ -1,6 +1,6 @@
 import type { Readable } from "stream";
 import * as Minio from "minio";
-import { config } from "~/consts";
+import { config, fileTypes } from "~/consts";
 import { PassThrough } from "stream";
 import sharp from "sharp";
 
@@ -68,7 +68,12 @@ export async function uploadImage(
     });
   });
 
-  const resizer = sharp().jpeg({ mozjpeg: true });
+  let resizer;
+  if (fileTypes.jpg.includes(contentType)) {
+    resizer = sharp().jpeg({ mozjpeg: true, quality: 60 });
+  } else {
+    resizer = sharp().png({ compressionLevel: 6, quality: 60 });
+  }
 
   const objectPutter = minioClient.putObject(
     bucketName,
