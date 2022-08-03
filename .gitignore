@@ -7,5 +7,6 @@ node_modules
 /app/tailwind.css
 
 .env
+.env*
 *.db
 *.db-journal
