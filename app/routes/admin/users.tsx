@@ -42,7 +42,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       updatedAt: true,
     },
     orderBy: {
-      updatedAt: "asc",
+      updatedAt: "desc",
     },
   });
 

@@ -21,6 +21,7 @@ export const loader: LoaderFunction = async () => {
   const users = await db.user.findMany({
     take: 8,
     select: { id: true, username: true, avatarUrl: true },
+    orderBy: { updatedAt: "desc" },
   });
 
   const stickers = await db.sticker.findMany({
