@@ -2,6 +2,7 @@ import type { Readable } from "stream";
 import * as Minio from "minio";
 import { config } from "~/consts";
 import { PassThrough } from "stream";
+import sharp from "sharp";
 
 export const buckets = Object.freeze({
   stickers: "stickers",
@@ -67,9 +68,16 @@ export async function uploadImage(
     });
   });
 
-  const objectPutter = minioClient.putObject(bucketName, fileName, stream, {
-    "Content-Type": contentType,
-  });
+  const resizer = sharp().jpeg({ mozjpeg: true });
+
+  const objectPutter = minioClient.putObject(
+    bucketName,
+    fileName,
+    stream.pipe(resizer),
+    {
+      "Content-Type": contentType,
+    }
+  );
 
   try {
     await Promise.all([sizeChecker, objectPutter]);
