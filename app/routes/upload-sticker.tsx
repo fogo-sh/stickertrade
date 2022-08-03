@@ -22,6 +22,7 @@ import { db } from "~/utils/db.server";
 import mime from "mime-types";
 import { ensureLoggedIn } from "~/utils/perms.server";
 import { Readable } from "stream";
+import { config } from "~/consts";
 
 export const loader: LoaderFunction = async ({ request }) => {
   await ensureLoggedIn(request);
@@ -69,9 +70,19 @@ export const action: ActionFunction = async ({ request }) => {
     if (name !== "image") {
       return;
     }
+
+    if (!config.site.files.allowedFilesTypes.includes(contentType)) {
+      throw new Error("Non-permitted contentType");
+    }
+
     const extension = mime.extension(contentType);
     const filename = `${id}.${extension}`;
-    await uploadImage(Readable.from(data), buckets.stickers, filename);
+    await uploadImage(
+      Readable.from(data),
+      buckets.stickers,
+      filename,
+      contentType
+    );
     return `s3://stickers/${filename}`;
   };
 
@@ -113,7 +124,12 @@ export default function Index() {
         encType="multipart/form-data"
       >
         <FormInput name="name" label="name" />
-        <FormInput name="image" label="image" type="file" accept="image/*" />
+        <FormInput
+          name="image"
+          label="image"
+          type="file"
+          accept=".png, .jpg, .jpeg"
+        />
         <SubmitButton
           className="mt-3"
           submit="Create Sticker"

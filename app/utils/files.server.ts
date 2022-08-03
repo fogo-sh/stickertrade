@@ -41,9 +41,12 @@ ensureBuckets();
 export async function uploadImage(
   data: string | Readable | Buffer,
   bucketName: BucketName,
-  fileName: string
+  fileName: string,
+  contentType: string
 ) {
-  return await minioClient.putObject(bucketName, fileName, data);
+  return await minioClient.putObject(bucketName, fileName, data, {
+    "Content-Type": contentType,
+  });
 }
 
 export function imageUrlHandler(imageUrl: string) {
