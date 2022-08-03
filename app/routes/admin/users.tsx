@@ -101,7 +101,7 @@ export default function Admin() {
           />
         </div>
         <Link to="remove">
-          <button className="button-light">apply</button>
+          <button className="button-light">perform</button>
         </Link>
       </div>
 
