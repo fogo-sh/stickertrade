@@ -32,7 +32,8 @@ export const links: LinksFunction = () => [
 export const meta: MetaFunction = () => {
   return {
     title: "stickertrade",
-    "og:image": "/images/banner.png",
+    // TODO make this use config, but work on clientside as well
+    "og:image": "https://stickertrade.ca/images/banner.png",
   };
 };
 

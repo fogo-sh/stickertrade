@@ -7,6 +7,8 @@ const defaultPassword = "password";
 
 const db = new PrismaClient();
 
+// TODO depricate usage of 'test-data' dir, and test uploading actual images -> minio during seed
+
 const users = [
   {
     username: "david",
