@@ -4,6 +4,7 @@ import { formatDate } from "./tableUtils";
 import type { Serialized } from "~/types";
 import { useMemo } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
+import { ClipboardCopyIcon } from "@heroicons/react/solid";
 
 type Row = Pick<
   Serialized<User>,
@@ -38,18 +39,34 @@ export function UserTable({
       }),
       columnHelper.accessor("avatarUrl", {
         cell: (info) => (
-          <img
-            src={info.getValue() ?? "/images/default-avatar.webp"}
-            alt="TODO"
-            className="h-16 w-16 mx-auto object-cover"
-          />
+          <a href={`/profile/${info.row.getValue("username")}`}>
+            <img
+              src={info.getValue() ?? "/images/default-avatar.webp"}
+              alt="TODO"
+              className="h-16 w-16 mx-auto object-cover"
+            />
+          </a>
         ),
       }),
       columnHelper.accessor("username", {
-        cell: (info) => info.getValue(),
+        cell: (info) => (
+          <a className="underline" href={`/profile/${info.getValue()}`}>
+            {info.getValue()}
+          </a>
+        ),
       }),
       columnHelper.accessor("id", {
-        cell: (info) => info.getValue(),
+        cell: (info) => (
+          <button
+            className="button-light items-center flex gap-x-2"
+            onClick={() =>
+              window.navigator.clipboard.writeText(info.getValue())
+            }
+          >
+            <ClipboardCopyIcon className="h-5" />
+            copy id
+          </button>
+        ),
       }),
       columnHelper.accessor("role", {
         cell: (info) => info.getValue(),
