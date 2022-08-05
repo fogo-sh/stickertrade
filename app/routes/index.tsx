@@ -1,6 +1,6 @@
 import type { Sticker, User } from "@prisma/client";
 import { Link } from "@remix-run/react";
-import type { LoaderFunction } from "@remix-run/node";
+import type { LoaderFunction, MetaFunction } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { useLoaderData, useOutletContext } from "@remix-run/react";
 import { StickerCard } from "~/components/StickerCard";

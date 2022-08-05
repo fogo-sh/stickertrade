@@ -1,4 +1,4 @@
-import type { LoaderFunction } from "@remix-run/node";
+import type { LoaderFunction, MetaFunction } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import invariant from "tiny-invariant";
@@ -10,6 +10,15 @@ import { imageUrlHandler } from "~/utils/files.server";
 
 type LoaderData = Pick<Sticker, "name" | "imageUrl"> & {
   owner: Pick<User, "username" | "avatarUrl"> | null;
+};
+
+export const meta: MetaFunction = ({ data }) => {
+  if (data === undefined) return {};
+  const { name, imageUrl } = data as LoaderData;
+  return {
+    title: `stickertrade - ${name}`,
+    "og:image": imageUrl,
+  };
 };
 
 export const loader: LoaderFunction = async ({ params }) => {

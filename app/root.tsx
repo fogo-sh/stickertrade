@@ -30,7 +30,10 @@ export const links: LinksFunction = () => [
 ];
 
 export const meta: MetaFunction = () => {
-  return { title: "stickertrade" };
+  return {
+    title: "stickertrade",
+    "og:image": "/images/banner.png",
+  };
 };
 
 type LoaderData = Pick<User, "id" | "username" | "role" | "avatarUrl"> | null;

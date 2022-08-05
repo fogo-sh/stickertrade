@@ -1,4 +1,4 @@
-import type { LoaderFunction } from "@remix-run/node";
+import type { LoaderFunction, MetaFunction } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { Link, useLoaderData } from "@remix-run/react";
 
@@ -6,6 +6,12 @@ import { getDevLogs } from "~/data/dev-logs.server";
 import type { DevLog } from "~/data/dev-logs.server";
 
 type LoaderData = DevLog[];
+
+export const meta: MetaFunction = () => {
+  return {
+    title: `stickertrade - dev logs`,
+  };
+};
 
 export const loader: LoaderFunction = async () => {
   const data: LoaderData = getDevLogs();

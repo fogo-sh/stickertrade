@@ -1,6 +1,10 @@
 import type { Sticker, User } from "@prisma/client";
 import type { Params } from "react-router";
-import type { ActionFunction, LoaderFunction } from "@remix-run/node";
+import type {
+  ActionFunction,
+  LoaderFunction,
+  MetaFunction,
+} from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 
 import { Form, useLoaderData, useNavigate } from "@remix-run/react";
@@ -62,6 +66,14 @@ const ensurePermittedToRemoveSticker = async ({
 
 type LoaderData = Pick<Sticker, "name" | "imageUrl"> & {
   owner: Pick<User, "username"> | null;
+};
+
+export const meta: MetaFunction = ({ data }) => {
+  if (data === undefined) return {};
+  const { name } = data as LoaderData;
+  return {
+    title: `stickertrade - remove ${name}`,
+  };
 };
 
 export const loader: LoaderFunction = async ({ request, params }) => {

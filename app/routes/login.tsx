@@ -1,4 +1,4 @@
-import type { ActionFunction } from "@remix-run/node";
+import type { ActionFunction, MetaFunction } from "@remix-run/node";
 import { withZod } from "@remix-validated-form/with-zod";
 import { ValidatedForm, validationError } from "remix-validated-form";
 import { z } from "zod";
@@ -20,6 +20,12 @@ export const validator = withZod(
       .max(32, { message: "Password can't be more than 32 characters" }),
   })
 );
+
+export const meta: MetaFunction = () => {
+  return {
+    title: `stickertrade - login`,
+  };
+};
 
 export const action: ActionFunction = async ({ request }) => {
   const { formId, data, error } = await validator.validate(

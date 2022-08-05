@@ -1,4 +1,5 @@
 import {
+  MetaFunction,
   redirect,
   unstable_composeUploadHandlers,
   unstable_createMemoryUploadHandler,
@@ -23,6 +24,12 @@ import mime from "mime-types";
 import { ensureLoggedIn } from "~/utils/perms.server";
 import { Readable } from "stream";
 import { config } from "~/consts";
+
+export const meta: MetaFunction = () => {
+  return {
+    title: `stickertrade - upload sticker`,
+  };
+};
 
 export const loader: LoaderFunction = async ({ request }) => {
   await ensureLoggedIn(request);

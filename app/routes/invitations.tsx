@@ -1,6 +1,10 @@
 import { XCircleIcon } from "@heroicons/react/solid";
 import type { Invitation, User } from "@prisma/client";
-import type { ActionFunction, LoaderFunction } from "@remix-run/node";
+import type {
+  ActionFunction,
+  LoaderFunction,
+  MetaFunction,
+} from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { Form, Link, useLoaderData } from "@remix-run/react";
 import { withZod } from "@remix-validated-form/with-zod";
@@ -27,6 +31,12 @@ type LoaderData = {
   })[];
   user: Pick<User, "invitationLimit" | "role">;
   config: { invitationsEnabled: boolean };
+};
+
+export const meta: MetaFunction = () => {
+  return {
+    title: `stickertrade - invitations`,
+  };
 };
 
 export const loader: LoaderFunction = async ({ request }) => {

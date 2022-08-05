@@ -1,6 +1,12 @@
-import type { LoaderFunction } from "@remix-run/node";
+import type { LoaderFunction, MetaFunction } from "@remix-run/node";
 import { Link, Outlet } from "@remix-run/react";
 import { ensureAdmin } from "~/utils/perms.server";
+
+export const meta: MetaFunction = () => {
+  return {
+    title: `stickertrade - admin 👑`,
+  };
+};
 
 export const loader: LoaderFunction = async ({ request }) => {
   await ensureAdmin(request);

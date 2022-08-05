@@ -1,4 +1,8 @@
-import type { ActionFunction, LoaderFunction } from "@remix-run/node";
+import type {
+  ActionFunction,
+  LoaderFunction,
+  MetaFunction,
+} from "@remix-run/node";
 import { redirect } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
@@ -25,6 +29,14 @@ type LoaderData = {
 };
 
 type SerializedLoaderData = Serialized<LoaderData>;
+
+export const meta: MetaFunction = ({ data }) => {
+  if (data === undefined) return {};
+  const { invitation } = data as LoaderData;
+  return {
+    title: `stickertrade - invitation from ${invitation.from.username}`,
+  };
+};
 
 export const loader: LoaderFunction = async ({ request, params }) => {
   invariant(params.id, "expected params.id");

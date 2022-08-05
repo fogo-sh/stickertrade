@@ -1,4 +1,4 @@
-import type { LoaderFunction } from "@remix-run/node";
+import type { LoaderFunction, MetaFunction } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import {
   Link,
@@ -22,6 +22,15 @@ type PartialSticker = Pick<Sticker, "id" | "name" | "imageUrl">;
 
 type LoaderData = Pick<User, "username" | "avatarUrl"> & {
   stickers: PartialSticker[];
+};
+
+export const meta: MetaFunction = ({ data }) => {
+  if (data === undefined) return {};
+  const { username, avatarUrl } = data as LoaderData;
+  return {
+    title: `stickertrade - ${username}`,
+    "og:image": avatarUrl,
+  };
 };
 
 export const loader: LoaderFunction = async ({ params }) => {

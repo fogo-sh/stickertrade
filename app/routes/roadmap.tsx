@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import { marked } from "marked";
-import type { LoaderFunction } from "@remix-run/node";
+import type { LoaderFunction, MetaFunction } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import dedent from "ts-dedent";
@@ -116,6 +116,12 @@ const taskList: Roadmap[] = (
   description: task.description ? marked(task.description.trim()) : undefined,
   id: index,
 }));
+
+export const meta: MetaFunction = () => {
+  return {
+    title: `stickertrade - roadmap`,
+  };
+};
 
 export const loader: LoaderFunction = async () => {
   const data: LoaderData = taskList;
