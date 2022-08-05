@@ -69,10 +69,13 @@ function Document({
             <p className="bg-red-500 text-dark-500 text-xl mx-2 mt-8 p-3">
               <b>WARNING:</b>
               <br />
-              this site is currently under heavy development
+              this site is currently a work in progress
               <br />
-              data created here might be reset at <b>any</b> time
+              if you want an invite, reach out to me!
               <br />
+              <a href="mailto:me@jackharrhy.com" className="underline">
+                me@jackharrhy.com
+              </a>
             </p>
           </div>
           <div className="pt-5 pb-8">{children}</div>
