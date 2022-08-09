@@ -6,6 +6,13 @@ https://stickertrade.ca
 
 From your terminal:
 
+```
+TODO
+- explain how to run minio through docker
+- explain npm install
+- explain prisma seed
+```
+
 ```sh
 npm run dev
 ```
