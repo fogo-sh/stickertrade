@@ -7,9 +7,9 @@ import { db } from "~/utils/db.server";
 import type { Serialized } from "~/types";
 import { UserTable } from "~/components/table/UserTable";
 import {
-  ArrowCircleLeftIcon,
-  ArrowCircleRightIcon,
-} from "@heroicons/react/solid";
+  ArrowLeftCircleIcon,
+  ArrowRightCircleIcon,
+} from "@heroicons/react/24/solid";
 import { useMemo, useState } from "react";
 import { ensureAdmin } from "~/utils/perms.server";
 import { Select } from "~/components/Select";
@@ -112,12 +112,12 @@ export default function Admin() {
         <p className="text-lg font-semibold">users (page {page})</p>
         {page > 0 && (
           <Link to={`?page=${page - 1}`}>
-            <ArrowCircleLeftIcon className="h-6 w-6" />
+            <ArrowLeftCircleIcon className="h-6 w-6" />
           </Link>
         )}
         {users.length !== 0 && (
           <Link to={`?page=${page + 1}`}>
-            <ArrowCircleRightIcon className="h-6 w-6" />
+            <ArrowRightCircleIcon className="h-6 w-6" />
           </Link>
         )}
       </div>

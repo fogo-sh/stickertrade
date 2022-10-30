@@ -8,7 +8,7 @@ import {
 } from "@remix-run/react";
 import invariant from "tiny-invariant";
 import type { Sticker, User } from "@prisma/client";
-import { XCircleIcon } from "@heroicons/react/solid";
+import { XCircleIcon } from "@heroicons/react/24/solid";
 
 import { db } from "~/utils/db.server";
 import { imageUrlHandler } from "~/utils/files.server";
