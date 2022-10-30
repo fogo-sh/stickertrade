@@ -4,7 +4,7 @@ import { formatDate } from "./tableUtils";
 import type { Serialized } from "~/types";
 import { useMemo } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
-import { ClipboardCopyIcon } from "@heroicons/react/solid";
+import { ClipboardIcon } from "@heroicons/react/24/solid";
 
 type Row = Pick<
   Serialized<User>,
@@ -63,7 +63,7 @@ export function UserTable({
               window.navigator.clipboard.writeText(info.getValue())
             }
           >
-            <ClipboardCopyIcon className="h-5" />
+            <ClipboardIcon className="h-5" />
             copy id
           </button>
         ),

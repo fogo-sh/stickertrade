@@ -1,4 +1,4 @@
-import { XCircleIcon } from "@heroicons/react/solid";
+import { XCircleIcon } from "@heroicons/react/24/solid";
 import type { Invitation, User } from "@prisma/client";
 import type {
   ActionFunction,

@@ -6,9 +6,9 @@ import type { Sticker, User } from "@prisma/client";
 import type { Serialized } from "~/types";
 import { db } from "~/utils/db.server";
 import {
-  ArrowCircleLeftIcon,
-  ArrowCircleRightIcon,
-} from "@heroicons/react/solid";
+  ArrowLeftCircleIcon,
+  ArrowRightCircleIcon,
+} from "@heroicons/react/24/solid";
 import { StickerTable } from "~/components/table/StickerTable";
 import { imageUrlHandler } from "~/utils/files.server";
 import { useMemo, useState } from "react";
@@ -104,12 +104,12 @@ export default function Admin() {
         <p className="text-lg font-semibold">stickers (page {page})</p>
         {page > 0 && (
           <Link to={`?page=${page - 1}`}>
-            <ArrowCircleLeftIcon className="h-6 w-6" />
+            <ArrowLeftCircleIcon className="h-6 w-6" />
           </Link>
         )}
         {stickers.length !== 0 && (
           <Link to={`?page=${page + 1}`}>
-            <ArrowCircleRightIcon className="h-6 w-6" />
+            <ArrowRightCircleIcon className="h-6 w-6" />
           </Link>
         )}
       </div>

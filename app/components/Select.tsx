@@ -1,5 +1,5 @@
 import { Listbox } from "@headlessui/react";
-import { CheckIcon, SelectorIcon } from "@heroicons/react/solid";
+import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/24/solid";
 import clsx from "clsx";
 
 interface Option {
@@ -21,7 +21,7 @@ export function Select({
         <Listbox.Button className="relative w-full py-2 pl-3 pr-10 text-left rounded cursor-default border border-light-500 border-opacity-50">
           <span className="block truncate">{selected.name}</span>
           <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-            <SelectorIcon
+            <ChevronUpDownIcon
               className="w-5 h-5 text-light-500"
               aria-hidden="true"
             />

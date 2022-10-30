@@ -2,7 +2,7 @@ version: "3"
 
 services:
   stickertrade:
-    image: "stickertrade"
+    image: ghcr.io/fogo-sh/stickertrade:latest
     build: .
     ports:
       - "3000:3000"
@@ -12,7 +12,7 @@ services:
       - DATABASE_URL=file:../data/docker.db
 
   minio:
-    image: minio/minio:RELEASE.2022-07-30T05-21-40Z
+    image: minio/minio:RELEASE.2022-10-29T06-21-33Z
     command: server --console-address ":9001" /data/minio
     ports:
       - "9000:9000"
