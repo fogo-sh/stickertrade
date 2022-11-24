@@ -102,7 +102,7 @@ export default function App() {
       <body className="bg-dark-500 p-4 h-full">
         <div className="max-w-[30rem] mx-auto">
           <h1 className="text-center mb-2">
-            due to making a <i>large</i> Oopsie, the data for Stickertrade has
+            due to making a <i>large</i> oopsie, the data for stickertrade has
             been lost :(
           </h1>
           <p>
