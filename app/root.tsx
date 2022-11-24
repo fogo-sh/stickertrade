@@ -91,6 +91,30 @@ function Document({
 
 export default function App() {
   const user = useLoaderData<LoaderData>();
+  return (
+    <html lang="en" className="h-full">
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <Meta />
+        <Links />
+      </head>
+      <body className="bg-dark-500 p-4 h-full">
+        <div className="max-w-[30rem] mx-auto">
+          <h1 className="text-center mb-2">
+            due to making a <i>large</i> Oopsie, the data for Stickertrade has
+            been lost :(
+          </h1>
+          <p>
+            i will be looking into recovering what I can, setting up a proper
+            backup system, but likely making use of this unfortunate situation
+            to work on more features before launching again
+            <br />- jack
+          </p>
+        </div>
+      </body>
+    </html>
+  );
 
   return (
     <Document user={user}>
