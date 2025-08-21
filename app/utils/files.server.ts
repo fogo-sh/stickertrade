@@ -24,6 +24,7 @@ const publicBucketPolicy = (bucketName: BucketName) => ({
   ],
 });
 
+/*
 const minioClient = new Minio.Client(config.minio);
 
 const ensureBuckets = async () => {
@@ -39,6 +40,7 @@ const ensureBuckets = async () => {
 };
 
 ensureBuckets();
+*/
 
 export async function uploadImage(
   stream: Readable,
@@ -75,6 +77,9 @@ export async function uploadImage(
     resizer = sharp().withMetadata().png({ compressionLevel: 6, quality: 60 });
   }
 
+  throw new Error("Not implemented");
+
+  /*
   const objectPutter = minioClient.putObject(
     bucketName,
     fileName,
@@ -94,6 +99,7 @@ export async function uploadImage(
   }
 
   return true;
+  */
 }
 
 export function imageUrlHandler(imageUrl: string) {
