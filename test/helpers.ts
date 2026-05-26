@@ -43,7 +43,7 @@ export async function createTestEnv(): Promise<TestEnv> {
   const db = createDatabase(adapter)
 
   // Apply migrations to the fresh database.
-  const migrations = await loadMigrations('./db/migrations')
+  const migrations = await loadMigrations('./migrations')
   const runner = createMigrationRunner(adapter, migrations)
   await runner.up()
 

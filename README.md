@@ -44,7 +44,7 @@ Seeded credentials:
 | ------------------- | -------------------------------------------------- |
 | `npm run dev`       | Dev server with `node --watch`                     |
 | `npm start`         | Production-style boot                              |
-| `npm run migrate`   | Apply `db/migrations/*` SQL migrations             |
+| `npm run migrate`   | Apply `migrations/*` SQL migrations                |
 | `npm run seed`      | Seed admin + sample user / sticker / invitation    |
 | `npm test`          | Run `node --test` smoke suite                      |
 | `npm run typecheck` | `tsc --noEmit`                                     |

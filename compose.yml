@@ -1,0 +1,17 @@
+# Local-only compose file for testing the production image build.
+# Production deployment lives in the infra repo's host compose.yml.
+services:
+  stickertrade:
+    build: .
+    image: stickertrade:local
+    ports:
+      - "44100:44100"
+    environment:
+      - NODE_ENV=production
+      - SESSION_SECRET=local-only-secret-do-not-use-in-prod
+      - SEED_ON_BOOT=true
+    volumes:
+      - ./tmp/docker-db:/app/db
+      - ./tmp/docker-uploads:/app/tmp/uploads
+      - ./tmp/docker-sessions:/app/tmp/sessions
+    restart: unless-stopped
