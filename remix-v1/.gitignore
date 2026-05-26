@@ -1,0 +1,14 @@
+node_modules
+
+/.cache
+/build
+/public/build
+
+/app/tailwind.css
+
+.env
+.env*
+*.db
+*.db-journal
+
+tmp

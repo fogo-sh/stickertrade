@@ -1,20 +1,56 @@
 # stickertrade
 
-https://stickertrade.ca
+an invite-only sticker trading site. originally a [Remix v1] app
+(now archived at `./remix-v1/`), now running on [Remix 3].
 
-## Development
+[Remix v1]: https://remix.run
+[Remix 3]: https://remix.run/blog/remix-3-beta-preview
 
-From your terminal:
+## Stack
 
-```
-TODO
-- explain how to run minio through docker
-- explain npm install
-- explain prisma seed
-```
+- **Remix 3** (`remix` ^3.0.0-beta) — router, controllers, middleware, UI runtime,
+  asset pipeline, file storage, auth/session middleware, data-table ORM, all from
+  a single npm package
+- **Node 24+** with the built-in `node:sqlite`
+- **`sharp`** for sticker image optimization
+- **`bcryptjs`** for password hashing
+- **`marked`** + **`front-matter`** + **`feed`** for the dev-logs blog and its
+  RSS / Atom / JSON feeds
+
+## Quick start
 
 ```sh
-npm run dev
+npm install
+npm run migrate
+npm run seed
+SESSION_SECRET=$(openssl rand -hex 32) npm run dev
 ```
 
-This starts the app in development mode, rebuilding assets on file changes.
+Then open [http://localhost:44100](http://localhost:44100).
+
+Seeded credentials:
+
+- `admin` / `changeme` (admin)
+- `alice` / `alicepass` (regular user, has a sample sticker)
+
+## Scripts
+
+| Script              | What it does                                       |
+| ------------------- | -------------------------------------------------- |
+| `npm run dev`       | Dev server with `node --watch`                     |
+| `npm start`         | Production-style boot                              |
+| `npm run migrate`   | Apply `db/migrations/*` SQL migrations             |
+| `npm run seed`      | Seed admin + sample user / sticker / invitation    |
+| `npm test`          | Run `node --test` smoke suite                      |
+| `npm run typecheck` | `tsc --noEmit`                                     |
+
+## Environment
+
+| Var               | Default                          | Notes                                       |
+| ----------------- | -------------------------------- | ------------------------------------------- |
+| `SESSION_SECRET`  | _required_ (except in `--test`)  | Used to sign the session cookie             |
+| `DATABASE_URL`    | `./db/stickertrade.sqlite`       | Path to SQLite file                         |
+| `PORT`            | `44100`                          | HTTP listen port                            |
+| `NODE_ENV`        | `development`                    | Toggles dev logger, cookie secure flag, etc |
+
+See [`AGENTS.md`](./AGENTS.md) for architecture and conventions.

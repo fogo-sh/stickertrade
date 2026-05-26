@@ -1,0 +1,53 @@
+import { css } from 'remix/ui'
+
+import { Document } from '../ui/document.tsx'
+import type { HeaderUser } from '../ui/header.tsx'
+import { colors } from '../ui/theme.ts'
+
+export function DevLogPage() {
+  return ({
+    user,
+    log,
+  }: {
+    user: HeaderUser | null
+    log: { title: string; dateString: string; html: string }
+  }) => (
+    <Document title={`stickertrade - dev log | ${log.title}`} user={user}>
+      <main mix={css({ maxWidth: '32rem', margin: '0 auto' })}>
+        <h1 mix={css({ fontSize: '1.5rem', marginBottom: '0.5rem' })}>dev log {log.title}</h1>
+        <p mix={css({ fontStyle: 'italic', opacity: 0.6, marginBottom: '1rem' })}>
+          {log.dateString}
+        </p>
+        <div mix={markdownStyle} innerHTML={log.html} />
+      </main>
+    </Document>
+  )
+}
+
+const markdownStyle = css({
+  '& h1, & h2, & h3': { margin: '1rem 0 0.5rem', fontWeight: 600 },
+  '& h1': { fontSize: '1.5rem' },
+  '& h2': { fontSize: '1.25rem' },
+  '& h3': { fontSize: '1.125rem' },
+  '& p': { margin: '0.5rem 0' },
+  '& ul, & ol': { paddingLeft: '1.25rem', margin: '0.5rem 0' },
+  '& li': { margin: '0.25rem 0' },
+  '& code': {
+    background: '#0e0709',
+    padding: '0.1rem 0.3rem',
+    fontSize: '0.9em',
+  },
+  '& pre': {
+    background: '#0e0709',
+    padding: '0.75rem',
+    overflow: 'auto',
+  },
+  '& a': { textDecoration: 'underline', color: colors.primary[500] },
+  '& img': { maxWidth: '100%' },
+  '& blockquote': {
+    margin: '0.5rem 0',
+    paddingLeft: '0.75rem',
+    borderLeft: `2px solid ${colors.light[500]}55`,
+    opacity: 0.85,
+  },
+})
