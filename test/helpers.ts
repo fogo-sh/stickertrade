@@ -18,6 +18,7 @@ import { createRouter, type MiddlewareContext } from 'remix/router'
 
 import rootController from '../app/actions/controller.tsx'
 import adminController from '../app/actions/admin/controller.tsx'
+import changePasswordController from '../app/actions/change-password/controller.tsx'
 import invitationsController from '../app/actions/invitations/controller.tsx'
 import invitationController from '../app/actions/invitation/controller.tsx'
 import loginController from '../app/actions/login/controller.tsx'
@@ -104,6 +105,7 @@ export async function createTestEnv(): Promise<TestEnv> {
   router.map(routes.invitations, invitationsController as any)
   router.map(routes.invitation, invitationController as any)
   router.map(routes.login, loginController as any)
+  router.map(routes.changePassword, changePasswordController as any)
   router.map(routes.removeSticker, removeStickerController as any)
   router.map(routes.uploadSticker, uploadStickerController as any)
 

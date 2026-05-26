@@ -6,6 +6,7 @@ import { staticFiles } from 'remix/middleware/static'
 
 import rootController from './actions/controller.tsx'
 import adminController from './actions/admin/controller.tsx'
+import changePasswordController from './actions/change-password/controller.tsx'
 import invitationsController from './actions/invitations/controller.tsx'
 import invitationController from './actions/invitation/controller.tsx'
 import loginController from './actions/login/controller.tsx'
@@ -44,5 +45,6 @@ router.map(routes.admin, adminController)
 router.map(routes.invitations, invitationsController)
 router.map(routes.invitation, invitationController)
 router.map(routes.login, loginController)
+router.map(routes.changePassword, changePasswordController)
 router.map(routes.removeSticker, removeStickerController)
 router.map(routes.uploadSticker, uploadStickerController)
