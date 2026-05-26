@@ -3,12 +3,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --watch --import remix/node-tsx server.ts",
-    "start": "node --import remix/node-tsx server.ts",
-    "test": "NODE_ENV=test node --import remix/node-tsx --test 'test/**/*.test.ts' 'test/**/*.test.tsx'",
+    "dev": "node --env-file-if-exists=.env --watch --import remix/node-tsx server.ts",
+    "start": "node --env-file-if-exists=.env --import remix/node-tsx server.ts",
+    "test": "NODE_ENV=test node --env-file-if-exists=.env.test --import remix/node-tsx --test 'test/**/*.test.ts' 'test/**/*.test.tsx'",
     "typecheck": "tsc --noEmit",
-    "migrate": "node --import remix/node-tsx scripts/migrate.ts",
-    "seed": "node --import remix/node-tsx scripts/seed.ts"
+    "migrate": "node --env-file-if-exists=.env --import remix/node-tsx scripts/migrate.ts",
+    "seed": "node --env-file-if-exists=.env --import remix/node-tsx scripts/seed.ts"
   },
   "engines": {
     "node": ">=24.3.0"
