@@ -206,6 +206,69 @@ describe('admin', () => {
   })
 })
 
+describe('change password', () => {
+  it('rejects wrong current password', async () => {
+    const env = await createTestEnv()
+    try {
+      await seedUser(env, 'carol', 'currentpass')
+      const cookie = await loginAs(env, 'carol', 'currentpass')
+
+      const body = new FormData()
+      body.set('currentPassword', 'wrongpass')
+      body.set('newPassword', 'newpassword123')
+      body.set('confirmPassword', 'newpassword123')
+      const res = await env.fetch(
+        new Request(buildUrl(routes.changePassword.action.href()), {
+          method: 'POST',
+          headers: { cookie },
+          body,
+        }),
+      )
+      assert.equal(res.status, 400)
+      assert.match(await res.text(), /Current password is incorrect/)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('updates password and lets the user log in with the new one', async () => {
+    const env = await createTestEnv()
+    try {
+      await seedUser(env, 'dan', 'oldpass1')
+      const cookie = await loginAs(env, 'dan', 'oldpass1')
+
+      const body = new FormData()
+      body.set('currentPassword', 'oldpass1')
+      body.set('newPassword', 'brand_new_pw')
+      body.set('confirmPassword', 'brand_new_pw')
+      const res = await env.fetch(
+        new Request(buildUrl(routes.changePassword.action.href()), {
+          method: 'POST',
+          headers: { cookie },
+          body,
+        }),
+      )
+      assert.equal(res.status, 303)
+      assert.equal(res.headers.get('location'), routes.changePassword.index.href())
+
+      // Old password should no longer work
+      const oldBody = new FormData()
+      oldBody.set('username', 'dan')
+      oldBody.set('password', 'oldpass1')
+      const oldLogin = await env.fetch(
+        new Request(buildUrl(routes.login.action.href()), { method: 'POST', body: oldBody }),
+      )
+      assert.equal(oldLogin.status, 400)
+
+      // New password works
+      const newCookie = await loginAs(env, 'dan', 'brand_new_pw')
+      assert.ok(newCookie)
+    } finally {
+      env.cleanup()
+    }
+  })
+})
+
 describe('dev logs', () => {
   it('renders the dev logs index', async () => {
     const env = await createTestEnv()

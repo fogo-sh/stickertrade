@@ -26,6 +26,7 @@ export const routes = route({
   // Auth
   login: form('/login'),
   logout: post('/logout'),
+  changePassword: form('/account/password'),
 
   // Invitations
   invitations: route('/invitations', {

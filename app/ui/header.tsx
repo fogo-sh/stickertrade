@@ -46,6 +46,9 @@ function UserMenu(handle: Handle<{ user: HeaderUser }>) {
         <a href={routes.invitations.index.href()} mix={menuLinkStyle}>
           invitations
         </a>
+        <a href={routes.changePassword.index.href()} mix={menuLinkStyle}>
+          password
+        </a>
         {user.role === 'ADMIN' ? (
           <a href={routes.admin.users.href()} mix={menuLinkStyle}>
             admin

@@ -46,6 +46,7 @@ Seeded credentials:
 | `npm start`         | Production-style boot                              |
 | `npm run migrate`   | Apply `migrations/*` SQL migrations                |
 | `npm run seed`      | Seed admin + sample user / sticker / invitation    |
+| `npm run bootstrap-admin` | Interactively create a single admin user (prod) |
 | `npm test`          | Run `node --test` smoke suite                      |
 | `npm run typecheck` | `tsc --noEmit`                                     |
 
@@ -57,5 +58,21 @@ Seeded credentials:
 | `DATABASE_URL`    | `./db/stickertrade.sqlite`       | Path to SQLite file                         |
 | `PORT`            | `44100`                          | HTTP listen port                            |
 | `NODE_ENV`        | `development`                    | Toggles dev logger, cookie secure flag, etc |
+
+## Production bootstrap
+
+The production container only runs migrations on boot — it does not seed any
+users. Use `npm run bootstrap-admin` to interactively create your first admin:
+
+```sh
+docker compose exec stickertrade npm run bootstrap-admin
+# Username: <your handle>
+# Password: <hidden>
+# Confirm password: <hidden>
+```
+
+The script refuses to create a duplicate username and never logs the password
+to the terminal. After that, log in, and invite anyone else via the
+`/invitations` page.
 
 See [`AGENTS.md`](./AGENTS.md) for architecture and conventions.
