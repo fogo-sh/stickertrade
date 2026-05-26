@@ -1,7 +1,8 @@
 # stickertrade
 
-an invite-only sticker trading site. originally a [Remix v1] app
-(now archived at `./remix-v1/`), now running on [Remix 3].
+an invite-only sticker trading site, running on [Remix 3].
+originally a [Remix v1] app — the previous tree is in the git history
+prior to the `port to remix 3` commit if you want to look back.
 
 [Remix v1]: https://remix.run
 [Remix 3]: https://remix.run/blog/remix-3-beta-preview

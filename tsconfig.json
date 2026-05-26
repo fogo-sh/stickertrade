@@ -15,5 +15,5 @@
     "jsxImportSource": "remix/ui",
     "noEmit": true
   },
-  "exclude": ["dist", "remix-v1", "node_modules", "tmp"]
+  "exclude": ["dist", "node_modules", "tmp"]
 }

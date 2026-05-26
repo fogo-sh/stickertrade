@@ -1,8 +1,8 @@
 # stickertrade Agent Guide
 
-stickertrade is an invite-only sticker trading site, ported to Remix 3. The
-previous Remix v1 app lives at `./remix-v1/` for reference; it is not built or
-tested as part of the new app.
+stickertrade is an invite-only sticker trading site, running on Remix 3. The
+old Remix v1 app was removed; see git history before the `port to remix 3`
+commit if you need to look back at the original.
 
 ## Commands
 
