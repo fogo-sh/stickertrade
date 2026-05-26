@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1"
+  xmlns="http://www.w3.org/2000/svg" viewBox="-16 -16 544 544">
+  <defs>
+    <linearGradient id="gradient">
+      <stop offset="0%" stop-color="#F7A1C4" />
+      <stop offset="100%" stop-color="#F5D491" />
+    </linearGradient>
+  </defs>
+  <path stroke="#1C0F13" stroke-width="16" fill="#F1EEE4" d="M276.681,19.326c-3.03,76.189,13.18,132.554,48.308,167.682c35.131,35.131,91.49,51.342,167.684,48.31L276.681,19.326z"/>
+  <path stroke="#1C0F13" stroke-width="16" fill="url('#gradient')" d="M475.26,278.421c-79.224,0.003-139.817-20.512-180.494-61.188C248.021,170.488,227.919,97.399,234.968,0
+			C103.388,10.915,0,121.151,0,255.548C0,397.182,114.818,512,256.452,512C390.849,512,501.085,408.61,512,277.029
+			C499.35,277.944,487.083,278.421,475.26,278.421z"/>
+</svg>
