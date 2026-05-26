@@ -35,15 +35,20 @@ COPY --chown=app:app scripts ./scripts
 COPY --chown=app:app docker-entrypoint.sh ./docker-entrypoint.sh
 
 # Runtime data dirs (sqlite file, uploads, sessions). These are also exposed
-# as volumes in compose.yml so they survive container recreation.
+# as volumes in compose.yml so they survive container recreation. The entrypoint
+# re-chowns these at boot in case they are bind-mounted from a host dir owned
+# by a different uid.
 RUN install -d -o app -g app -m 0755 /app/db /app/tmp /app/tmp/uploads /app/tmp/sessions && \
     chmod +x /app/docker-entrypoint.sh
 
 ENV DATABASE_URL=/app/db/stickertrade.sqlite \
     PORT=44100 \
-    NODE_ENV=production
+    NODE_ENV=production \
+    APP_UID=1001 \
+    APP_GID=1001
 
-USER app
+# Start as root so the entrypoint can fix bind-mount ownership, then runuser
+# drops to the unprivileged `app` user before exec'ing the server.
 EXPOSE 44100
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
