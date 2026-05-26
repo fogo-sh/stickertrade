@@ -1,34 +1,30 @@
 import { randomUUID } from 'node:crypto'
-import { createInterface, type Interface } from 'node:readline/promises'
+import { parseArgs } from 'node:util'
 
 import bcrypt from 'bcryptjs'
 
 import { db } from '../app/data/db.ts'
 import { config, users, UserRoles } from '../app/data/schema.ts'
 
-interface MutableInterface extends Interface {
-  _writeToOutput?: (stringToWrite: string) => void
-}
+const USAGE = `Usage:
+  bootstrap-admin --username <name> --password <password>
 
-async function askVisible(rl: Interface, prompt: string): Promise<string> {
-  return (await rl.question(prompt)).trim()
-}
+Options:
+  --username, -u   Username for the new admin (3-16 chars, [a-zA-Z0-9_-])
+  --password, -p   Password for the new admin (8-64 chars)
+  --help, -h       Show this message
 
-async function askHidden(rl: MutableInterface, prompt: string): Promise<string> {
-  process.stdout.write(prompt)
-  const originalWrite = rl._writeToOutput
-  rl._writeToOutput = (stringToWrite: string) => {
-    // Allow newlines through (so the user sees they hit enter); swallow keystroke echoes.
-    if (stringToWrite === '\n' || stringToWrite === '\r\n' || stringToWrite === '\r') {
-      originalWrite?.call(rl, stringToWrite)
-    }
-  }
-  try {
-    const value = await rl.question('')
-    return value
-  } finally {
-    rl._writeToOutput = originalWrite
-  }
+Notes:
+  - Refuses to overwrite an existing user. Pick a different username if the
+    chosen one already exists.
+  - Passes appear in shell history. Wrap with 'history -d $(history 1)' or
+    use a leading space (with HISTCONTROL=ignorespace) to avoid that.`
+
+function fail(message: string): never {
+  console.error(message)
+  console.error('')
+  console.error(USAGE)
+  process.exit(1)
 }
 
 function validateUsername(value: string): string | null {
@@ -50,68 +46,46 @@ async function ensureConfigRow(): Promise<void> {
   await db.create(config, { id: 1, invitations_enabled: true })
 }
 
-async function main() {
-  const rl: MutableInterface = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: true,
-  })
+const { values } = parseArgs({
+  options: {
+    username: { type: 'string', short: 'u' },
+    password: { type: 'string', short: 'p' },
+    help: { type: 'boolean', short: 'h' },
+  },
+  strict: true,
+})
 
-  try {
-    console.log('Bootstrap a stickertrade admin user.')
-    console.log('')
-
-    let username: string
-    while (true) {
-      username = await askVisible(rl, 'Username: ')
-      const err = validateUsername(username)
-      if (err) {
-        console.log(`  ✗ ${err}`)
-        continue
-      }
-      const existing = await db.findOne(users, { where: { username } })
-      if (existing) {
-        console.log(`  ✗ User "${username}" already exists. Choose a different username.`)
-        continue
-      }
-      break
-    }
-
-    let password: string
-    while (true) {
-      const first = await askHidden(rl, 'Password: ')
-      const err = validatePassword(first)
-      if (err) {
-        console.log(`  ✗ ${err}`)
-        continue
-      }
-      const second = await askHidden(rl, 'Confirm password: ')
-      if (first !== second) {
-        console.log("  ✗ Passwords don't match. Try again.")
-        continue
-      }
-      password = first
-      break
-    }
-
-    await ensureConfigRow()
-
-    const now = Date.now()
-    await db.create(users, {
-      id: randomUUID(),
-      username,
-      role: UserRoles.Admin,
-      password_hash: await bcrypt.hash(password, 10),
-      invitation_limit: 100,
-      created_at: now,
-      updated_at: now,
-    })
-
-    console.log('')
-    console.log(`✓ Admin user "${username}" created.`)
-  } finally {
-    rl.close()
-  }
+if (values.help) {
+  console.log(USAGE)
+  process.exit(0)
 }
 
-await main()
+const username = values.username
+const password = values.password
+
+if (!username) fail('Missing required --username')
+if (!password) fail('Missing required --password')
+
+const usernameError = validateUsername(username)
+if (usernameError) fail(`Invalid --username: ${usernameError}`)
+
+const passwordError = validatePassword(password)
+if (passwordError) fail(`Invalid --password: ${passwordError}`)
+
+const existing = await db.findOne(users, { where: { username } })
+if (existing) fail(`User "${username}" already exists.`)
+
+await ensureConfigRow()
+
+const now = Date.now()
+await db.create(users, {
+  id: randomUUID(),
+  username,
+  role: UserRoles.Admin,
+  password_hash: await bcrypt.hash(password, 10),
+  invitation_limit: 100,
+  created_at: now,
+  updated_at: now,
+})
+
+console.log(`Admin user "${username}" created.`)

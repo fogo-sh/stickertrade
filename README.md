@@ -46,7 +46,7 @@ Seeded credentials:
 | `npm start`         | Production-style boot                              |
 | `npm run migrate`   | Apply `migrations/*` SQL migrations                |
 | `npm run seed`      | Seed admin + sample user / sticker / invitation    |
-| `npm run bootstrap-admin` | Interactively create a single admin user (prod) |
+| `npm run bootstrap-admin -- -u <name> -p <pw>` | Create a single admin user (prod) |
 | `npm test`          | Run `node --test` smoke suite                      |
 | `npm run typecheck` | `tsc --noEmit`                                     |
 
@@ -62,17 +62,17 @@ Seeded credentials:
 ## Production bootstrap
 
 The production container only runs migrations on boot — it does not seed any
-users. Use `npm run bootstrap-admin` to interactively create your first admin:
+users. Use the bootstrap-admin CLI to create your first admin:
 
 ```sh
-docker compose exec stickertrade npm run bootstrap-admin
-# Username: <your handle>
-# Password: <hidden>
-# Confirm password: <hidden>
+docker compose exec stickertrade npm run bootstrap-admin -- \
+  --username <handle> --password '<password>'
 ```
 
-The script refuses to create a duplicate username and never logs the password
-to the terminal. After that, log in, and invite anyone else via the
-`/invitations` page.
+The script refuses to create a duplicate username. The password is passed on
+the command line, so consider prefixing the command with a space (with
+`HISTCONTROL=ignorespace` set) or running `history -d $(history 1)` afterward
+to keep it out of shell history. Once you're logged in, you can change it via
+the in-app `/account/password` page.
 
 See [`AGENTS.md`](./AGENTS.md) for architecture and conventions.
