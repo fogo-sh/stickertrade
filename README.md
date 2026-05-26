@@ -22,12 +22,16 @@ prior to the `port to remix 3` commit if you want to look back.
 
 ```sh
 npm install
+cp .env.dist .env       # then fill in SESSION_SECRET
 npm run migrate
 npm run seed
-SESSION_SECRET=$(openssl rand -hex 32) npm run dev
+npm run dev
 ```
 
 Then open [http://localhost:44100](http://localhost:44100).
+
+Scripts load `.env` automatically via Node's `--env-file-if-exists` flag, so
+you only need to set vars on the command line for one-off overrides.
 
 Seeded credentials:
 
