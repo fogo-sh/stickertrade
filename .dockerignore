@@ -1,0 +1,14 @@
+.git
+.github
+.agents
+node_modules
+db/*.sqlite
+db/*.sqlite-*
+tmp
+.coverage
+.DS_Store
+.env
+.env.*
+README.md
+AGENTS.md
+test

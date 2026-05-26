@@ -40,7 +40,7 @@ request, components are not React.
 - `app/data/` — schema, db wiring, auth, dev-logs loader, roadmap, upload pipeline
 - `app/middleware/` — `database.ts` and `render.tsx`
 - `app/utils/time.ts` — small relative-time formatter
-- `db/migrations/<timestamp>_<slug>/{up,down}.sql` — SQL migrations
+- `migrations/<timestamp>_<slug>/{up,down}.sql` — SQL migrations
 - `scripts/migrate.ts`, `scripts/seed.ts` — one-shot operational scripts
 - `test/` — `node --test` smoke suite + a `helpers.ts` that spins up an isolated router/db
 - `dev-logs/` — markdown dev logs surfaced at `/dev-logs` and as RSS/Atom/JSON feeds
