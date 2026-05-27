@@ -1,5 +1,6 @@
 import { css } from 'remix/ui'
 
+import { routes } from '../routes.ts'
 import { Document } from '../ui/document.tsx'
 import type { HeaderUser } from '../ui/header.tsx'
 import { StickerCard, UploadStickerCard, type StickerCardSticker } from '../ui/sticker-card.tsx'
@@ -13,7 +14,14 @@ export interface HomePageProps {
 
 export function HomePage() {
   return ({ user, stickers, users }: HomePageProps) => (
-    <Document user={user}>
+    <Document
+      user={user}
+      og={{
+        title: 'stickertrade',
+        description: 'invite-only sticker trading site',
+        url: routes.home.href(),
+      }}
+    >
       <main>
         <p mix={sectionHeading}>recently posted stickers</p>
         <div mix={gridStyle}>

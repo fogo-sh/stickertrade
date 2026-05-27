@@ -19,8 +19,22 @@ export interface ProfilePageProps {
 export function ProfilePage() {
   return ({ user, profile }: ProfilePageProps) => {
     const isOwner = user?.username === profile.username
+    const stickerCount = profile.stickers.length
     return (
-      <Document title={`stickertrade - ${profile.username}`} user={user}>
+      <Document
+        title={`stickertrade - ${profile.username}`}
+        user={user}
+        og={{
+          title: `${profile.username} on stickertrade`,
+          description:
+            stickerCount === 0
+              ? `${profile.username} hasn't uploaded any stickers yet`
+              : `${stickerCount} sticker${stickerCount === 1 ? '' : 's'} by ${profile.username}`,
+          image: profile.avatar_url ?? '/images/default-avatar.webp',
+          url: routes.profile.href({ username: profile.username }),
+          type: 'profile',
+        }}
+      >
         <main>
           <div mix={profileHeaderStyle}>
             <img

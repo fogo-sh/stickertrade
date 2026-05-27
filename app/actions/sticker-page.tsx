@@ -20,8 +20,19 @@ export function StickerPage() {
   return ({ user, sticker }: StickerPageProps) => {
     const canEdit =
       user != null && (user.username === sticker.owner?.username || user.role === 'ADMIN')
+    const ownerLabel = sticker.owner ? `by ${sticker.owner.username}` : '(no owner)'
     return (
-      <Document title={`stickertrade - ${sticker.name}`} user={user}>
+      <Document
+        title={`stickertrade - ${sticker.name}`}
+        user={user}
+        og={{
+          title: sticker.name,
+          description: `sticker ${ownerLabel}`,
+          image: sticker.image_url,
+          url: routes.sticker.href({ id: sticker.id }),
+          type: 'article',
+        }}
+      >
         <main mix={css({ maxWidth: '32rem', margin: '0 auto' })}>
           <div mix={imageWrapStyle}>
             <img src={sticker.image_url} alt={sticker.name} mix={imageStyle} />
