@@ -3,6 +3,7 @@ import { Session } from 'remix/session'
 import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
 
+import { listTokensForUser } from '../../data/api-tokens.ts'
 import { getCurrentUser } from '../../data/current-user.ts'
 import { users } from '../../data/schema.ts'
 import { processAvatarUpload } from '../../data/upload-image.ts'
@@ -22,7 +23,7 @@ async function safeRemoveStoredUpload(url: string | null) {
 
 export default createController(routes.editProfile, {
   actions: {
-    index(context) {
+    async index(context) {
       const user = getCurrentUser(context)
       if (!user) return redirect(routes.login.index.href(), 303)
       const session = context.get(Session)
@@ -30,8 +31,41 @@ export default createController(routes.editProfile, {
       session.unset('profile_flash')
       const passwordFlash = session.get('password_flash') as string | undefined
       session.unset('password_flash')
+      const tokenFlash = session.get('token_flash') as string | undefined
+      session.unset('token_flash')
+      const tokenErrorName = session.get('token_error_name') as string | undefined
+      session.unset('token_error_name')
+      const tokenNewRaw = session.get('token_new') as string | undefined
+      session.unset('token_new')
+
+      const db = context.get(Database)
+      const tokens = (await listTokensForUser(db, user.id)).map((t) => ({
+        id: t.id,
+        name: t.name,
+        prefix: t.prefix,
+        created_at: t.created_at,
+        last_used_at: t.last_used_at ?? null,
+      }))
+
+      let newToken: { name: string; plaintext: string } | undefined
+      if (tokenNewRaw) {
+        try {
+          newToken = JSON.parse(tokenNewRaw)
+        } catch {
+          // ignore malformed flash
+        }
+      }
+
       return context.render(
-        <EditProfilePage user={user} avatarFlash={avatarFlash} passwordFlash={passwordFlash} />,
+        <EditProfilePage
+          user={user}
+          avatarFlash={avatarFlash}
+          passwordFlash={passwordFlash}
+          tokens={tokens}
+          tokenFlash={tokenFlash}
+          tokenErrors={tokenErrorName ? { name: tokenErrorName } : undefined}
+          newToken={newToken}
+        />,
       )
     },
 

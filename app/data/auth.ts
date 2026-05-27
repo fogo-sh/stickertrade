@@ -1,10 +1,15 @@
 import bcrypt from 'bcryptjs'
 import { Database } from 'remix/data-table'
-import { auth, createSessionAuthScheme } from 'remix/middleware/auth'
+import {
+  auth,
+  createBearerTokenAuthScheme,
+  createSessionAuthScheme,
+} from 'remix/middleware/auth'
 import { createCookie } from 'remix/cookie'
 import { createFsSessionStorage } from 'remix/session-storage/fs'
 import { session } from 'remix/middleware/session'
 
+import { verifyToken } from './api-tokens.ts'
 import { users, type User } from './schema.ts'
 
 const isTest = process.env.NODE_ENV === 'test'
@@ -47,6 +52,16 @@ export function loadAuth() {
         },
         invalidate(s) {
           s.unset('auth')
+        },
+      }),
+      createBearerTokenAuthScheme<User>({
+        async verify(token, context) {
+          const db = context.get(Database)
+          if (!db) return null
+          const match = await verifyToken(db, token)
+          if (!match) return null
+          const user = await db.findOne(users, { where: { id: match.user_id } })
+          return user ?? null
         },
       }),
     ],

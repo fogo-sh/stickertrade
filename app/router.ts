@@ -1,13 +1,15 @@
 import { createRouter, type MiddlewareContext } from 'remix/router'
 import { asyncContext } from 'remix/middleware/async-context'
 import { compression } from 'remix/middleware/compression'
-import { csrf } from 'remix/middleware/csrf'
 import { formData } from 'remix/middleware/form-data'
 import { logger } from 'remix/middleware/logger'
 import { staticFiles } from 'remix/middleware/static'
 
+import { csrfOrBearer } from './middleware/csrf-or-bearer.ts'
+
 import rootController from './actions/controller.tsx'
 import adminController from './actions/admin/controller.tsx'
+import apiController from './actions/api/controller.tsx'
 import changePasswordController from './actions/change-password/controller.tsx'
 import editProfileController from './actions/edit-profile/controller.tsx'
 import editStickerController from './actions/edit-sticker/controller.tsx'
@@ -26,7 +28,7 @@ const stack = [
   staticFiles('./public', { index: false }),
   formData(),
   appSession(),
-  csrf(),
+  csrfOrBearer(),
   asyncContext(),
   loadDatabase(),
   loadAuth(),
@@ -54,5 +56,6 @@ router.map(routes.login, loginController)
 router.map(routes.changePassword, changePasswordController)
 router.map(routes.editProfile, editProfileController)
 router.map(routes.editSticker, editStickerController)
+router.map(routes.api, apiController)
 router.map(routes.removeSticker, removeStickerController)
 router.map(routes.uploadSticker, uploadStickerController)

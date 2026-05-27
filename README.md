@@ -73,6 +73,30 @@ The script refuses to create a duplicate username. The password is passed on
 the command line, so consider prefixing the command with a space (with
 `HISTCONTROL=ignorespace` set) or running `history -d $(history 1)` afterward
 to keep it out of shell history. Once you're logged in, you can change it via
-the in-app `/account/password` page.
+the in-app `/account/profile` page.
+
+## JSON API
+
+A small REST API lives at `/api/*`. Reads are public; writes require a bearer
+token. Create one at `/account/profile` → "api tokens" — the plaintext is shown
+exactly once.
+
+| Method | Path                                  | Auth     | Body                                  |
+| ------ | ------------------------------------- | -------- | ------------------------------------- |
+| GET    | `/api/stickers`                       | optional | —                                     |
+| GET    | `/api/stickers/:id`                   | optional | —                                     |
+| POST   | `/api/stickers`                       | required | `multipart/form-data` (`name`, `image`) |
+| PATCH  | `/api/stickers/:id`                   | required | `application/json` `{ "name": "..." }` |
+| DELETE | `/api/stickers/:id`                   | required | —                                     |
+| GET    | `/api/me`                             | required | —                                     |
+| GET    | `/api/users/:username`                | optional | —                                     |
+| GET    | `/api/users/:username/stickers`       | optional | —                                     |
+
+Auth header: `Authorization: Bearer st_…`. Errors come back as
+`{ "error": "..." }` with the appropriate HTTP status; validation failures
+include an `issues` array.
+
+Each token inherits the permissions of the user that created it (no scopes).
+Admins' tokens can edit/delete any sticker, just like in the web UI.
 
 See [`AGENTS.md`](./AGENTS.md) for architecture and conventions.

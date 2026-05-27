@@ -9,17 +9,24 @@ import { createMigrationRunner } from 'remix/data-table/migrations'
 import { loadMigrations } from 'remix/data-table/migrations/node'
 import { asyncContext } from 'remix/middleware/async-context'
 import { compression } from 'remix/middleware/compression'
-import { csrf } from 'remix/middleware/csrf'
 import { formData } from 'remix/middleware/form-data'
 import { staticFiles } from 'remix/middleware/static'
-import { auth, createSessionAuthScheme } from 'remix/middleware/auth'
+import {
+  auth,
+  createBearerTokenAuthScheme,
+  createSessionAuthScheme,
+} from 'remix/middleware/auth'
 import { session } from 'remix/middleware/session'
+
+import { csrfOrBearer } from '../app/middleware/csrf-or-bearer.ts'
+import { verifyToken } from '../app/data/api-tokens.ts'
 import { createCookie } from 'remix/cookie'
 import { createMemorySessionStorage } from 'remix/session-storage/memory'
 import { createRouter, type MiddlewareContext } from 'remix/router'
 
 import rootController from '../app/actions/controller.tsx'
 import adminController from '../app/actions/admin/controller.tsx'
+import apiController from '../app/actions/api/controller.tsx'
 import changePasswordController from '../app/actions/change-password/controller.tsx'
 import editProfileController from '../app/actions/edit-profile/controller.tsx'
 import editStickerController from '../app/actions/edit-sticker/controller.tsx'
@@ -87,6 +94,15 @@ export async function createTestEnv(): Promise<TestEnv> {
             s.unset('auth')
           },
         }),
+        createBearerTokenAuthScheme<User>({
+          async verify(token, context) {
+            const inner = context.get(Database)
+            if (!inner) return null
+            const match = await verifyToken(inner, token)
+            if (!match) return null
+            return (await inner.findOne(users, { where: { id: match.user_id } })) ?? null
+          },
+        }),
       ],
     })
   }
@@ -96,7 +112,7 @@ export async function createTestEnv(): Promise<TestEnv> {
     staticFiles('./public', { index: false }),
     formData(),
     session(sessionCookie, sessionStorage),
-    csrf(),
+    csrfOrBearer(),
     asyncContext(),
     loadTestDatabase() as any,
     loadTestAuth(),
@@ -114,6 +130,7 @@ export async function createTestEnv(): Promise<TestEnv> {
   router.map(routes.changePassword, changePasswordController as any)
   router.map(routes.editProfile, editProfileController as any)
   router.map(routes.editSticker, editStickerController as any)
+  router.map(routes.api, apiController as any)
   router.map(routes.removeSticker, removeStickerController as any)
   router.map(routes.uploadSticker, uploadStickerController as any)
 

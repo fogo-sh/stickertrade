@@ -13,6 +13,14 @@ import {
 import type { HeaderUser } from '../ui/header.tsx'
 import { colors } from '../ui/theme.ts'
 
+export interface TokenRow {
+  id: string
+  name: string
+  prefix: string
+  created_at: number
+  last_used_at: number | null
+}
+
 export interface EditProfilePageProps {
   user: HeaderUser
   /** Errors and flash for the avatar form. */
@@ -21,6 +29,12 @@ export interface EditProfilePageProps {
   /** Errors and flash for the password form. */
   passwordErrors?: Record<string, string>
   passwordFlash?: string
+  /** API tokens for the current user. */
+  tokens?: TokenRow[]
+  tokenErrors?: Record<string, string>
+  tokenFlash?: string
+  /** Plaintext value of a freshly-created token, shown exactly once. */
+  newToken?: { name: string; plaintext: string }
 }
 
 export function EditProfilePage() {
@@ -30,6 +44,10 @@ export function EditProfilePage() {
     avatarFlash,
     passwordErrors = {},
     passwordFlash,
+    tokens = [],
+    tokenErrors = {},
+    tokenFlash,
+    newToken,
   }: EditProfilePageProps) => (
     <Document title="stickertrade - edit profile" user={user}>
       <main mix={css({ maxWidth: '28rem', margin: '0 auto' })}>
@@ -107,6 +125,64 @@ export function EditProfilePage() {
             <SubmitButton label="change password" />
           </form>
         </section>
+
+        <section mix={sectionStyle}>
+          <h2 mix={sectionHeadingStyle}>api tokens</h2>
+          {tokenFlash ? <p mix={flashStyle}>{tokenFlash}</p> : null}
+          {newToken ? (
+            <div mix={newTokenBoxStyle}>
+              <p mix={css({ marginBottom: '0.5rem', fontWeight: 600 })}>
+                token "{newToken.name}" created
+              </p>
+              <p mix={css({ marginBottom: '0.5rem', fontSize: '0.85rem' })}>
+                copy this value now — you won't be able to see it again.
+              </p>
+              <code mix={newTokenValueStyle}>{newToken.plaintext}</code>
+            </div>
+          ) : null}
+
+          <p mix={helpTextStyle}>
+            tokens authenticate API requests via{' '}
+            <code>Authorization: Bearer &lt;token&gt;</code>. each token has the same
+            permissions as your account.
+          </p>
+
+          {tokens.length === 0 ? (
+            <p mix={css({ fontStyle: 'italic', opacity: 0.7, marginBottom: '0.75rem' })}>
+              no tokens yet.
+            </p>
+          ) : (
+            <ul mix={tokenListStyle}>
+              {tokens.map((tok) => (
+                <li key={tok.id} mix={tokenRowStyle}>
+                  <div>
+                    <p mix={css({ fontWeight: 600 })}>{tok.name}</p>
+                    <p mix={css({ fontSize: '0.8rem', opacity: 0.7 })}>
+                      <code>{tok.prefix}…</code> · created{' '}
+                      {new Date(tok.created_at).toISOString().slice(0, 10)}
+                      {tok.last_used_at
+                        ? ` · last used ${new Date(tok.last_used_at).toISOString().slice(0, 10)}`
+                        : ' · never used'}
+                    </p>
+                  </div>
+                  <form method="post" action={routes.revokeApiToken.href({ id: tok.id })}>
+                    <CsrfField />
+                    <button type="submit" mix={removeBtnStyle}>
+                      revoke
+                    </button>
+                  </form>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <form method="post" action={routes.createApiToken.href()}>
+            <CsrfField />
+            <TextField name="name" label="token name (e.g. 'my laptop')" error={tokenErrors.name} />
+            {tokenErrors._form ? <p mix={errorStyle}>{tokenErrors._form}</p> : null}
+            <SubmitButton label="create token" />
+          </form>
+        </section>
       </main>
     </Document>
   )
@@ -148,4 +224,39 @@ const removeBtnStyle = css({
   font: 'inherit',
   fontSize: '0.85rem',
   '&:hover': { background: colors.primary[500], color: colors.dark[500] },
+})
+
+const tokenListStyle = css({
+  listStyle: 'none',
+  margin: '0 0 1rem',
+  padding: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.5rem',
+})
+
+const tokenRowStyle = css({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  padding: '0.5rem 0.75rem',
+  border: `1px solid ${colors.light[500]}33`,
+  gap: '0.5rem',
+})
+
+const newTokenBoxStyle = css({
+  marginBottom: '1rem',
+  padding: '0.75rem',
+  background: '#0e0709',
+  border: `1px solid ${colors.primary[500]}`,
+})
+
+const newTokenValueStyle = css({
+  display: 'block',
+  padding: '0.5rem',
+  background: colors.dark[500],
+  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+  fontSize: '0.85rem',
+  wordBreak: 'break-all',
+  color: colors.primary[400],
 })
