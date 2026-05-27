@@ -79,6 +79,51 @@ describe('login', () => {
     }
   })
 
+  it('rejects POST whose Origin header does not match request URL (proxy scenario)', async () => {
+    // Default CSRF behaviour: configured origin = undefined, so the middleware
+    // compares Origin against context.url.origin. Behind a TLS-terminating
+    // proxy these differ and CSRF rejects with 'invalid CSRF origin'.
+    const env = await createTestEnv()
+    try {
+      await seedUser(env, 'alice', 'goodpass')
+      const res = await env.fetch(
+        new Request(buildUrl(routes.login.action.href()), {
+          method: 'POST',
+          headers: { origin: 'https://stickertrade.ca' },
+          body: new FormData(),
+        }),
+      )
+      assert.equal(res.status, 403)
+      const body = await res.text()
+      assert.match(body, /invalid CSRF origin/)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('PUBLIC_ORIGIN config lets a proxied request pass the origin check', async () => {
+    // Same as above but with publicOrigin configured. We still expect a 403
+    // (no _csrf token), but it should be a missing-token rejection, not an
+    // origin rejection — proving the origin check now accepts the proxied
+    // browser request.
+    const env = await createTestEnv({ publicOrigin: 'https://stickertrade.ca' })
+    try {
+      await seedUser(env, 'alice', 'goodpass')
+      const res = await env.fetch(
+        new Request(buildUrl(routes.login.action.href()), {
+          method: 'POST',
+          headers: { origin: 'https://stickertrade.ca' },
+          body: new FormData(),
+        }),
+      )
+      assert.equal(res.status, 403)
+      const body = await res.text()
+      assert.match(body, /missing CSRF token/)
+    } finally {
+      env.cleanup()
+    }
+  })
+
   it('accepts valid credentials and redirects home', async () => {
     const env = await createTestEnv()
     try {

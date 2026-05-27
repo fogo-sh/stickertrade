@@ -58,6 +58,7 @@ Seeded credentials:
 | `DATABASE_URL`    | `./db/stickertrade.sqlite`       | Path to SQLite file                         |
 | `PORT`            | `44100`                          | HTTP listen port                            |
 | `NODE_ENV`        | `development`                    | Toggles dev logger, cookie secure flag, etc |
+| `PUBLIC_ORIGIN`   | _unset_ (same-origin only)       | Allowed public origin(s) for CSRF Origin checks. Required behind a TLS proxy; e.g. `https://stickertrade.ca`. Comma-separate for multiple. |
 
 ## Production bootstrap
 

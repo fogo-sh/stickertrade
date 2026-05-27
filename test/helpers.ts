@@ -45,7 +45,12 @@ export interface TestEnv {
   cleanup: () => void
 }
 
-export async function createTestEnv(): Promise<TestEnv> {
+export interface CreateTestEnvOptions {
+  /** Override the allowed CSRF origin (defaults to undefined = same-origin only). */
+  publicOrigin?: string | string[]
+}
+
+export async function createTestEnv(options: CreateTestEnvOptions = {}): Promise<TestEnv> {
   const tmpDir = mkdtempSync(path.join(tmpdir(), 'stickertrade-test-'))
   const dbPath = path.join(tmpDir, 'test.sqlite')
   const sqlite = new DatabaseSync(dbPath)
@@ -112,7 +117,7 @@ export async function createTestEnv(): Promise<TestEnv> {
     staticFiles('./public', { index: false }),
     formData(),
     session(sessionCookie, sessionStorage),
-    csrfOrBearer(),
+    csrfOrBearer({ origin: options.publicOrigin }),
     asyncContext(),
     loadTestDatabase() as any,
     loadTestAuth(),
