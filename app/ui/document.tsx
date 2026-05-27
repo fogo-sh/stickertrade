@@ -1,9 +1,10 @@
 import { css, type RemixNode } from 'remix/ui'
 
 import { routes } from '../routes.ts'
-import { colors } from './theme.ts'
-import { Header, type HeaderUser } from './header.tsx'
 import { Footer } from './footer.tsx'
+import { Header, type HeaderUser } from './header.tsx'
+import { OgTags, type OgTagsProps } from './og-tags.tsx'
+import { colors } from './theme.ts'
 
 export interface DocumentProps {
   children?: RemixNode
@@ -11,6 +12,11 @@ export interface DocumentProps {
   title?: string
   user?: HeaderUser | null
   showChrome?: boolean
+  /**
+   * Open Graph metadata for this page. Pages that don't supply one get a
+   * site-default set of tags from `OgTags` (banner image, generic copy).
+   */
+  og?: Partial<OgTagsProps>
 }
 
 const DEFAULT_TITLE = 'stickertrade'
@@ -22,13 +28,14 @@ export function Document() {
     title = DEFAULT_TITLE,
     user = null,
     showChrome = true,
+    og,
   }: DocumentProps) => (
     <html lang="en" mix={css({ height: '100%' })}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-        <meta property="og:image" content="/images/banner.png" />
+        <OgTags title={og?.title ?? title} {...og} />
         <title>{title}</title>
         {head}
       </head>

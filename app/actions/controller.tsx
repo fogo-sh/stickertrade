@@ -247,7 +247,12 @@ export default createController(routes, {
       return context.render(
         <DevLogPage
           user={getCurrentUser(context)}
-          log={{ title: log.title, dateString: log.dateString, html: log.html }}
+          log={{
+            slug: log.slug,
+            title: log.title,
+            dateString: log.dateString,
+            html: log.html,
+          }}
         />,
       )
     },

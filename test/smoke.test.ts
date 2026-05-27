@@ -762,6 +762,63 @@ describe('api: stickers', () => {
   })
 })
 
+describe('og tags', () => {
+  it('home page emits site-level og:image and og:title', async () => {
+    const env = await createTestEnv()
+    try {
+      const res = await env.fetch(new Request(buildUrl(routes.home.href())))
+      const html = await res.text()
+      assert.match(html, /<meta property="og:title" content="stickertrade"/)
+      assert.match(html, /<meta property="og:image" content="http:\/\/localhost(:\d+)?\/images\/banner\.png"/)
+      assert.match(html, /<meta name="twitter:card" content="summary_large_image"/)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('sticker page emits per-sticker og:title + og:image (absolute)', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'roxie', 'roxiepass')
+      const stickerId = randomUUID()
+      await env.db.create(stickers, {
+        id: stickerId,
+        name: 'cool og sticker',
+        image_url: '/uploads/stickers/cool.png',
+        owner_id: ownerId,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      })
+
+      const res = await env.fetch(new Request(buildUrl(routes.sticker.href({ id: stickerId }))))
+      const html = await res.text()
+      assert.match(html, /<meta property="og:title" content="cool og sticker"/)
+      assert.match(html, /<meta property="og:image" content="http:\/\/localhost(:\d+)?\/uploads\/stickers\/cool\.png"/)
+      assert.match(html, /<meta property="og:description" content="sticker by roxie"/)
+      assert.match(html, /<meta property="og:type" content="article"/)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('profile page emits per-profile og:title + og:image', async () => {
+    const env = await createTestEnv()
+    try {
+      const userId = await seedUser(env, 'sami', 'samipass')
+      await env.db.update(users, userId, { avatar_url: '/uploads/avatars/sami.png' })
+      const res = await env.fetch(
+        new Request(buildUrl(routes.profile.href({ username: 'sami' }))),
+      )
+      const html = await res.text()
+      assert.match(html, /<meta property="og:title" content="sami on stickertrade"/)
+      assert.match(html, /<meta property="og:image" content="http:\/\/localhost(:\d+)?\/uploads\/avatars\/sami\.png"/)
+      assert.match(html, /<meta property="og:type" content="profile"/)
+    } finally {
+      env.cleanup()
+    }
+  })
+})
+
 describe('dev logs', () => {
   it('renders the dev logs index', async () => {
     const env = await createTestEnv()

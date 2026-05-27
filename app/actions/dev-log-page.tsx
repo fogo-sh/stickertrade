@@ -1,5 +1,6 @@
 import { css } from 'remix/ui'
 
+import { routes } from '../routes.ts'
 import { Document } from '../ui/document.tsx'
 import type { HeaderUser } from '../ui/header.tsx'
 import { colors } from '../ui/theme.ts'
@@ -10,9 +11,18 @@ export function DevLogPage() {
     log,
   }: {
     user: HeaderUser | null
-    log: { title: string; dateString: string; html: string }
+    log: { slug: string; title: string; dateString: string; html: string }
   }) => (
-    <Document title={`stickertrade - dev log | ${log.title}`} user={user}>
+    <Document
+      title={`stickertrade - dev log | ${log.title}`}
+      user={user}
+      og={{
+        title: log.title,
+        description: `stickertrade dev log from ${log.dateString}`,
+        url: routes.devLog.href({ slug: log.slug }),
+        type: 'article',
+      }}
+    >
       <main mix={css({ maxWidth: '32rem', margin: '0 auto' })}>
         <h1 mix={css({ fontSize: '1.5rem', marginBottom: '0.5rem' })}>dev log {log.title}</h1>
         <p mix={css({ fontStyle: 'italic', opacity: 0.6, marginBottom: '1rem' })}>
