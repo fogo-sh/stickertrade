@@ -7,6 +7,25 @@ import { staticFiles } from 'remix/middleware/static'
 
 import { csrfOrBearer } from './middleware/csrf-or-bearer.ts'
 
+/**
+ * Comma-separated list of allowed public origins for CSRF Origin/Referer checks.
+ * Required behind a TLS-terminating proxy where the browser's Origin header
+ * doesn't match `context.url.origin` (which is whatever the proxy forwards to,
+ * e.g. `http://stickertrade:44100`).
+ *
+ * Set `PUBLIC_ORIGIN=https://stickertrade.ca` in prod (multiple values
+ * separated by commas if you also serve under www. etc.).
+ */
+function parsePublicOrigin(raw: string | undefined): string | string[] | undefined {
+  if (!raw) return undefined
+  const list = raw
+    .split(',')
+    .map((v) => v.trim())
+    .filter((v) => v.length > 0)
+  if (list.length === 0) return undefined
+  return list.length === 1 ? list[0] : list
+}
+
 import rootController from './actions/controller.tsx'
 import adminController from './actions/admin/controller.tsx'
 import apiController from './actions/api/controller.tsx'
@@ -28,7 +47,7 @@ const stack = [
   staticFiles('./public', { index: false }),
   formData(),
   appSession(),
-  csrfOrBearer(),
+  csrfOrBearer({ origin: parsePublicOrigin(process.env.PUBLIC_ORIGIN) }),
   asyncContext(),
   loadDatabase(),
   loadAuth(),
