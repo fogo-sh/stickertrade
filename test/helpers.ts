@@ -7,7 +7,9 @@ import { createDatabase, Database } from 'remix/data-table'
 import { createSqliteDatabaseAdapter } from 'remix/data-table/sqlite'
 import { createMigrationRunner } from 'remix/data-table/migrations'
 import { loadMigrations } from 'remix/data-table/migrations/node'
+import { asyncContext } from 'remix/middleware/async-context'
 import { compression } from 'remix/middleware/compression'
+import { csrf } from 'remix/middleware/csrf'
 import { formData } from 'remix/middleware/form-data'
 import { staticFiles } from 'remix/middleware/static'
 import { auth, createSessionAuthScheme } from 'remix/middleware/auth'
@@ -19,6 +21,8 @@ import { createRouter, type MiddlewareContext } from 'remix/router'
 import rootController from '../app/actions/controller.tsx'
 import adminController from '../app/actions/admin/controller.tsx'
 import changePasswordController from '../app/actions/change-password/controller.tsx'
+import editProfileController from '../app/actions/edit-profile/controller.tsx'
+import editStickerController from '../app/actions/edit-sticker/controller.tsx'
 import invitationsController from '../app/actions/invitations/controller.tsx'
 import invitationController from '../app/actions/invitation/controller.tsx'
 import loginController from '../app/actions/login/controller.tsx'
@@ -92,6 +96,8 @@ export async function createTestEnv(): Promise<TestEnv> {
     staticFiles('./public', { index: false }),
     formData(),
     session(sessionCookie, sessionStorage),
+    csrf(),
+    asyncContext(),
     loadTestDatabase() as any,
     loadTestAuth(),
     render(),
@@ -106,6 +112,8 @@ export async function createTestEnv(): Promise<TestEnv> {
   router.map(routes.invitation, invitationController as any)
   router.map(routes.login, loginController as any)
   router.map(routes.changePassword, changePasswordController as any)
+  router.map(routes.editProfile, editProfileController as any)
+  router.map(routes.editSticker, editStickerController as any)
   router.map(routes.removeSticker, removeStickerController as any)
   router.map(routes.uploadSticker, uploadStickerController as any)
 
@@ -125,16 +133,64 @@ export function buildUrl(pathname: string): string {
   return BASE + pathname
 }
 
+/**
+ * Fetch a page that contains a CSRF-protected form and return both the session
+ * cookie installed by the response and the `_csrf` token embedded in the HTML.
+ * Useful for stitching together a request that needs to satisfy CSRF.
+ */
+export async function fetchCsrf(
+  env: TestEnv,
+  url: string,
+  cookie?: string,
+): Promise<{ token: string; cookie: string }> {
+  const headers = new Headers({ origin: BASE })
+  if (cookie) headers.set('cookie', cookie)
+  const res = await env.fetch(new Request(buildUrl(url), { headers }))
+  const html = await res.text()
+  const match = html.match(/name="_csrf"\s+value="([^"]+)"/)
+  if (!match) throw new Error(`No _csrf token in response from ${url}`)
+  const setCookie = res.headers.get('set-cookie')
+  const nextCookie = setCookie ? setCookie.split(';')[0] : cookie ?? ''
+  return { token: match[1]!, cookie: nextCookie }
+}
+
+/**
+ * Send a POST with a same-origin Origin header. CSRF middleware checks origin
+ * for cross-site protection; tests need to mimic a real browser submit.
+ */
+export async function postForm(
+  env: TestEnv,
+  pathname: string,
+  options: { cookie?: string; body: FormData },
+): Promise<Response> {
+  const headers = new Headers({ origin: BASE })
+  if (options.cookie) headers.set('cookie', options.cookie)
+  return env.fetch(
+    new Request(buildUrl(pathname), {
+      method: 'POST',
+      headers,
+      body: options.body,
+    }),
+  )
+}
+
 export async function loginAs(
   env: TestEnv,
   username: string,
   password: string,
 ): Promise<string> {
+  // First, fetch /login to get a CSRF token + session cookie.
+  const { token, cookie: preCookie } = await fetchCsrf(env, routes.login.index.href())
   const body = new FormData()
+  body.set('_csrf', token)
   body.set('username', username)
   body.set('password', password)
   const res = await env.fetch(
-    new Request(buildUrl(routes.login.action.href()), { method: 'POST', body }),
+    new Request(buildUrl(routes.login.action.href()), {
+      method: 'POST',
+      headers: { cookie: preCookie, origin: BASE },
+      body,
+    }),
   )
   if (res.status !== 303) {
     throw new Error(`Login failed: ${res.status} ${await res.text()}`)

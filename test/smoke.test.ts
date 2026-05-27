@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs'
 
 import { invitations, stickers, users, UserRoles } from '../app/data/schema.ts'
 import { routes } from '../app/routes.ts'
-import { buildUrl, createTestEnv, loginAs } from './helpers.ts'
+import { buildUrl, createTestEnv, fetchCsrf, loginAs, postForm } from './helpers.ts'
 
 async function seedUser(
   env: Awaited<ReturnType<typeof createTestEnv>>,
@@ -48,15 +48,32 @@ describe('login', () => {
     const env = await createTestEnv()
     try {
       await seedUser(env, 'alice', 'goodpass')
+      const { token, cookie } = await fetchCsrf(env, routes.login.index.href())
       const body = new FormData()
+      body.set('_csrf', token)
       body.set('username', 'alice')
       body.set('password', 'wrongpass')
-      const res = await env.fetch(
-        new Request(buildUrl(routes.login.action.href()), { method: 'POST', body }),
-      )
+      const res = await postForm(env, routes.login.action.href(), { cookie, body })
       assert.equal(res.status, 400)
       const html = await res.text()
       assert.match(html, /Login failed/)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('rejects POST without CSRF token', async () => {
+    const env = await createTestEnv()
+    try {
+      await seedUser(env, 'alice', 'goodpass')
+      const body = new FormData()
+      body.set('username', 'alice')
+      body.set('password', 'goodpass')
+      // No _csrf, no Origin header.
+      const res = await env.fetch(
+        new Request(buildUrl(routes.login.action.href()), { method: 'POST', body }),
+      )
+      assert.equal(res.status, 403)
     } finally {
       env.cleanup()
     }
@@ -88,14 +105,11 @@ describe('invitations', () => {
     const env = await createTestEnv()
     try {
       await seedUser(env, 'bob', 'bobpass')
-      const cookie = await loginAs(env, 'bob', 'bobpass')
-
-      const res = await env.fetch(
-        new Request(buildUrl(routes.invitations.generate.href()), {
-          method: 'POST',
-          headers: { cookie },
-        }),
-      )
+      const sessionCookie = await loginAs(env, 'bob', 'bobpass')
+      const { token, cookie } = await fetchCsrf(env, routes.invitations.index.href(), sessionCookie)
+      const body = new FormData()
+      body.set('_csrf', token)
+      const res = await postForm(env, routes.invitations.generate.href(), { cookie, body })
       assert.equal(res.status, 303)
       assert.equal(res.headers.get('location'), routes.invitations.index.href())
 
@@ -118,16 +132,16 @@ describe('invitations', () => {
         updated_at: Date.now(),
       })
 
+      const { token, cookie } = await fetchCsrf(env, routes.invitation.index.href({ id: invitationId }))
       const body = new FormData()
+      body.set('_csrf', token)
       body.set('username', 'newcomer')
       body.set('password', 'newpass1')
       body.set('confirmPassword', 'newpass1')
-      const res = await env.fetch(
-        new Request(buildUrl(routes.invitation.action.href({ id: invitationId })), {
-          method: 'POST',
-          body,
-        }),
-      )
+      const res = await postForm(env, routes.invitation.action.href({ id: invitationId }), {
+        cookie,
+        body,
+      })
       assert.equal(res.status, 303)
       assert.equal(res.headers.get('location'), routes.profile.href({ username: 'newcomer' }))
 
@@ -142,16 +156,17 @@ describe('invitations', () => {
   it('rejects accepting a non-existent invitation', async () => {
     const env = await createTestEnv()
     try {
+      // Get a CSRF token from a known-good page since /invitation/:id returns 404 before render.
+      const { token, cookie } = await fetchCsrf(env, routes.login.index.href())
       const body = new FormData()
+      body.set('_csrf', token)
       body.set('username', 'someone')
-      body.set('password', 'somepass')
-      body.set('confirmPassword', 'somepass')
-      const res = await env.fetch(
-        new Request(buildUrl(routes.invitation.action.href({ id: 'does-not-exist' })), {
-          method: 'POST',
-          body,
-        }),
-      )
+      body.set('password', 'somepass1')
+      body.set('confirmPassword', 'somepass1')
+      const res = await postForm(env, routes.invitation.action.href({ id: 'does-not-exist' }), {
+        cookie,
+        body,
+      })
       assert.equal(res.status, 404)
     } finally {
       env.cleanup()
@@ -190,13 +205,14 @@ describe('admin', () => {
         updated_at: Date.now(),
       })
 
-      const cookie = await loginAs(env, 'admin', 'adminpass')
-      const res = await env.fetch(
-        new Request(buildUrl(routes.admin.deleteSticker.href({ id: stickerId })), {
-          method: 'POST',
-          headers: { cookie },
-        }),
-      )
+      const sessionCookie = await loginAs(env, 'admin', 'adminpass')
+      const { token, cookie } = await fetchCsrf(env, routes.admin.stickers.href(), sessionCookie)
+      const body = new FormData()
+      body.set('_csrf', token)
+      const res = await postForm(env, routes.admin.deleteSticker.href({ id: stickerId }), {
+        cookie,
+        body,
+      })
       assert.equal(res.status, 303)
       const remaining = await env.db.find(stickers, stickerId)
       assert.equal(remaining, null)
@@ -211,19 +227,14 @@ describe('change password', () => {
     const env = await createTestEnv()
     try {
       await seedUser(env, 'carol', 'currentpass')
-      const cookie = await loginAs(env, 'carol', 'currentpass')
-
+      const sessionCookie = await loginAs(env, 'carol', 'currentpass')
+      const { token, cookie } = await fetchCsrf(env, routes.editProfile.index.href(), sessionCookie)
       const body = new FormData()
+      body.set('_csrf', token)
       body.set('currentPassword', 'wrongpass')
       body.set('newPassword', 'newpassword123')
       body.set('confirmPassword', 'newpassword123')
-      const res = await env.fetch(
-        new Request(buildUrl(routes.changePassword.action.href()), {
-          method: 'POST',
-          headers: { cookie },
-          body,
-        }),
-      )
+      const res = await postForm(env, routes.changePassword.action.href(), { cookie, body })
       assert.equal(res.status, 400)
       assert.match(await res.text(), /Current password is incorrect/)
     } finally {
@@ -235,34 +246,157 @@ describe('change password', () => {
     const env = await createTestEnv()
     try {
       await seedUser(env, 'dan', 'oldpass1')
-      const cookie = await loginAs(env, 'dan', 'oldpass1')
-
+      const sessionCookie = await loginAs(env, 'dan', 'oldpass1')
+      const { token, cookie } = await fetchCsrf(env, routes.editProfile.index.href(), sessionCookie)
       const body = new FormData()
+      body.set('_csrf', token)
       body.set('currentPassword', 'oldpass1')
       body.set('newPassword', 'brand_new_pw')
       body.set('confirmPassword', 'brand_new_pw')
-      const res = await env.fetch(
-        new Request(buildUrl(routes.changePassword.action.href()), {
-          method: 'POST',
-          headers: { cookie },
-          body,
-        }),
-      )
+      const res = await postForm(env, routes.changePassword.action.href(), { cookie, body })
       assert.equal(res.status, 303)
-      assert.equal(res.headers.get('location'), routes.changePassword.index.href())
+      assert.equal(res.headers.get('location'), routes.editProfile.index.href())
 
       // Old password should no longer work
-      const oldBody = new FormData()
-      oldBody.set('username', 'dan')
-      oldBody.set('password', 'oldpass1')
-      const oldLogin = await env.fetch(
-        new Request(buildUrl(routes.login.action.href()), { method: 'POST', body: oldBody }),
-      )
+      const oldLoginAttempt = fetchCsrf(env, routes.login.index.href()).then(({ token: t, cookie: c }) => {
+        const oldBody = new FormData()
+        oldBody.set('_csrf', t)
+        oldBody.set('username', 'dan')
+        oldBody.set('password', 'oldpass1')
+        return postForm(env, routes.login.action.href(), { cookie: c, body: oldBody })
+      })
+      const oldLogin = await oldLoginAttempt
       assert.equal(oldLogin.status, 400)
 
       // New password works
       const newCookie = await loginAs(env, 'dan', 'brand_new_pw')
       assert.ok(newCookie)
+    } finally {
+      env.cleanup()
+    }
+  })
+})
+
+describe('edit profile', () => {
+  it('updates the avatar_url for the current user', async () => {
+    const env = await createTestEnv()
+    try {
+      const userId = await seedUser(env, 'eve', 'evepass')
+      const sessionCookie = await loginAs(env, 'eve', 'evepass')
+      const { token, cookie } = await fetchCsrf(env, routes.editProfile.index.href(), sessionCookie)
+
+      // Tiny valid PNG generated by sharp.
+      const sharp = (await import('sharp')).default
+      const png = await sharp({
+        create: { width: 100, height: 100, channels: 3, background: { r: 128, g: 64, b: 200 } },
+      })
+        .png()
+        .toBuffer()
+      const view = new Uint8Array(new ArrayBuffer(png.byteLength))
+      view.set(png)
+      const file = new File([view], 'avatar.png', { type: 'image/png' })
+
+      const body = new FormData()
+      body.set('_csrf', token)
+      body.set('avatar', file)
+      const res = await postForm(env, routes.editProfile.action.href(), { cookie, body })
+      assert.equal(res.status, 303)
+      assert.equal(res.headers.get('location'), routes.editProfile.index.href())
+
+      const updated = await env.db.findOne(users, { where: { id: userId } })
+      assert.ok(updated)
+      assert.match(updated.avatar_url ?? '', /^\/uploads\/avatars\//)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('clears the avatar when remove-avatar is submitted', async () => {
+    const env = await createTestEnv()
+    try {
+      const userId = await seedUser(env, 'frank', 'frankpass')
+      // Pre-set an avatar_url directly in the db.
+      await env.db.update(users, userId, { avatar_url: '/uploads/avatars/existing.png' })
+      const sessionCookie = await loginAs(env, 'frank', 'frankpass')
+      const { token, cookie } = await fetchCsrf(env, routes.editProfile.index.href(), sessionCookie)
+
+      const body = new FormData()
+      body.set('_csrf', token)
+      body.set('action', 'remove-avatar')
+      const res = await postForm(env, routes.editProfile.action.href(), { cookie, body })
+      assert.equal(res.status, 303)
+
+      const updated = await env.db.findOne(users, { where: { id: userId } })
+      assert.ok(updated)
+      assert.equal(updated.avatar_url, null)
+    } finally {
+      env.cleanup()
+    }
+  })
+})
+
+describe('edit sticker', () => {
+  it('lets the owner rename a sticker', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'grace', 'gracepass')
+      const stickerId = randomUUID()
+      await env.db.create(stickers, {
+        id: stickerId,
+        name: 'old name',
+        image_url: '/images/banner.png',
+        owner_id: ownerId,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      })
+
+      const sessionCookie = await loginAs(env, 'grace', 'gracepass')
+      const { token, cookie } = await fetchCsrf(
+        env,
+        routes.editSticker.index.href({ id: stickerId }),
+        sessionCookie,
+      )
+      const body = new FormData()
+      body.set('_csrf', token)
+      body.set('name', 'new shiny name')
+      const res = await postForm(env, routes.editSticker.action.href({ id: stickerId }), {
+        cookie,
+        body,
+      })
+      assert.equal(res.status, 303)
+      assert.equal(res.headers.get('location'), routes.sticker.href({ id: stickerId }))
+
+      const updated = await env.db.findOne(stickers, { where: { id: stickerId } })
+      assert.ok(updated)
+      assert.equal(updated.name, 'new shiny name')
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('refuses edits by non-owner non-admin users', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'henry', 'henrypass')
+      await seedUser(env, 'intruder', 'intruderpass')
+      const stickerId = randomUUID()
+      await env.db.create(stickers, {
+        id: stickerId,
+        name: 'mine',
+        image_url: '/images/banner.png',
+        owner_id: ownerId,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      })
+
+      const sessionCookie = await loginAs(env, 'intruder', 'intruderpass')
+      // Intruder can't reach the edit page either.
+      const get = await env.fetch(
+        new Request(buildUrl(routes.editSticker.index.href({ id: stickerId })), {
+          headers: { cookie: sessionCookie },
+        }),
+      )
+      assert.equal(get.status, 403)
     } finally {
       env.cleanup()
     }

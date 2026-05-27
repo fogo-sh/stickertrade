@@ -1,3 +1,5 @@
+import { getContext } from 'remix/middleware/async-context'
+import { getCsrfToken } from 'remix/middleware/csrf'
 import { css, type Handle } from 'remix/ui'
 
 import { colors } from './theme.ts'
@@ -59,6 +61,19 @@ export function SubmitButton(handle: Handle<SubmitButtonProps>) {
       {handle.props.label}
     </button>
   )
+}
+
+/**
+ * Hidden form field that carries the per-session CSRF token. Self-resolves
+ * via `getContext()` + `getCsrfToken()`, so consumers can drop it into any
+ * `<form>` without explicit prop drilling. Requires `asyncContext()` and
+ * `csrf()` in the middleware stack.
+ */
+export function CsrfField() {
+  return () => {
+    const token = getCsrfToken(getContext())
+    return <input type="hidden" name="_csrf" value={token} />
+  }
 }
 
 export const fieldStyle = css({ display: 'block', marginBottom: '0.75rem' })

@@ -15,6 +15,7 @@ export const routes = route({
 
   // Sticker show page
   sticker: '/sticker/:id',
+  editSticker: form('/sticker/:id/edit'),
 
   // Profile page
   profile: '/profile/:username',
@@ -23,10 +24,11 @@ export const routes = route({
   // Sticker upload (GET form, POST action)
   uploadSticker: form('/upload-sticker'),
 
-  // Auth
+  // Auth + account
   login: form('/login'),
   logout: post('/logout'),
   changePassword: form('/account/password'),
+  editProfile: form('/account/profile'),
 
   // Invitations
   invitations: route('/invitations', {

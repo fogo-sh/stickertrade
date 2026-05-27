@@ -1,6 +1,7 @@
 import { css, type Handle } from 'remix/ui'
 
 import { routes } from '../routes.ts'
+import { CsrfField } from './form.tsx'
 import { colors } from './theme.ts'
 
 export interface HeaderUser {
@@ -46,8 +47,8 @@ function UserMenu(handle: Handle<{ user: HeaderUser }>) {
         <a href={routes.invitations.index.href()} mix={menuLinkStyle}>
           invitations
         </a>
-        <a href={routes.changePassword.index.href()} mix={menuLinkStyle}>
-          password
+        <a href={routes.editProfile.index.href()} mix={menuLinkStyle}>
+          profile
         </a>
         {user.role === 'ADMIN' ? (
           <a href={routes.admin.users.href()} mix={menuLinkStyle}>
@@ -55,6 +56,7 @@ function UserMenu(handle: Handle<{ user: HeaderUser }>) {
           </a>
         ) : null}
         <form method="post" action={routes.logout.href()} mix={css({ display: 'inline' })}>
+          <CsrfField />
           <button type="submit" mix={logoutBtnStyle}>
             logout
           </button>

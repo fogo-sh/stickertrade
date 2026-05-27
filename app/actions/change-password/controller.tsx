@@ -7,17 +7,14 @@ import { hashPassword, verifyPassword } from '../../data/auth.ts'
 import { getCurrentUser } from '../../data/current-user.ts'
 import { users } from '../../data/schema.ts'
 import { routes } from '../../routes.ts'
-import { ChangePasswordPage } from '../change-password-page.tsx'
+import { EditProfilePage } from '../edit-profile-page.tsx'
 
 export default createController(routes.changePassword, {
   actions: {
-    index(context) {
-      const user = getCurrentUser(context)
-      if (!user) return redirect(routes.login.index.href(), 303)
-      const session = context.get(Session)
-      const flash = session.get('password_flash') as string | undefined
-      session.unset('password_flash')
-      return context.render(<ChangePasswordPage user={user} flash={flash} />)
+    // The dedicated change-password page is gone; the form lives on /account/profile.
+    // Hitting this URL directly just redirects there.
+    index() {
+      return redirect(routes.editProfile.index.href(), 303)
     },
 
     async action(context) {
@@ -50,7 +47,7 @@ export default createController(routes.changePassword, {
       }
 
       if (Object.keys(errors).length > 0) {
-        return context.render(<ChangePasswordPage user={user} errors={errors} />, {
+        return context.render(<EditProfilePage user={user} passwordErrors={errors} />, {
           status: 400,
         })
       }
@@ -66,7 +63,7 @@ export default createController(routes.changePassword, {
       session.regenerateId(true)
       session.flash('password_flash', 'Password updated.')
 
-      return redirect(routes.changePassword.index.href(), 303)
+      return redirect(routes.editProfile.index.href(), 303)
     },
   },
 })

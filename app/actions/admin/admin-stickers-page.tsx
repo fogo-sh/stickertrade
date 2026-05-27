@@ -2,6 +2,7 @@ import { css } from 'remix/ui'
 
 import { routes } from '../../routes.ts'
 import { Document } from '../../ui/document.tsx'
+import { CsrfField } from '../../ui/form.tsx'
 import type { HeaderUser } from '../../ui/header.tsx'
 import { colors } from '../../ui/theme.ts'
 
@@ -83,6 +84,7 @@ export function AdminStickersPage() {
                 <td mix={cellStyle}>{s.createdRelative} ago</td>
                 <td mix={cellStyle}>
                   <form method="post" action={routes.admin.deleteSticker.href({ id: s.id })}>
+                    <CsrfField />
                     <button type="submit" mix={dangerBtnStyle}>
                       delete
                     </button>
