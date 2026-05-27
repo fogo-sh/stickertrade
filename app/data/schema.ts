@@ -46,10 +46,24 @@ export const config = table({
   },
 })
 
+export const apiTokens = table({
+  name: 'api_tokens',
+  columns: {
+    id: c.text().primaryKey(),
+    user_id: c.text().notNull(),
+    name: c.text().notNull(),
+    token_hash: c.text().notNull(),
+    prefix: c.text().notNull(),
+    last_used_at: c.integer(),
+    created_at: c.integer().notNull(),
+  },
+})
+
 export type User = TableRow<typeof users>
 export type Sticker = TableRow<typeof stickers>
 export type Invitation = TableRow<typeof invitations>
 export type Config = TableRow<typeof config>
+export type ApiToken = TableRow<typeof apiTokens>
 
 export const UserRoles = {
   User: 'USER',

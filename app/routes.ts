@@ -1,4 +1,4 @@
-import { del, form, get, post, route } from 'remix/routes'
+import { del, form, get, patch, post, route } from 'remix/routes'
 
 export const routes = route({
   // Compiled browser modules.
@@ -51,5 +51,21 @@ export const routes = route({
     deleteUser: post('/users/:id/delete'),
     stickers: get('/stickers'),
     deleteSticker: post('/stickers/:id/delete'),
+  }),
+
+  // API token management (HTML pages, not API endpoints).
+  createApiToken: post('/account/tokens'),
+  revokeApiToken: post('/account/tokens/:id/revoke'),
+
+  // JSON API
+  api: route('/api', {
+    me: get('/me'),
+    stickersIndex: get('/stickers'),
+    stickerShow: get('/stickers/:id'),
+    stickerCreate: post('/stickers'),
+    stickerUpdate: patch('/stickers/:id'),
+    stickerDestroy: del('/stickers/:id'),
+    userShow: get('/users/:username'),
+    userStickers: get('/users/:username/stickers'),
   }),
 })

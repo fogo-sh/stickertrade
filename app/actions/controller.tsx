@@ -5,11 +5,12 @@ import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
 
 import { assetServer } from '../assets.ts'
+import { createTokenForUser } from '../data/api-tokens.ts'
 import { getCurrentUser } from '../data/current-user.ts'
 import { buildDevLogsFeed } from '../data/dev-logs-feed.ts'
 import { getDevLog, getDevLogs } from '../data/dev-logs.ts'
 import { roadmapTasks } from '../data/roadmap.ts'
-import { stickers, users } from '../data/schema.ts'
+import { apiTokens, stickers, users } from '../data/schema.ts'
 import { uploadStorage } from '../data/uploads.ts'
 import { routes } from '../routes.ts'
 import { BrandPage } from './brand-page.tsx'
@@ -197,6 +198,41 @@ export default createController(routes, {
       session.unset('auth')
       session.regenerateId(true)
       return redirect(routes.home.href(), 303)
+    },
+
+    // -------- API token management (HTML forms, not API endpoints) --------
+    async createApiToken(context) {
+      const user = getCurrentUser(context)
+      if (!user) return redirect(routes.login.index.href(), 303)
+      const formData = context.get(FormData)
+      const name = String(formData.get('name') ?? '').trim()
+      const session = context.get(Session)
+      if (name.length === 0 || name.length > 60) {
+        session.flash('token_error_name', 'Token name must be 1-60 characters')
+        return redirect(routes.editProfile.index.href(), 303)
+      }
+      const db = context.get(Database)
+      const created = await createTokenForUser(db, user, name)
+      session.flash(
+        'token_new',
+        JSON.stringify({ name: created.name, plaintext: created.plaintext }),
+      )
+      return redirect(routes.editProfile.index.href(), 303)
+    },
+
+    async revokeApiToken(context) {
+      const user = getCurrentUser(context)
+      if (!user) return redirect(routes.login.index.href(), 303)
+      const db = context.get(Database)
+      const row = await db.findOne(apiTokens, { where: { id: context.params.id } })
+      if (!row || row.user_id !== user.id) {
+        // Don't leak whether the id exists.
+        return redirect(routes.editProfile.index.href(), 303)
+      }
+      await db.delete(apiTokens, row.id)
+      const session = context.get(Session)
+      session.flash('token_flash', `Token "${row.name}" revoked.`)
+      return redirect(routes.editProfile.index.href(), 303)
     },
 
     // -------- Dev logs --------

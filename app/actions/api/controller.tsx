@@ -1,0 +1,210 @@
+import { randomUUID } from 'node:crypto'
+
+import { Database } from 'remix/data-table'
+import { inList } from 'remix/data-table/operators'
+import { createController } from 'remix/router'
+
+import { getCurrentUser } from '../../data/current-user.ts'
+import { stickers, users } from '../../data/schema.ts'
+import { processStickerUpload } from '../../data/upload-image.ts'
+import { uploadStorage } from '../../data/uploads.ts'
+import { routes } from '../../routes.ts'
+import { jsonError, jsonOk } from './json.ts'
+import { serializeSticker, serializeUser, serializeUserStub } from './serializers.ts'
+
+const PAGE_SIZE = 50
+
+function readPage(url: URL): number {
+  const raw = url.searchParams.get('page') ?? '0'
+  const parsed = Number.parseInt(raw, 10)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
+}
+
+async function safeRemoveStoredUpload(url: string | null | undefined) {
+  if (!url || !url.startsWith('/uploads/')) return
+  const key = url.slice('/uploads/'.length)
+  try {
+    await uploadStorage.remove(key)
+  } catch {
+    // ignore
+  }
+}
+
+export default createController(routes.api, {
+  actions: {
+    // -------- /api/me --------
+    me(context) {
+      const user = getCurrentUser(context)
+      if (!user) return jsonError(401, 'Unauthorized')
+      // getCurrentUser returns AuthedUser which already includes the fields we need.
+      return jsonOk({ user: serializeUser(user as never) })
+    },
+
+    // -------- GET /api/stickers --------
+    async stickersIndex(context) {
+      const db = context.get(Database)
+      const page = readPage(context.url)
+      const rows = await db.findMany(stickers, {
+        orderBy: ['created_at', 'desc'],
+        limit: PAGE_SIZE + 1,
+        offset: page * PAGE_SIZE,
+      })
+      const hasMore = rows.length > PAGE_SIZE
+      const slice = rows.slice(0, PAGE_SIZE)
+      const ownerIds = Array.from(
+        new Set(slice.map((s) => s.owner_id).filter((id): id is string => !!id)),
+      )
+      const ownerRows = ownerIds.length
+        ? await db.findMany(users, { where: inList('id', ownerIds) })
+        : []
+      const ownerById = new Map(ownerRows.map((u) => [u.id, u]))
+      return jsonOk({
+        stickers: slice.map((s) => {
+          const owner = s.owner_id ? ownerById.get(s.owner_id) ?? null : null
+          return serializeSticker(s, owner)
+        }),
+        page,
+        has_more: hasMore,
+      })
+    },
+
+    // -------- GET /api/stickers/:id --------
+    async stickerShow(context) {
+      const db = context.get(Database)
+      const sticker = await db.findOne(stickers, { where: { id: context.params.id } })
+      if (!sticker) return jsonError(404, 'Not Found')
+      let owner = null
+      if (sticker.owner_id) {
+        owner = (await db.findOne(users, { where: { id: sticker.owner_id } })) ?? null
+      }
+      return jsonOk({ sticker: serializeSticker(sticker, owner) })
+    },
+
+    // -------- POST /api/stickers --------
+    async stickerCreate(context) {
+      const user = getCurrentUser(context)
+      if (!user) return jsonError(401, 'Unauthorized')
+
+      const formData = context.get(FormData)
+      const name = String(formData.get('name') ?? '').trim()
+      const file = formData.get('image')
+
+      const issues: Array<{ path: string[]; message: string }> = []
+      if (name.length === 0 || name.length > 60) {
+        issues.push({ path: ['name'], message: 'Name must be 1-60 characters' })
+      }
+      if (!(file instanceof File) || file.size === 0) {
+        issues.push({ path: ['image'], message: 'Please attach an image' })
+      }
+      if (issues.length > 0) return jsonError(400, 'Validation failed', issues)
+
+      let storedImageUrl: string
+      try {
+        storedImageUrl = await processStickerUpload(file as File)
+      } catch (error) {
+        return jsonError(400, error instanceof Error ? error.message : 'Upload failed')
+      }
+
+      const db = context.get(Database)
+      const now = Date.now()
+      const id = randomUUID()
+      await db.create(stickers, {
+        id,
+        name,
+        image_url: storedImageUrl,
+        owner_id: user.id,
+        created_at: now,
+        updated_at: now,
+      })
+      const created = await db.findOne(stickers, { where: { id } })
+      return jsonOk({ sticker: serializeSticker(created!, user as never) }, { status: 201 })
+    },
+
+    // -------- PATCH /api/stickers/:id --------
+    async stickerUpdate(context) {
+      const user = getCurrentUser(context)
+      if (!user) return jsonError(401, 'Unauthorized')
+
+      const db = context.get(Database)
+      const sticker = await db.findOne(stickers, { where: { id: context.params.id } })
+      if (!sticker) return jsonError(404, 'Not Found')
+      if (sticker.owner_id !== user.id && user.role !== 'ADMIN') {
+        return jsonError(403, 'Forbidden')
+      }
+
+      // Accept either JSON ({"name": "..."}) or form-encoded body.
+      let payload: { name?: unknown }
+      const contentType = context.request.headers.get('content-type') ?? ''
+      if (contentType.includes('application/json')) {
+        try {
+          payload = (await context.request.json()) as { name?: unknown }
+        } catch {
+          return jsonError(400, 'Invalid JSON body')
+        }
+      } else {
+        const formData = context.get(FormData)
+        payload = { name: formData.get('name') }
+      }
+
+      const name = typeof payload.name === 'string' ? payload.name.trim() : ''
+      if (name.length === 0 || name.length > 60) {
+        return jsonError(400, 'Validation failed', [
+          { path: ['name'], message: 'Name must be 1-60 characters' },
+        ])
+      }
+
+      await db.update(stickers, sticker.id, { name, updated_at: Date.now() })
+      const updated = await db.findOne(stickers, { where: { id: sticker.id } })
+      let owner = null
+      if (updated?.owner_id) {
+        owner = (await db.findOne(users, { where: { id: updated.owner_id } })) ?? null
+      }
+      return jsonOk({ sticker: serializeSticker(updated!, owner) })
+    },
+
+    // -------- DELETE /api/stickers/:id --------
+    async stickerDestroy(context) {
+      const user = getCurrentUser(context)
+      if (!user) return jsonError(401, 'Unauthorized')
+
+      const db = context.get(Database)
+      const sticker = await db.findOne(stickers, { where: { id: context.params.id } })
+      if (!sticker) return jsonError(404, 'Not Found')
+      if (sticker.owner_id !== user.id && user.role !== 'ADMIN') {
+        return jsonError(403, 'Forbidden')
+      }
+      await db.delete(stickers, sticker.id)
+      await safeRemoveStoredUpload(sticker.image_url)
+      return new Response(null, { status: 204 })
+    },
+
+    // -------- GET /api/users/:username --------
+    async userShow(context) {
+      const db = context.get(Database)
+      const u = await db.findOne(users, { where: { username: context.params.username } })
+      if (!u) return jsonError(404, 'Not Found')
+      return jsonOk({
+        user: {
+          username: u.username,
+          avatar_url: u.avatar_url ?? null,
+          created_at: u.created_at,
+        },
+      })
+    },
+
+    // -------- GET /api/users/:username/stickers --------
+    async userStickers(context) {
+      const db = context.get(Database)
+      const u = await db.findOne(users, { where: { username: context.params.username } })
+      if (!u) return jsonError(404, 'Not Found')
+      const rows = await db.findMany(stickers, {
+        where: { owner_id: u.id },
+        orderBy: ['created_at', 'desc'],
+      })
+      return jsonOk({
+        user: serializeUserStub(u),
+        stickers: rows.map((s) => serializeSticker(s, u)),
+      })
+    },
+  },
+})

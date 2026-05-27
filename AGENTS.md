@@ -33,12 +33,16 @@ request, components are not React.
 - `app/router.ts` — composes the middleware stack and maps each route map to a controller
 - `app/actions/controller.tsx` — root controller for top-level leaf routes
 - `app/actions/<route-key>/controller.tsx` — one controller per nested route map (`admin`,
-  `invitations`, `invitation`, `login`, `upload-sticker`, `remove-sticker`)
+  `invitations`, `invitation`, `login`, `upload-sticker`, `remove-sticker`, `edit-profile`,
+  `edit-sticker`, `change-password`, `api`)
 - `app/actions/*-page.tsx` — page components, returned via `context.render(...)`
+- `app/actions/api/` — JSON API (controller, serializers, `jsonOk`/`jsonError` helpers)
 - `app/ui/` — shared UI primitives (`document.tsx`, `header.tsx`, `footer.tsx`,
   `sticker-card.tsx`, `user-card.tsx`, `form.tsx`, `theme.ts`)
-- `app/data/` — schema, db wiring, auth, dev-logs loader, roadmap, upload pipeline
-- `app/middleware/` — `database.ts` and `render.tsx`
+- `app/data/` — schema, db wiring, auth, dev-logs loader, roadmap, upload pipeline,
+  api-tokens helper
+- `app/middleware/` — `database.ts`, `render.tsx`, `csrf-or-bearer.ts` (skips CSRF
+  for `/api/*` and bearer-authenticated requests)
 - `app/utils/time.ts` — small relative-time formatter
 - `migrations/<timestamp>_<slug>/{up,down}.sql` — SQL migrations
 - `scripts/migrate.ts`, `scripts/seed.ts` — one-shot operational scripts

@@ -403,6 +403,320 @@ describe('edit sticker', () => {
   })
 })
 
+describe('api tokens', () => {
+  it('creates a token and lets it authenticate api requests', async () => {
+    const env = await createTestEnv()
+    try {
+      const userId = await seedUser(env, 'ivy', 'ivypass')
+      const sessionCookie = await loginAs(env, 'ivy', 'ivypass')
+
+      // Create a token via the HTML form.
+      const { token: csrfToken, cookie } = await fetchCsrf(
+        env,
+        routes.editProfile.index.href(),
+        sessionCookie,
+      )
+      const body = new FormData()
+      body.set('_csrf', csrfToken)
+      body.set('name', 'test token')
+      const res = await postForm(env, routes.createApiToken.href(), { cookie, body })
+      assert.equal(res.status, 303)
+
+      // Read the flash to recover the plaintext token.
+      const reload = await env.fetch(
+        new Request(buildUrl(routes.editProfile.index.href()), {
+          headers: { cookie: res.headers.get('set-cookie')?.split(';')[0] ?? cookie },
+        }),
+      )
+      const html = await reload.text()
+      const match = html.match(/(st_[0-9a-f]{48})/)
+      assert.ok(match, 'plaintext token should appear in the response once')
+      const plaintext = match[1]!
+
+      // Now hit a write-protected API endpoint with the bearer token.
+      const apiRes = await env.fetch(
+        new Request(buildUrl(routes.api.me.href()), {
+          headers: { authorization: `Bearer ${plaintext}` },
+        }),
+      )
+      assert.equal(apiRes.status, 200)
+      const payload = (await apiRes.json()) as { user: { username: string; id: string } }
+      assert.equal(payload.user.username, 'ivy')
+      assert.equal(payload.user.id, userId)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('revoked tokens stop authenticating', async () => {
+    const env = await createTestEnv()
+    try {
+      const userId = await seedUser(env, 'jess', 'jesspass')
+
+      // Create a token directly via the data helper.
+      const { createTokenForUser } = await import('../app/data/api-tokens.ts')
+      const { plaintext, id: tokenId } = await createTokenForUser(env.db, { id: userId }, 'tok')
+
+      // Sanity: bearer works.
+      const ok = await env.fetch(
+        new Request(buildUrl(routes.api.me.href()), {
+          headers: { authorization: `Bearer ${plaintext}` },
+        }),
+      )
+      assert.equal(ok.status, 200)
+
+      // Revoke via the HTML form.
+      const sessionCookie = await loginAs(env, 'jess', 'jesspass')
+      const { token: csrfToken, cookie } = await fetchCsrf(
+        env,
+        routes.editProfile.index.href(),
+        sessionCookie,
+      )
+      const body = new FormData()
+      body.set('_csrf', csrfToken)
+      const revoke = await postForm(env, routes.revokeApiToken.href({ id: tokenId }), {
+        cookie,
+        body,
+      })
+      assert.equal(revoke.status, 303)
+
+      // Bearer is now rejected.
+      const denied = await env.fetch(
+        new Request(buildUrl(routes.api.me.href()), {
+          headers: { authorization: `Bearer ${plaintext}` },
+        }),
+      )
+      assert.equal(denied.status, 401)
+    } finally {
+      env.cleanup()
+    }
+  })
+})
+
+describe('api: stickers', () => {
+  it('GET /api/stickers returns public list without auth', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'kelly', 'kellypass')
+      const stickerId = randomUUID()
+      await env.db.create(stickers, {
+        id: stickerId,
+        name: 'public sticker',
+        image_url: '/images/banner.png',
+        owner_id: ownerId,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      })
+
+      const res = await env.fetch(new Request(buildUrl(routes.api.stickersIndex.href())))
+      assert.equal(res.status, 200)
+      const payload = (await res.json()) as { stickers: Array<{ id: string; name: string }> }
+      assert.ok(Array.isArray(payload.stickers))
+      assert.equal(payload.stickers[0]?.name, 'public sticker')
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('GET /api/stickers/:id 404s a missing one', async () => {
+    const env = await createTestEnv()
+    try {
+      const res = await env.fetch(
+        new Request(buildUrl(routes.api.stickerShow.href({ id: 'missing' }))),
+      )
+      assert.equal(res.status, 404)
+      const payload = (await res.json()) as { error: string }
+      assert.equal(payload.error, 'Not Found')
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('POST /api/stickers requires bearer auth', async () => {
+    const env = await createTestEnv()
+    try {
+      const body = new FormData()
+      body.set('name', 'not gonna work')
+      const res = await env.fetch(
+        new Request(buildUrl(routes.api.stickerCreate.href()), { method: 'POST', body }),
+      )
+      assert.equal(res.status, 401)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('POST /api/stickers creates a sticker with bearer auth', async () => {
+    const env = await createTestEnv()
+    try {
+      const userId = await seedUser(env, 'liam', 'liampass')
+      const { createTokenForUser } = await import('../app/data/api-tokens.ts')
+      const { plaintext } = await createTokenForUser(env.db, { id: userId }, 'tok')
+
+      // Build a tiny PNG.
+      const sharp = (await import('sharp')).default
+      const png = await sharp({
+        create: { width: 100, height: 100, channels: 3, background: { r: 200, g: 100, b: 100 } },
+      })
+        .png()
+        .toBuffer()
+      const view = new Uint8Array(new ArrayBuffer(png.byteLength))
+      view.set(png)
+      const file = new File([view], 'sticker.png', { type: 'image/png' })
+
+      const body = new FormData()
+      body.set('name', 'api created')
+      body.set('image', file)
+
+      const res = await env.fetch(
+        new Request(buildUrl(routes.api.stickerCreate.href()), {
+          method: 'POST',
+          headers: { authorization: `Bearer ${plaintext}` },
+          body,
+        }),
+      )
+      assert.equal(res.status, 201)
+      const payload = (await res.json()) as {
+        sticker: { id: string; name: string; owner: { username: string } | null }
+      }
+      assert.equal(payload.sticker.name, 'api created')
+      assert.equal(payload.sticker.owner?.username, 'liam')
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('PATCH /api/stickers/:id renames when owned', async () => {
+    const env = await createTestEnv()
+    try {
+      const userId = await seedUser(env, 'mary', 'marypass')
+      const { createTokenForUser } = await import('../app/data/api-tokens.ts')
+      const { plaintext } = await createTokenForUser(env.db, { id: userId }, 'tok')
+      const stickerId = randomUUID()
+      await env.db.create(stickers, {
+        id: stickerId,
+        name: 'old',
+        image_url: '/images/banner.png',
+        owner_id: userId,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      })
+
+      const res = await env.fetch(
+        new Request(buildUrl(routes.api.stickerUpdate.href({ id: stickerId })), {
+          method: 'PATCH',
+          headers: {
+            authorization: `Bearer ${plaintext}`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({ name: 'new' }),
+        }),
+      )
+      assert.equal(res.status, 200)
+      const payload = (await res.json()) as { sticker: { name: string } }
+      assert.equal(payload.sticker.name, 'new')
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('PATCH /api/stickers/:id forbids non-owner', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'nate', 'natepass')
+      const otherId = await seedUser(env, 'oscar', 'oscarpass')
+      const { createTokenForUser } = await import('../app/data/api-tokens.ts')
+      const { plaintext } = await createTokenForUser(env.db, { id: otherId }, 'tok')
+      const stickerId = randomUUID()
+      await env.db.create(stickers, {
+        id: stickerId,
+        name: 'natefoo',
+        image_url: '/images/banner.png',
+        owner_id: ownerId,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      })
+
+      const res = await env.fetch(
+        new Request(buildUrl(routes.api.stickerUpdate.href({ id: stickerId })), {
+          method: 'PATCH',
+          headers: {
+            authorization: `Bearer ${plaintext}`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({ name: 'taken over' }),
+        }),
+      )
+      assert.equal(res.status, 403)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('DELETE /api/stickers/:id deletes when owned', async () => {
+    const env = await createTestEnv()
+    try {
+      const userId = await seedUser(env, 'piper', 'piperpass')
+      const { createTokenForUser } = await import('../app/data/api-tokens.ts')
+      const { plaintext } = await createTokenForUser(env.db, { id: userId }, 'tok')
+      const stickerId = randomUUID()
+      await env.db.create(stickers, {
+        id: stickerId,
+        name: 'going away',
+        image_url: '/images/banner.png',
+        owner_id: userId,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      })
+
+      const res = await env.fetch(
+        new Request(buildUrl(routes.api.stickerDestroy.href({ id: stickerId })), {
+          method: 'DELETE',
+          headers: { authorization: `Bearer ${plaintext}` },
+        }),
+      )
+      assert.equal(res.status, 204)
+      const remaining = await env.db.find(stickers, stickerId)
+      assert.equal(remaining, null)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('GET /api/users/:username and /stickers return public data', async () => {
+    const env = await createTestEnv()
+    try {
+      const userId = await seedUser(env, 'quincy', 'quincypass')
+      await env.db.create(stickers, {
+        id: randomUUID(),
+        name: 'q1',
+        image_url: '/images/banner.png',
+        owner_id: userId,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      })
+
+      const userRes = await env.fetch(
+        new Request(buildUrl(routes.api.userShow.href({ username: 'quincy' }))),
+      )
+      assert.equal(userRes.status, 200)
+      const userPayload = (await userRes.json()) as { user: { username: string } }
+      assert.equal(userPayload.user.username, 'quincy')
+
+      const stickersRes = await env.fetch(
+        new Request(buildUrl(routes.api.userStickers.href({ username: 'quincy' }))),
+      )
+      assert.equal(stickersRes.status, 200)
+      const stickersPayload = (await stickersRes.json()) as {
+        stickers: Array<{ name: string }>
+      }
+      assert.equal(stickersPayload.stickers[0]?.name, 'q1')
+    } finally {
+      env.cleanup()
+    }
+  })
+})
+
 describe('dev logs', () => {
   it('renders the dev logs index', async () => {
     const env = await createTestEnv()
