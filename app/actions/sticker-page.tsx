@@ -9,6 +9,7 @@ import { colors } from '../ui/theme.ts'
 export interface StickerPageProps {
   user: HeaderUser | null
   sticker: {
+    id: string
     name: string
     image_url: string
     owner: { username: string; avatar_url: string | null } | null
@@ -16,25 +17,36 @@ export interface StickerPageProps {
 }
 
 export function StickerPage() {
-  return ({ user, sticker }: StickerPageProps) => (
-    <Document title={`stickertrade - ${sticker.name}`} user={user}>
-      <main mix={css({ maxWidth: '32rem', margin: '0 auto' })}>
-        <div mix={imageWrapStyle}>
-          <img src={sticker.image_url} alt={sticker.name} mix={imageStyle} />
-        </div>
-        <h1 mix={titleStyle}>{sticker.name}</h1>
-        {sticker.owner ? (
-          <div mix={ownerWrapStyle}>
-            <h2 mix={css({ fontSize: '1rem' })}>owned by</h2>
-            <UserCard user={sticker.owner} />
-            <a href={routes.profile.href({ username: sticker.owner.username })} mix={profileLink}>
-              view profile
-            </a>
+  return ({ user, sticker }: StickerPageProps) => {
+    const canEdit =
+      user != null && (user.username === sticker.owner?.username || user.role === 'ADMIN')
+    return (
+      <Document title={`stickertrade - ${sticker.name}`} user={user}>
+        <main mix={css({ maxWidth: '32rem', margin: '0 auto' })}>
+          <div mix={imageWrapStyle}>
+            <img src={sticker.image_url} alt={sticker.name} mix={imageStyle} />
           </div>
-        ) : null}
-      </main>
-    </Document>
-  )
+          <h1 mix={titleStyle}>{sticker.name}</h1>
+          {sticker.owner ? (
+            <div mix={ownerWrapStyle}>
+              <h2 mix={css({ fontSize: '1rem' })}>owned by</h2>
+              <UserCard user={sticker.owner} />
+              <a href={routes.profile.href({ username: sticker.owner.username })} mix={profileLink}>
+                view profile
+              </a>
+            </div>
+          ) : null}
+          {canEdit ? (
+            <div mix={css({ textAlign: 'center', marginTop: '1.25rem' })}>
+              <a href={routes.editSticker.index.href({ id: sticker.id })} mix={editLink}>
+                edit this sticker
+              </a>
+            </div>
+          ) : null}
+        </main>
+      </Document>
+    )
+  }
 }
 
 const imageWrapStyle = css({
@@ -66,4 +78,11 @@ const profileLink = css({
   opacity: 0.7,
   fontSize: '0.85rem',
   '&:hover': { textDecoration: 'underline' },
+})
+
+const editLink = css({
+  display: 'inline-block',
+  padding: '0.4rem 0.75rem',
+  border: `1px solid ${colors.light[500]}55`,
+  '&:hover': { borderColor: colors.primary[500], color: colors.primary[500] },
 })

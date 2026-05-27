@@ -154,7 +154,12 @@ export default createController(routes, {
       return context.render(
         <StickerPage
           user={getCurrentUser(context)}
-          sticker={{ name: sticker.name, image_url: sticker.image_url, owner }}
+          sticker={{
+            id: sticker.id,
+            name: sticker.name,
+            image_url: sticker.image_url,
+            owner,
+          }}
         />,
       )
     },

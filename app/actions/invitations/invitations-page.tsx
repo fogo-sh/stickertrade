@@ -2,6 +2,7 @@ import { css } from 'remix/ui'
 
 import { routes } from '../../routes.ts'
 import { Document } from '../../ui/document.tsx'
+import { CsrfField } from '../../ui/form.tsx'
 import type { HeaderUser } from '../../ui/header.tsx'
 import { colors } from '../../ui/theme.ts'
 
@@ -46,6 +47,7 @@ export function InvitationsPage() {
                     action={routes.invitations.destroy.href({ id: inv.id })}
                     mix={css({ display: 'inline' })}
                   >
+                    <CsrfField />
                     <button type="submit" mix={destroyBtnStyle} aria-label="destroy invitation">
                       ✕
                     </button>
@@ -71,6 +73,7 @@ export function InvitationsPage() {
             )}
             {remaining > 0 ? (
               <form method="post" action={routes.invitations.generate.href()} mix={generateRowStyle}>
+                <CsrfField />
                 <button type="submit" mix={generateBtnStyle}>
                   generate invitation
                 </button>

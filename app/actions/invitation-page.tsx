@@ -2,7 +2,7 @@ import { css } from 'remix/ui'
 
 import { routes } from '../routes.ts'
 import { Document } from '../ui/document.tsx'
-import { SubmitButton, TextField, errorStyle } from '../ui/form.tsx'
+import { CsrfField, SubmitButton, TextField, errorStyle } from '../ui/form.tsx'
 
 export interface InvitationPageProps {
   invitationId: string
@@ -35,6 +35,7 @@ export function InvitationPage() {
         </div>
         <div mix={css({ maxWidth: '24rem', margin: '0 auto' })}>
           <form method="post" action={routes.invitation.action.href({ id: invitationId })}>
+            <CsrfField />
             <TextField
               name="username"
               label="create username"

@@ -6,7 +6,7 @@ import { createController } from 'remix/router'
 
 import { getCurrentUser } from '../../data/current-user.ts'
 import { stickers } from '../../data/schema.ts'
-import { processStickerUpload } from '../../data/upload-sticker.ts'
+import { processStickerUpload } from '../../data/upload-image.ts'
 import { routes } from '../../routes.ts'
 import { UploadStickerPage } from '../upload-sticker-page.tsx'
 

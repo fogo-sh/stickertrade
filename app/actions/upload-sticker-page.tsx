@@ -3,7 +3,7 @@ import { css } from 'remix/ui'
 import { routes } from '../routes.ts'
 import { Document } from '../ui/document.tsx'
 import type { HeaderUser } from '../ui/header.tsx'
-import { FileField, SubmitButton, TextField, errorStyle } from '../ui/form.tsx'
+import { CsrfField, FileField, SubmitButton, TextField, errorStyle } from '../ui/form.tsx'
 
 export interface UploadStickerPageProps {
   user: HeaderUser | null
@@ -21,6 +21,7 @@ export function UploadStickerPage() {
           action={routes.uploadSticker.action.href()}
           encType="multipart/form-data"
         >
+          <CsrfField />
           <TextField name="name" label="name" value={values.name} error={errors.name} />
           <FileField name="image" label="image" error={errors.image} />
           {errors._form ? <p mix={errorStyle}>{errors._form}</p> : null}

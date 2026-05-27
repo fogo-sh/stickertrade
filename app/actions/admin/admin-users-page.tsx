@@ -2,6 +2,7 @@ import { css } from 'remix/ui'
 
 import { routes } from '../../routes.ts'
 import { Document } from '../../ui/document.tsx'
+import { CsrfField } from '../../ui/form.tsx'
 import type { HeaderUser } from '../../ui/header.tsx'
 import { colors } from '../../ui/theme.ts'
 
@@ -69,6 +70,7 @@ export function AdminUsersPage() {
                 <td mix={cellStyle}>{u.updatedRelative} ago</td>
                 <td mix={cellStyle}>
                   <form method="post" action={routes.admin.deleteUser.href({ id: u.id })}>
+                    <CsrfField />
                     <button type="submit" mix={dangerBtnStyle}>
                       delete
                     </button>

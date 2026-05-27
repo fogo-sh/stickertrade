@@ -2,6 +2,7 @@ import { css } from 'remix/ui'
 
 import { routes } from '../routes.ts'
 import { Document } from '../ui/document.tsx'
+import { CsrfField } from '../ui/form.tsx'
 import type { HeaderUser } from '../ui/header.tsx'
 import { StickerCard, UploadStickerCard } from '../ui/sticker-card.tsx'
 import { colors } from '../ui/theme.ts'
@@ -38,18 +39,28 @@ export function ProfilePage() {
             {profile.stickers.map((sticker) => (
               <div key={sticker.id} mix={css({ position: 'relative' })}>
                 {isOwner ? (
-                  <form
-                    method="post"
-                    action={routes.removeSticker.action.href({
-                      username: profile.username,
-                      stickerId: sticker.id,
-                    })}
-                    mix={removeFormStyle}
-                  >
-                    <button type="submit" mix={removeBtnStyle} aria-label="remove sticker">
-                      ✕
-                    </button>
-                  </form>
+                  <div mix={overlayStyle}>
+                    <a
+                      href={routes.editSticker.index.href({ id: sticker.id })}
+                      mix={editBtnStyle}
+                      aria-label="edit sticker"
+                    >
+                      ✎
+                    </a>
+                    <form
+                      method="post"
+                      action={routes.removeSticker.action.href({
+                        username: profile.username,
+                        stickerId: sticker.id,
+                      })}
+                      mix={css({ display: 'inline' })}
+                    >
+                      <CsrfField />
+                      <button type="submit" mix={removeBtnStyle} aria-label="remove sticker">
+                        ✕
+                      </button>
+                    </form>
+                  </div>
                 ) : null}
                 <StickerCard sticker={sticker} showOwner={false} />
               </div>
@@ -88,11 +99,29 @@ const gridStyle = css({
   gap: '1.5rem',
 })
 
-const removeFormStyle = css({
+const overlayStyle = css({
   position: 'absolute',
   top: '0.25rem',
   right: '0.25rem',
   zIndex: 1,
+  display: 'flex',
+  gap: '0.25rem',
+})
+
+const editBtnStyle = css({
+  width: '1.5rem',
+  height: '1.5rem',
+  borderRadius: '999px',
+  background: colors.light[500],
+  color: colors.dark[500],
+  border: 'none',
+  cursor: 'pointer',
+  font: 'inherit',
+  fontWeight: 700,
+  lineHeight: '1.5rem',
+  textAlign: 'center',
+  textDecoration: 'none',
+  '&:hover': { background: colors.primary[500] },
 })
 
 const removeBtnStyle = css({
