@@ -36,15 +36,33 @@ export interface FileFieldProps {
   label: string
   accept?: string
   error?: string
+  multiple?: boolean
+  required?: boolean
+  helperText?: string
 }
 
 export function FileField(handle: Handle<FileFieldProps>) {
   return () => {
-    const { name, label, accept = '.png, .jpg, .jpeg', error } = handle.props
+    const {
+      name,
+      label,
+      accept = '.png, .jpg, .jpeg',
+      error,
+      multiple = false,
+      required = false,
+      helperText,
+    } = handle.props
     return (
       <label mix={fieldStyle}>
         <span mix={css({ display: 'block', marginBottom: '0.25rem' })}>{label}</span>
-        <input name={name} type="file" accept={accept} />
+        <input
+          name={name}
+          type="file"
+          accept={accept}
+          multiple={multiple}
+          required={required}
+        />
+        {helperText ? <p mix={helperTextStyle}>{helperText}</p> : null}
         {error ? <p mix={errorStyle}>{error}</p> : null}
       </label>
     )
@@ -103,6 +121,12 @@ export const submitBtnStyle = css({
 export const errorStyle = css({
   marginTop: '0.25rem',
   color: colors.primary[500],
+  fontSize: '0.85rem',
+})
+
+export const helperTextStyle = css({
+  marginTop: '0.25rem',
+  color: `${colors.light[500]}aa`,
   fontSize: '0.85rem',
 })
 

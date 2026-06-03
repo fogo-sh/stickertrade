@@ -49,7 +49,15 @@ export function UploadSurfacePage() {
             />
             {errors.description ? <p mix={errorStyle}>{errors.description}</p> : null}
           </label>
-          <FileField name="image" label="image" error={errors.image} />
+          <FileField
+            name="image"
+            label="images"
+            helperText="up to 8 images. the first will be the primary."
+            accept="image/png,image/jpeg,image/webp"
+            required
+            multiple
+            error={errors.image}
+          />
           {errors._form ? <p mix={errorStyle}>{errors._form}</p> : null}
           <SubmitButton label="create surface" />
         </form>
