@@ -5,6 +5,7 @@ import { describe, it } from 'node:test'
 import bcrypt from 'bcryptjs'
 
 import { invitations, stickers, users, UserRoles } from '../app/data/schema.ts'
+import { generateStickerSlug } from '../app/data/slug.ts'
 import { routes } from '../app/routes.ts'
 import {
   buildUrl,
@@ -259,6 +260,7 @@ describe('admin', () => {
       await env.db.create(stickers, {
         id: stickerId,
         name: 'soon-gone',
+        slug: generateStickerSlug('soon-gone'),
         image_url: '/images/banner.png',
         owner_id: aliceId,
         created_at: Date.now(),
@@ -401,9 +403,12 @@ describe('edit sticker', () => {
     try {
       const ownerId = await seedUser(env, 'grace', 'gracepass')
       const stickerId = randomUUID()
+      const stickerName = 'old name'
+      const stickerSlug = generateStickerSlug(stickerName)
       await env.db.create(stickers, {
         id: stickerId,
-        name: 'old name',
+        name: stickerName,
+        slug: stickerSlug,
         image_url: '/images/banner.png',
         owner_id: ownerId,
         created_at: Date.now(),
@@ -413,18 +418,18 @@ describe('edit sticker', () => {
       const sessionCookie = await loginAs(env, 'grace', 'gracepass')
       const { token, cookie } = await fetchCsrf(
         env,
-        routes.editSticker.index.href({ id: stickerId }),
+        routes.editSticker.index.href({ slug: stickerSlug }),
         sessionCookie,
       )
       const body = new FormData()
       body.set('_csrf', token)
       body.set('name', 'new shiny name')
-      const res = await postForm(env, routes.editSticker.action.href({ id: stickerId }), {
+      const res = await postForm(env, routes.editSticker.action.href({ slug: stickerSlug }), {
         cookie,
         body,
       })
       assert.equal(res.status, 303)
-      assert.equal(res.headers.get('location'), routes.sticker.href({ id: stickerId }))
+      assert.equal(res.headers.get('location'), routes.sticker.href({ slug: stickerSlug }))
 
       const updated = await env.db.findOne(stickers, { where: { id: stickerId } })
       assert.ok(updated)
@@ -440,9 +445,12 @@ describe('edit sticker', () => {
       const ownerId = await seedUser(env, 'henry', 'henrypass')
       await seedUser(env, 'intruder', 'intruderpass')
       const stickerId = randomUUID()
+      const stickerName = 'mine'
+      const stickerSlug = generateStickerSlug(stickerName)
       await env.db.create(stickers, {
         id: stickerId,
-        name: 'mine',
+        name: stickerName,
+        slug: stickerSlug,
         image_url: '/images/banner.png',
         owner_id: ownerId,
         created_at: Date.now(),
@@ -452,11 +460,51 @@ describe('edit sticker', () => {
       const sessionCookie = await loginAs(env, 'intruder', 'intruderpass')
       // Intruder can't reach the edit page either.
       const get = await env.fetch(
-        new Request(buildUrl(routes.editSticker.index.href({ id: stickerId })), {
+        new Request(buildUrl(routes.editSticker.index.href({ slug: stickerSlug })), {
           headers: { cookie: sessionCookie },
         }),
       )
       assert.equal(get.status, 403)
+    } finally {
+      env.cleanup()
+    }
+  })
+})
+
+describe('sticker URL backwards compatibility', () => {
+  it('301-redirects /sticker/<uuid> to the slug URL', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'redirector', 'redirectorpass')
+      const stickerId = randomUUID()
+      const stickerName = 'Vintage'
+      const stickerSlug = generateStickerSlug(stickerName)
+      await env.db.create(stickers, {
+        id: stickerId,
+        name: stickerName,
+        slug: stickerSlug,
+        image_url: '/images/banner.png',
+        owner_id: ownerId,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      })
+
+      const res = await env.fetch(
+        new Request(buildUrl(`/sticker/${stickerId}`), { redirect: 'manual' }),
+      )
+      assert.equal(res.status, 301)
+      assert.equal(res.headers.get('location'), `/sticker/${stickerSlug}`)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('returns 404 for a /sticker/<uuid> with no matching sticker', async () => {
+    const env = await createTestEnv()
+    try {
+      const phantomId = randomUUID()
+      const res = await env.fetch(new Request(buildUrl(`/sticker/${phantomId}`)))
+      assert.equal(res.status, 404)
     } finally {
       env.cleanup()
     }
@@ -562,6 +610,7 @@ describe('api: stickers', () => {
       await env.db.create(stickers, {
         id: stickerId,
         name: 'public sticker',
+        slug: generateStickerSlug('public sticker'),
         image_url: '/images/banner.png',
         owner_id: ownerId,
         created_at: Date.now(),
@@ -736,6 +785,7 @@ describe('api: stickers', () => {
       await env.db.create(stickers, {
         id: stickerId,
         name: 'old',
+        slug: generateStickerSlug('old'),
         image_url: '/images/banner.png',
         owner_id: userId,
         created_at: Date.now(),
@@ -771,6 +821,7 @@ describe('api: stickers', () => {
       await env.db.create(stickers, {
         id: stickerId,
         name: 'natefoo',
+        slug: generateStickerSlug('natefoo'),
         image_url: '/images/banner.png',
         owner_id: ownerId,
         created_at: Date.now(),
@@ -803,6 +854,7 @@ describe('api: stickers', () => {
       await env.db.create(stickers, {
         id: stickerId,
         name: 'going away',
+        slug: generateStickerSlug('going away'),
         image_url: '/images/banner.png',
         owner_id: userId,
         created_at: Date.now(),
@@ -830,6 +882,7 @@ describe('api: stickers', () => {
       await env.db.create(stickers, {
         id: randomUUID(),
         name: 'q1',
+        slug: generateStickerSlug('q1'),
         image_url: '/images/banner.png',
         owner_id: userId,
         created_at: Date.now(),
@@ -907,16 +960,19 @@ describe('og tags', () => {
     try {
       const ownerId = await seedUser(env, 'roxie', 'roxiepass')
       const stickerId = randomUUID()
+      const stickerName = 'cool og sticker'
+      const stickerSlug = generateStickerSlug(stickerName)
       await env.db.create(stickers, {
         id: stickerId,
-        name: 'cool og sticker',
+        name: stickerName,
+        slug: stickerSlug,
         image_url: '/uploads/stickers/cool.png',
         owner_id: ownerId,
         created_at: Date.now(),
         updated_at: Date.now(),
       })
 
-      const res = await env.fetch(new Request(buildUrl(routes.sticker.href({ id: stickerId }))))
+      const res = await env.fetch(new Request(buildUrl(routes.sticker.href({ slug: stickerSlug }))))
       const html = await res.text()
       assert.match(html, /<meta property="og:title" content="cool og sticker"/)
       assert.match(html, /<meta property="og:image" content="http:\/\/localhost(:\d+)?\/uploads\/stickers\/cool\.png"/)
