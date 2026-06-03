@@ -56,6 +56,15 @@ export function SurfaceCard(handle: Handle<SurfaceCardProps>) {
   }
 }
 
+export function UploadSurfaceCard() {
+  return () => (
+    <a href={routes.uploadSurface.index.href()} mix={uploadCardStyle}>
+      <span mix={uploadIconStyle}>+</span>
+      <span>upload a surface</span>
+    </a>
+  )
+}
+
 const cardStyle = css({
   display: 'block',
   width: '100%',
@@ -66,6 +75,27 @@ const cardStyle = css({
   textDecoration: 'none',
   color: 'inherit',
   '&:hover': { borderColor: colors.primary[500] },
+})
+
+const uploadCardStyle = css({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '0.5rem',
+  width: '100%',
+  marginBottom: '2rem',
+  padding: '2rem 0.5rem',
+  border: `2px dashed ${colors.light[500]}55`,
+  textDecoration: 'none',
+  color: 'inherit',
+  opacity: 0.85,
+  '&:hover': { borderColor: colors.primary[500], opacity: 1 },
+})
+
+const uploadIconStyle = css({
+  fontSize: '1.5rem',
+  fontWeight: 700,
+  lineHeight: 1,
 })
 
 const imageWrapStyle = css({

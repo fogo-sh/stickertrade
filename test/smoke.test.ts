@@ -1301,6 +1301,44 @@ describe('surfaces', () => {
     }
   })
 
+  it('shows an upload-surface affordance on the owner profile even with zero surfaces', async () => {
+    const env = await createTestEnv()
+    try {
+      await seedUser(env, 'sf-empty', 'sf-emptypass')
+      const sessionCookie = await loginAs(env, 'sf-empty', 'sf-emptypass')
+      const res = await env.fetch(
+        new Request(buildUrl(routes.profile.href({ username: 'sf-empty' })), {
+          headers: { cookie: sessionCookie },
+        }),
+      )
+      assert.equal(res.status, 200)
+      const html = await res.text()
+      // Section heading renders without the count when zero.
+      assert.ok(/<p[^>]*>\s*surfaces\s*<\/p>/.test(html), 'expected empty "surfaces" heading')
+      // Upload affordance links to /upload-surface.
+      assert.ok(html.includes(routes.uploadSurface.index.href()))
+      assert.ok(html.includes('upload a surface'))
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('does NOT show the upload-surface affordance to non-owners with zero surfaces', async () => {
+    const env = await createTestEnv()
+    try {
+      await seedUser(env, 'sf-stranger', 'sf-strangerpass')
+      const res = await env.fetch(
+        new Request(buildUrl(routes.profile.href({ username: 'sf-stranger' }))),
+      )
+      assert.equal(res.status, 200)
+      const html = await res.text()
+      // Empty surfaces section is hidden for non-owners.
+      assert.ok(!html.includes('upload a surface'))
+    } finally {
+      env.cleanup()
+    }
+  })
+
   it('renders the surface of the day on the home page when one exists', async () => {
     const env = await createTestEnv()
     try {

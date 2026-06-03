@@ -5,7 +5,11 @@ import { Document } from '../ui/document.tsx'
 import { CsrfField } from '../ui/form.tsx'
 import type { HeaderUser } from '../ui/header.tsx'
 import { StickerCard, UploadStickerCard } from '../ui/sticker-card.tsx'
-import { SurfaceCard, type SurfaceCardSurface } from '../ui/surface-card.tsx'
+import {
+  SurfaceCard,
+  UploadSurfaceCard,
+  type SurfaceCardSurface,
+} from '../ui/surface-card.tsx'
 import { colors } from '../ui/theme.ts'
 
 export interface ProfilePageProps {
@@ -82,12 +86,15 @@ export function ProfilePage() {
               </div>
             ))}
           </div>
-          {profile.surfaces.length > 0 ? (
+          {isOwner || profile.surfaces.length > 0 ? (
             <section mix={surfacesSectionStyle}>
-              <p mix={sectionHeading}>surfaces ({profile.surfaces.length})</p>
+              <p mix={sectionHeading}>
+                surfaces{profile.surfaces.length > 0 ? ` (${profile.surfaces.length})` : ''}
+              </p>
               {profile.surfaces.map((s) => (
                 <SurfaceCard key={s.id} surface={s} showOwner={false} />
               ))}
+              {isOwner ? <UploadSurfaceCard /> : null}
             </section>
           ) : null}
         </main>
