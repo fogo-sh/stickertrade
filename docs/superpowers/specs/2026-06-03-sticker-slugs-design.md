@@ -76,25 +76,51 @@ After:  `/sticker/dino-sticker-k3p9aq`
 ## Schema Change
 
 Our migration system is pure SQL (`migrations/<ts>_<slug>/{up,down}.sql`,
-loaded by `remix/data-table/migrations/node`). No JS hook mid-migration.
-This rules out generating name-derived slugs for existing stickers from
-inside the migration. We accept that pre-migration stickers get
-**suffix-only slugs** (e.g. `/sticker/a3f9b1`) and only new stickers get
-the prettier `<name>-<suffix>` form. The number of pre-migration
-stickers is tiny (handful in dev, small in prod), so this is fine.
+loaded by `remix/data-table/migrations/node`). One migration file does the
+whole job: add the column, backfill name-derived slugs for existing rows,
+add the unique index.
+
+The backfill SQL is the "good enough" version: it lowercases, replaces
+common word separators with hyphens, trims edge hyphens, and appends a
+random 6-char hex suffix. It does NOT try to perfectly mirror the
+runtime `slugifyName` (which strips all non-alphanumerics and caps at 40
+chars). For typical names like "Dino Sticker" the backfill produces the
+same result as the runtime function. For weird names ("🦖 fire 🦖") it
+produces `🦖-fire-🦖-a3f9b1` — URL-encoded but functional, and unique
+thanks to the suffix. We accept this asymmetry because:
+
+- The backfill runs once, against a handful of existing stickers.
+- All future stickers go through the polished runtime function.
+- Lookup is by exact-match on the slug column, so the shape doesn't
+  matter — it just needs to be unique and stable.
 
 **Migration up:** `<ts>_add_sticker_slug/up.sql`
 
 ```sql
 ALTER TABLE stickers ADD COLUMN slug TEXT NOT NULL DEFAULT '';
-UPDATE stickers SET slug = lower(hex(randomblob(3))) WHERE slug = '';
+
+-- Backfill: replace common separators with hyphens, lowercase, trim
+-- edge hyphens, append a random 6-char hex suffix.
+UPDATE stickers
+SET slug = trim(
+  replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(
+    lower(name),
+    ' ', '-'), '_', '-'), '.', '-'), ',', '-'), '!', '-'),
+    '?', '-'), ':', '-'), ';', '-'), '/', '-'), '\', '-'),
+  '-'
+) || '-' || lower(hex(randomblob(3)))
+WHERE slug = '';
+
+-- Strip any rows that ended up with a leading '-' (name was all
+-- separators). The suffix still keeps them unique.
+UPDATE stickers SET slug = substr(slug, 2) WHERE slug LIKE '-%';
+
 CREATE UNIQUE INDEX stickers_slug_unique ON stickers(slug);
 ```
 
-`hex(randomblob(3))` yields 6 lowercase-hex chars (`0-9a-f`), which is a
-subset of our `0-9a-z` runtime alphabet — backfilled slugs look the
-same shape as freshly-generated ones, so lookup code doesn't need to
-special-case them.
+`hex(randomblob(3))` yields 6 lowercase-hex chars (`0-9a-f`), a subset of
+the runtime `0-9a-z` alphabet — backfilled slugs look like
+freshly-generated ones, so lookup code doesn't special-case them.
 
 **Migration down:** `<ts>_add_sticker_slug/down.sql`
 
@@ -105,8 +131,34 @@ ALTER TABLE stickers DROP COLUMN slug;
 
 (SQLite 3.35+ supports `DROP COLUMN`.)
 
-All three `up.sql` steps run in the migration runner's transaction.
-Partial failure rolls the whole thing back.
+All `up.sql` steps run in the migration runner's transaction. Partial
+failure rolls the whole thing back.
+
+### Migration test
+
+Add `test/migrations.test.ts`. Flow:
+
+1. Build a fresh in-memory SQLite via the existing test harness.
+2. Apply all migrations *up to but not including* the sticker-slug one.
+3. Insert several stickers with known names (`"Dino Sticker"`,
+   `"hello"`, `"!!!"`, `"🦖"`) — no slug column yet.
+4. Apply the sticker-slug migration. The backfill UPDATE runs as part
+   of that migration.
+5. Read each sticker back and assert the slug matches the expected
+   regex.
+
+Assertions:
+
+- `"Dino Sticker"` → matches `^dino-sticker-[0-9a-f]{6}$`
+- `"hello"` → matches `^hello-[0-9a-f]{6}$`
+- `"!!!"` → matches `^[0-9a-f]{6}$` (all-separator name → suffix only)
+- `"🦖"` → matches `^🦖-[0-9a-f]{6}$` (emoji preserved, suffix appended)
+- All slugs are unique
+- The unique index is present: a subsequent `INSERT` with a duplicate
+  slug fails
+
+This covers the SQL backfill end-to-end. The runtime `slugifyName` and
+`generateStickerSlug` get their own pure-function unit tests.
 
 The TypeScript schema in `app/data/schema.ts` gets:
 
@@ -215,19 +267,16 @@ Roadmap entry under "Recently shipped" once landed. Brief mention.
 
 ## Migration & Rollout
 
-1. Land the migration + backfill in a single PR. Existing dev DBs need
-   `npm run migrate` to pick up the new column.
-2. Prod gets the new column auto-applied on container boot via the
-   existing migration-on-boot setup.
+1. Land the migration + backfill SQL in a single PR. Existing dev DBs
+   pick up the change via `npm run migrate`.
+2. Prod gets the new column + backfill auto-applied on container boot
+   via the existing migration-on-boot setup. Single deploy, no operator
+   step.
 3. UUID-redirect path means any links shared before today keep working
    indefinitely. We can keep the redirect path forever — it's ~6 lines.
 
 ## Risks
 
-- **`remix/data-table` `.unique()` on a new column:** confirm whether
-  `.unique()` is honoured by the migration generator or only by the
-  query builder. If only the latter, we need the raw `CREATE UNIQUE
-  INDEX` in the migration SQL too (it's already there in this design).
 - **`form()` route param rename:** Remix 3's `form()` macro accepts both
   GET and POST. POST requests to `/sticker/<uuid>/edit` won't hit the
   redirect path (we only redirect on GET). If someone bookmarks the
@@ -236,20 +285,23 @@ Roadmap entry under "Recently shipped" once landed. Brief mention.
   they submit, so the form's POST always targets the slug URL. Worst
   case: a stale bookmark to the edit page 404s on submit, which the
   user can recover from by re-navigating. Acceptable.
-- **Migration backfill atomicity:** addressed by putting the
-  `ALTER TABLE`, the backfill `UPDATE`, and the `CREATE UNIQUE INDEX`
-  all in the same migration file. The migration runner runs each file
-  in a transaction; if anything fails the whole migration rolls back.
 - **`hex(randomblob(3))` collision for backfilled rows:** 16M values
   for ~dozens of pre-existing stickers means collision probability is
   negligible. If it happens, the unique index creation fails, the
   migration rolls back, and we re-run (different random output).
+- **Backfill SQL diverges from runtime slugify:** intentional and
+  documented above. The migration test pins the exact SQL behavior so
+  any future change is explicit.
 
 ## Verification
 
 After implementation:
 
-- `npm test` — all 36 existing tests pass, plus the 2 new ones
+- `npm test` — all 36 existing tests pass, plus new ones:
+  - `test/migrations.test.ts` (backfill SQL produces expected slugs)
+  - Pure-function unit tests for `slugifyName` and `generateStickerSlug`
+  - Smoke test: GET `/sticker/<uuid>` 301-redirects to slug URL
+  - Smoke test: GET `/sticker/<uuid>` returns 404 for nonexistent UUID
 - `npm run typecheck` — clean
 - Manual browser check:
   - Upload a new sticker, verify the URL is `/sticker/<name>-<6chars>`
