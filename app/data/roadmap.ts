@@ -88,6 +88,16 @@ const sourceTasks: Array<Omit<RoadmapTask, 'id'>> = [
 - [x] JSON API and admin actions keep UUID params (intentional)
 `),
   },
+  {
+    title: 'Sticker surfaces 🎒',
+    description: md(`
+- [x] New \`surfaces\` content type — photos of stickered real-world objects
+- [x] Profile pages show a user's surfaces below their stickers
+- [x] Randomized "Surface of the Day" on the home page (lazy-on-demand, UTC daily)
+- [x] Pick history persisted in \`surface_features\` (archive page comes later)
+- [x] JSON API endpoints + admin moderation
+`),
+  },
 
   // ---- Currently in focus ----
   {

@@ -5,7 +5,7 @@ const SUFFIX_LENGTH = 6
 const SLUG_PART_MAX = 40
 
 /**
- * Reduce a sticker name to a URL-safe slug fragment.
+ * Reduce a name to a URL-safe slug fragment.
  *
  * - Lowercases.
  * - Replaces any run of non-`[a-z0-9]` chars with a single hyphen.

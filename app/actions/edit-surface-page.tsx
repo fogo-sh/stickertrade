@@ -16,7 +16,7 @@ import type { HeaderUser } from '../ui/header.tsx'
 import { colors } from '../ui/theme.ts'
 
 export interface EditSurfacePageProps {
-  user: HeaderUser | null
+  user: HeaderUser
   surface: {
     id: string
     slug: string
