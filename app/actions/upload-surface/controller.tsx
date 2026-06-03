@@ -51,7 +51,7 @@ export default createController(routes.uploadSurface, {
       if (!user) return redirect(routes.login.index.href(), 303)
 
       const verified = await readVerifiedUploadFormData(context, {
-        maxFiles: MAX_GALLERY_FILES + 4, // account for non-file parts (_csrf, name, description)
+        maxFiles: MAX_GALLERY_FILES,
         maxTotalSize: MAX_TOTAL_BYTES,
       })
       if (!verified.success) {
