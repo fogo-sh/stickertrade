@@ -2,6 +2,7 @@ import { css } from 'remix/ui'
 
 import { routes } from '../routes.ts'
 import { Document } from '../ui/document.tsx'
+import { CsrfField } from '../ui/form.tsx'
 import type { HeaderUser } from '../ui/header.tsx'
 import { UserCard } from '../ui/user-card.tsx'
 import { colors } from '../ui/theme.ts'
@@ -16,10 +17,11 @@ export interface SurfacePageProps {
     image_url: string
     owner: { username: string; avatar_url: string | null }
   }
+  canEdit: boolean
 }
 
 export function SurfacePage() {
-  return ({ user, surface }: SurfacePageProps) => {
+  return ({ user, surface, canEdit }: SurfacePageProps) => {
     const description = surface.description ?? `A sticker surface by ${surface.owner.username}.`
     return (
       <Document
@@ -47,6 +49,26 @@ export function SurfacePage() {
           </div>
           {surface.description ? (
             <p mix={descriptionStyle}>{surface.description}</p>
+          ) : null}
+          {canEdit ? (
+            <div mix={actionsRowStyle}>
+              <a href={routes.editSurface.index.href({ slug: surface.slug })} mix={editLink}>
+                edit this surface
+              </a>
+              <form
+                method="post"
+                action={routes.removeSurface.action.href({
+                  username: surface.owner.username,
+                  surfaceId: surface.id,
+                })}
+                mix={css({ display: 'inline' })}
+              >
+                <CsrfField />
+                <button type="submit" mix={removeButtonStyle}>
+                  remove
+                </button>
+              </form>
+            </div>
           ) : null}
         </main>
       </Document>
@@ -89,4 +111,29 @@ const descriptionStyle = css({
   marginTop: '1.5rem',
   whiteSpace: 'pre-wrap',
   lineHeight: 1.5,
+})
+
+const actionsRowStyle = css({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '0.75rem',
+  marginTop: '1.25rem',
+})
+
+const editLink = css({
+  display: 'inline-block',
+  padding: '0.4rem 0.75rem',
+  border: `1px solid ${colors.light[500]}55`,
+  '&:hover': { borderColor: colors.primary[500], color: colors.primary[500] },
+})
+
+const removeButtonStyle = css({
+  padding: '0.4rem 0.75rem',
+  background: 'transparent',
+  color: colors.light[500],
+  border: `1px solid ${colors.light[500]}55`,
+  cursor: 'pointer',
+  font: 'inherit',
+  '&:hover': { borderColor: colors.primary[500], color: colors.primary[500] },
 })

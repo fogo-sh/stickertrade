@@ -197,9 +197,13 @@ export default createController(routes, {
       if (!surface) return notFound()
       const owner = await db.findOne(users, { where: { id: surface.owner_id } })
       if (!owner) return notFound() // shouldn't happen due to CASCADE FK
+      const currentUser = getCurrentUser(context)
+      const canEdit =
+        currentUser != null &&
+        (currentUser.id === surface.owner_id || currentUser.role === 'ADMIN')
       return context.render(
         <SurfacePage
-          user={getCurrentUser(context)}
+          user={currentUser}
           surface={{
             id: surface.id,
             slug: surface.slug,
@@ -208,6 +212,7 @@ export default createController(routes, {
             image_url: surface.image_url,
             owner: { username: owner.username, avatar_url: owner.avatar_url ?? null },
           }}
+          canEdit={canEdit}
         />,
       )
     },

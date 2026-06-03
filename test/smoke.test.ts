@@ -1164,4 +1164,112 @@ describe('surfaces', () => {
       env.cleanup()
     }
   })
+
+  it('lets the owner rename a surface and keeps the slug frozen', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'sf-renamer', 'sf-renamerpass')
+      const id = randomUUID()
+      const originalName = 'Old Name'
+      const slug = generateContentSlug(originalName)
+      await env.db.create(surfaces, {
+        id,
+        name: originalName,
+        slug,
+        image_url: '/images/banner.png',
+        owner_id: ownerId,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      })
+
+      const sessionCookie = await loginAs(env, 'sf-renamer', 'sf-renamerpass')
+      const { token, cookie } = await fetchCsrf(
+        env,
+        routes.editSurface.index.href({ slug }),
+        sessionCookie,
+      )
+      const body = new FormData()
+      body.set('_csrf', token)
+      body.set('name', 'New Shiny Name')
+      body.set('description', 'now with words')
+      const res = await postForm(env, routes.editSurface.action.href({ slug }), { cookie, body })
+      assert.equal(res.status, 303)
+      assert.equal(res.headers.get('location'), `/surface/${slug}`)
+
+      const updated = await env.db.findOne(surfaces, { where: { id } })
+      assert.ok(updated)
+      assert.equal(updated.name, 'New Shiny Name')
+      assert.equal(updated.description, 'now with words')
+      assert.equal(updated.slug, slug, 'slug should be frozen on rename')
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('refuses surface edits by non-owner non-admin users', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'sf-owner', 'sf-ownerpass')
+      await seedUser(env, 'sf-intruder', 'sf-intruderpass')
+      const id = randomUUID()
+      const slug = generateContentSlug('Guarded')
+      await env.db.create(surfaces, {
+        id,
+        name: 'Guarded',
+        slug,
+        image_url: '/images/banner.png',
+        owner_id: ownerId,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      })
+
+      const sessionCookie = await loginAs(env, 'sf-intruder', 'sf-intruderpass')
+      const res = await env.fetch(
+        new Request(buildUrl(routes.editSurface.index.href({ slug })), {
+          headers: { cookie: sessionCookie },
+        }),
+      )
+      assert.equal(res.status, 403)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('lets the owner remove a surface', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'sf-deleter', 'sf-deleterpass')
+      const id = randomUUID()
+      const slug = generateContentSlug('Goner')
+      await env.db.create(surfaces, {
+        id,
+        name: 'Goner',
+        slug,
+        image_url: '/images/banner.png',
+        owner_id: ownerId,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      })
+
+      const sessionCookie = await loginAs(env, 'sf-deleter', 'sf-deleterpass')
+      const { token, cookie } = await fetchCsrf(
+        env,
+        routes.surface.href({ slug }),
+        sessionCookie,
+      )
+      const body = new FormData()
+      body.set('_csrf', token)
+      const res = await postForm(
+        env,
+        routes.removeSurface.action.href({ username: 'sf-deleter', surfaceId: id }),
+        { cookie, body },
+      )
+      assert.equal(res.status, 303)
+
+      const remaining = await env.db.findOne(surfaces, { where: { id } })
+      assert.equal(remaining, null)
+    } finally {
+      env.cleanup()
+    }
+  })
 })

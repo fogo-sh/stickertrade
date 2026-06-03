@@ -20,10 +20,12 @@ export const routes = route({
 
   // Surface show page (slug, not UUID)
   surface: '/surface/:slug',
+  editSurface: form('/surface/:slug/edit'),
 
   // Profile page
   profile: '/profile/:username',
   removeSticker: form('/profile/:username/remove-sticker/:stickerId'),
+  removeSurface: form('/profile/:username/remove-surface/:surfaceId'),
 
   // Sticker upload (GET form, POST action)
   uploadSticker: form('/upload-sticker'),

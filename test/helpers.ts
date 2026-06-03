@@ -30,10 +30,12 @@ import apiController from '../app/actions/api/controller.tsx'
 import changePasswordController from '../app/actions/change-password/controller.tsx'
 import editProfileController from '../app/actions/edit-profile/controller.tsx'
 import editStickerController from '../app/actions/edit-sticker/controller.tsx'
+import editSurfaceController from '../app/actions/edit-surface/controller.tsx'
 import invitationsController from '../app/actions/invitations/controller.tsx'
 import invitationController from '../app/actions/invitation/controller.tsx'
 import loginController from '../app/actions/login/controller.tsx'
 import removeStickerController from '../app/actions/remove-sticker/controller.tsx'
+import removeSurfaceController from '../app/actions/remove-surface/controller.tsx'
 import uploadStickerController from '../app/actions/upload-sticker/controller.tsx'
 import uploadSurfaceController from '../app/actions/upload-surface/controller.tsx'
 import { render } from '../app/middleware/render.tsx'
@@ -136,8 +138,10 @@ export async function createTestEnv(options: CreateTestEnvOptions = {}): Promise
   router.map(routes.changePassword, changePasswordController as any)
   router.map(routes.editProfile, editProfileController as any)
   router.map(routes.editSticker, editStickerController as any)
+  router.map(routes.editSurface, editSurfaceController as any)
   router.map(routes.api, apiController as any)
   router.map(routes.removeSticker, removeStickerController as any)
+  router.map(routes.removeSurface, removeSurfaceController as any)
   router.map(routes.uploadSticker, uploadStickerController as any)
   router.map(routes.uploadSurface, uploadSurfaceController as any)
 
