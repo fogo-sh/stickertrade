@@ -172,4 +172,42 @@ describe('getSurfaceOfTheDay', () => {
       cleanup(env)
     }
   })
+
+  it('drops a stale feature row whose surface was deleted (FK-bypass case)', async () => {
+    const env = await makeEnv()
+    try {
+      const ownerId = await makeUser(env, 'stale')
+      const aId = await makeSurface(env, ownerId, 'GoneSurface')
+      const bId = await makeSurface(env, ownerId, 'StillHere')
+
+      const today = new Date().toISOString().slice(0, 10)
+      await env.db.create(surfaceFeatures, {
+        surface_id: aId,
+        featured_date: today,
+        created_at: Date.now(),
+      })
+
+      // Disable FK enforcement so we can leave the feature row orphaned.
+      env.sqlite.exec('PRAGMA foreign_keys = OFF')
+      env.sqlite.prepare('DELETE FROM surfaces WHERE id = ?').run(aId)
+      env.sqlite.exec('PRAGMA foreign_keys = ON')
+
+      // The feature row should still exist now (because we bypassed the cascade).
+      const orphan = await env.db.findOne(surfaceFeatures, { where: { featured_date: today } })
+      assert.ok(orphan, 'precondition: orphan feature row should exist')
+
+      // getSurfaceOfTheDay should detect the stale row, drop it, and re-roll
+      // to a surface that exists.
+      const result = await getSurfaceOfTheDay(env.db)
+      assert.ok(result)
+      assert.equal(result.id, bId)
+
+      // The stale row was dropped and replaced with a row pointing at bId.
+      const features = await env.db.findMany(surfaceFeatures, {})
+      assert.equal(features.length, 1)
+      assert.equal(features[0]!.surface_id, bId)
+    } finally {
+      cleanup(env)
+    }
+  })
 })
