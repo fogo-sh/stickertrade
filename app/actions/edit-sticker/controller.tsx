@@ -7,6 +7,7 @@ import { createController } from 'remix/router'
 
 import { getCurrentUser } from '../../data/current-user.ts'
 import { stickers } from '../../data/schema.ts'
+import { looksLikeUuid } from '../../data/slug.ts'
 import { processStickerUpload } from '../../data/upload-image.ts'
 import { uploadStorage } from '../../data/uploads.ts'
 import {
@@ -28,8 +29,6 @@ const editStickerSchema = f.object({
   name: f.field(stickerNameSchema),
   image: f.file(optionalImage),
 })
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 function notFound() {
   return new Response('Not Found', { status: 404 })
@@ -53,7 +52,7 @@ export default createController(routes.editSticker, {
 
       const db = context.get(Database)
       const param = context.params.slug
-      if (UUID_REGEX.test(param)) {
+      if (looksLikeUuid(param)) {
         const byId = await db.findOne(stickers, { where: { id: param } })
         if (!byId) return notFound()
         return redirect(routes.editSticker.index.href({ slug: byId.slug }), 301)

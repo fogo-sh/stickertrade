@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { generateStickerSlug, slugifyName } from '../app/data/slug.ts'
+import { generateStickerSlug, looksLikeUuid, slugifyName } from '../app/data/slug.ts'
 
 describe('slugifyName', () => {
   it('lowercases and hyphenates spaces', () => {
@@ -47,5 +47,25 @@ describe('generateStickerSlug', () => {
     const a = generateStickerSlug('test')
     const b = generateStickerSlug('test')
     assert.notEqual(a, b)
+  })
+})
+
+describe('looksLikeUuid', () => {
+  it('returns true for canonical lowercase UUIDs', () => {
+    assert.equal(looksLikeUuid('5a2077e8-ef49-446b-aa27-dca99e15a9b4'), true)
+  })
+
+  it('returns true for uppercase UUIDs', () => {
+    assert.equal(looksLikeUuid('5A2077E8-EF49-446B-AA27-DCA99E15A9B4'), true)
+  })
+
+  it('returns false for sticker slugs', () => {
+    assert.equal(looksLikeUuid('dino-sticker-k3p9aq'), false)
+    assert.equal(looksLikeUuid('a3f9b1'), false)
+  })
+
+  it('returns false for empty / partial strings', () => {
+    assert.equal(looksLikeUuid(''), false)
+    assert.equal(looksLikeUuid('5a2077e8-ef49-446b-aa27'), false)
   })
 })

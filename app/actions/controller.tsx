@@ -12,6 +12,7 @@ import { buildDevLogsFeed } from '../data/dev-logs-feed.ts'
 import { getDevLog, getDevLogs } from '../data/dev-logs.ts'
 import { roadmapTasks } from '../data/roadmap.ts'
 import { apiTokens, stickers, users } from '../data/schema.ts'
+import { looksLikeUuid } from '../data/slug.ts'
 import { uploadStorage } from '../data/uploads.ts'
 import { tokenNameSchema } from '../data/validators.ts'
 import { routes } from '../routes.ts'
@@ -24,8 +25,6 @@ import { RoadmapPage } from './roadmap-page.tsx'
 import { StickerPage } from './sticker-page.tsx'
 import { StickersPage } from './stickers-page.tsx'
 import { UsersPage } from './users-page.tsx'
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 function notFound(): Response {
   return new Response('Not Found', { status: 404 })
@@ -154,7 +153,7 @@ export default createController(routes, {
       const param = context.params.slug
 
       // Backwards compatibility: old UUID URLs 301-redirect to the slug URL.
-      if (UUID_REGEX.test(param)) {
+      if (looksLikeUuid(param)) {
         const byId = await db.findOne(stickers, { where: { id: param } })
         if (!byId) return notFound()
         return redirect(routes.sticker.href({ slug: byId.slug }), 301)

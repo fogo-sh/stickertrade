@@ -33,6 +33,17 @@ export function generateStickerSlug(name: string): string {
   return slugPart === '' ? suffix : `${slugPart}-${suffix}`
 }
 
+/**
+ * True if the input string looks like a v4-ish UUID (8-4-4-4-12 lowercase
+ * hex). Used by the sticker show/edit handlers to detect old UUID URLs
+ * and 301-redirect them to the slug URL.
+ */
+export function looksLikeUuid(value: string): boolean {
+  return UUID_REGEX.test(value)
+}
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 function randomSuffix(): string {
   // randomBytes(SUFFIX_LENGTH) gives us SUFFIX_LENGTH bytes of entropy;
   // we use each byte mod 36 to pick from the alphabet. The tiny bias
