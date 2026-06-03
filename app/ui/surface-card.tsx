@@ -18,13 +18,19 @@ export interface SurfaceCardSurface {
 export interface SurfaceCardProps {
   surface: SurfaceCardSurface
   showOwner?: boolean
+  /**
+   * Compact mode caps the image at ~22rem tall and uses `object-fit: cover`
+   * so featured-in-a-list contexts (Surface of the Day on home) don't
+   * dominate the viewport with portrait or square photos.
+   */
+  compact?: boolean
 }
 
 const PREVIEW_LIMIT = 120
 
 export function SurfaceCard(handle: Handle<SurfaceCardProps>) {
   return () => {
-    const { surface, showOwner = true } = handle.props
+    const { surface, showOwner = true, compact = false } = handle.props
     const preview =
       surface.description && surface.description.length > PREVIEW_LIMIT
         ? surface.description.slice(0, PREVIEW_LIMIT) + '…'
@@ -32,7 +38,11 @@ export function SurfaceCard(handle: Handle<SurfaceCardProps>) {
     return (
       <a href={routes.surface.href({ slug: surface.slug })} mix={cardStyle}>
         <div mix={imageWrapStyle}>
-          <img src={surface.image_url} alt={surface.name} mix={imageStyle} />
+          <img
+            src={surface.image_url}
+            alt={surface.name}
+            mix={compact ? compactImageStyle : imageStyle}
+          />
         </div>
         <p mix={nameStyle}>{surface.name}</p>
         {showOwner ? (
@@ -106,6 +116,13 @@ const imageWrapStyle = css({
 const imageStyle = css({
   width: '100%',
   height: 'auto',
+  display: 'block',
+})
+
+const compactImageStyle = css({
+  width: '100%',
+  maxHeight: '22rem',
+  objectFit: 'cover',
   display: 'block',
 })
 

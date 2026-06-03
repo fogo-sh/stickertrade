@@ -50,6 +50,17 @@ export function ProfilePage() {
             />
             <h1 mix={css({ fontSize: '1.5rem' })}>{profile.username}</h1>
           </div>
+          {isOwner || profile.surfaces.length > 0 ? (
+            <section mix={surfacesSectionStyle}>
+              <p mix={sectionHeading}>
+                surfaces{profile.surfaces.length > 0 ? ` (${profile.surfaces.length})` : ''}
+              </p>
+              {profile.surfaces.map((s) => (
+                <SurfaceCard key={s.id} surface={s} showOwner={false} />
+              ))}
+              {isOwner ? <UploadSurfaceCard /> : null}
+            </section>
+          ) : null}
           <p mix={sectionHeading}>stickers</p>
           {profile.stickers.length === 0 && !isOwner ? (
             <p mix={css({ fontStyle: 'italic', marginBottom: '0.75rem' })}>no stickers</p>
@@ -86,17 +97,6 @@ export function ProfilePage() {
               </div>
             ))}
           </div>
-          {isOwner || profile.surfaces.length > 0 ? (
-            <section mix={surfacesSectionStyle}>
-              <p mix={sectionHeading}>
-                surfaces{profile.surfaces.length > 0 ? ` (${profile.surfaces.length})` : ''}
-              </p>
-              {profile.surfaces.map((s) => (
-                <SurfaceCard key={s.id} surface={s} showOwner={false} />
-              ))}
-              {isOwner ? <UploadSurfaceCard /> : null}
-            </section>
-          ) : null}
         </main>
       </Document>
     )
@@ -130,7 +130,7 @@ const gridStyle = css({
   gap: '1.5rem',
 })
 
-const surfacesSectionStyle = css({ marginTop: '2rem', maxWidth: '600px' })
+const surfacesSectionStyle = css({ maxWidth: '600px' })
 
 const overlayStyle = css({
   position: 'absolute',

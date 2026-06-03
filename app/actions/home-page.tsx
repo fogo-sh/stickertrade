@@ -29,7 +29,7 @@ export function HomePage() {
         {surfaceOfTheDay ? (
           <section mix={sotdSectionStyle}>
             <h2 mix={sotdHeadingStyle}>Surface of the Day</h2>
-            <SurfaceCard surface={surfaceOfTheDay} />
+            <SurfaceCard surface={surfaceOfTheDay} compact />
             <div mix={seeAllStyle}>
               <a href={routes.surfaces.href()} mix={seeAllLinkStyle}>
                 see all surfaces →
