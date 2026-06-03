@@ -15,6 +15,7 @@ import invitationController from './actions/invitation/controller.tsx'
 import loginController from './actions/login/controller.tsx'
 import removeStickerController from './actions/remove-sticker/controller.tsx'
 import uploadStickerController from './actions/upload-sticker/controller.tsx'
+import uploadSurfaceController from './actions/upload-surface/controller.tsx'
 import { appSession, loadAuth } from './data/auth.ts'
 import { loadDatabase } from './middleware/database.ts'
 import { formDataExceptUploads } from './middleware/form-data.ts'
@@ -81,3 +82,4 @@ router.map(routes.editSticker, editStickerController)
 router.map(routes.api, apiController)
 router.map(routes.removeSticker, removeStickerController)
 router.map(routes.uploadSticker, uploadStickerController)
+router.map(routes.uploadSurface, uploadSurfaceController)

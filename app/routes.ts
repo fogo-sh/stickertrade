@@ -11,11 +11,15 @@ export const routes = route({
   brand: '/brand',
   roadmap: '/roadmap',
   stickers: '/stickers',
+  surfaces: '/surfaces',
   users: '/users',
 
   // Sticker show page (slug, not UUID)
   sticker: '/sticker/:slug',
   editSticker: form('/sticker/:slug/edit'),
+
+  // Surface show page (slug, not UUID)
+  surface: '/surface/:slug',
 
   // Profile page
   profile: '/profile/:username',
@@ -23,6 +27,9 @@ export const routes = route({
 
   // Sticker upload (GET form, POST action)
   uploadSticker: form('/upload-sticker'),
+
+  // Surface upload (GET form, POST action)
+  uploadSurface: form('/upload-surface'),
 
   // Auth + account
   login: form('/login'),

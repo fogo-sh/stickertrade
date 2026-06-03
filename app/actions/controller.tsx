@@ -11,7 +11,7 @@ import { getCurrentUser } from '../data/current-user.ts'
 import { buildDevLogsFeed } from '../data/dev-logs-feed.ts'
 import { getDevLog, getDevLogs } from '../data/dev-logs.ts'
 import { roadmapTasks } from '../data/roadmap.ts'
-import { apiTokens, stickers, users } from '../data/schema.ts'
+import { apiTokens, stickers, surfaces, users } from '../data/schema.ts'
 import { looksLikeUuid } from '../data/slug.ts'
 import { uploadStorage } from '../data/uploads.ts'
 import { tokenNameSchema } from '../data/validators.ts'
@@ -24,6 +24,8 @@ import { ProfilePage } from './profile-page.tsx'
 import { RoadmapPage } from './roadmap-page.tsx'
 import { StickerPage } from './sticker-page.tsx'
 import { StickersPage } from './stickers-page.tsx'
+import { SurfacePage } from './surface-page.tsx'
+import { SurfacesPage } from './surfaces-page.tsx'
 import { UsersPage } from './users-page.tsx'
 
 function notFound(): Response {
@@ -143,6 +145,69 @@ export default createController(routes, {
         <UsersPage
           user={getCurrentUser(context)}
           users={rows.map((u) => ({ username: u.username, avatar_url: u.avatar_url ?? null }))}
+        />,
+      )
+    },
+
+    // -------- Surfaces index --------
+    async surfaces(context) {
+      const db = context.get(Database)
+      const rows = await db.findMany(surfaces, {
+        orderBy: ['created_at', 'desc'],
+        limit: 50,
+      })
+      const ownerIds = Array.from(new Set(rows.map((s) => s.owner_id)))
+      const ownerRows = ownerIds.length
+        ? await db.findMany(users, { where: inList('id', ownerIds) })
+        : []
+      const ownerById = new Map(ownerRows.map((u) => [u.id, u]))
+      return context.render(
+        <SurfacesPage
+          user={getCurrentUser(context)}
+          surfaces={rows.map((s) => {
+            const owner = ownerById.get(s.owner_id)
+            return {
+              id: s.id,
+              slug: s.slug,
+              name: s.name,
+              description: s.description,
+              image_url: s.image_url,
+              owner: owner
+                ? { username: owner.username, avatar_url: owner.avatar_url ?? null }
+                : { username: 'unknown', avatar_url: null },
+            }
+          })}
+        />,
+      )
+    },
+
+    // -------- Surface show --------
+    async surface(context) {
+      const db = context.get(Database)
+      const param = context.params.slug
+
+      // Backwards compatibility: UUID URLs 301-redirect to the slug URL.
+      if (looksLikeUuid(param)) {
+        const byId = await db.findOne(surfaces, { where: { id: param } })
+        if (!byId) return notFound()
+        return redirect(`/surface/${encodeURIComponent(byId.slug)}`, 301)
+      }
+
+      const surface = await db.findOne(surfaces, { where: { slug: param } })
+      if (!surface) return notFound()
+      const owner = await db.findOne(users, { where: { id: surface.owner_id } })
+      if (!owner) return notFound() // shouldn't happen due to CASCADE FK
+      return context.render(
+        <SurfacePage
+          user={getCurrentUser(context)}
+          surface={{
+            id: surface.id,
+            slug: surface.slug,
+            name: surface.name,
+            description: surface.description,
+            image_url: surface.image_url,
+            owner: { username: owner.username, avatar_url: owner.avatar_url ?? null },
+          }}
         />,
       )
     },

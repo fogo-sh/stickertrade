@@ -35,6 +35,7 @@ import invitationController from '../app/actions/invitation/controller.tsx'
 import loginController from '../app/actions/login/controller.tsx'
 import removeStickerController from '../app/actions/remove-sticker/controller.tsx'
 import uploadStickerController from '../app/actions/upload-sticker/controller.tsx'
+import uploadSurfaceController from '../app/actions/upload-surface/controller.tsx'
 import { render } from '../app/middleware/render.tsx'
 import { routes } from '../app/routes.ts'
 import { users, type User } from '../app/data/schema.ts'
@@ -138,6 +139,7 @@ export async function createTestEnv(options: CreateTestEnvOptions = {}): Promise
   router.map(routes.api, apiController as any)
   router.map(routes.removeSticker, removeStickerController as any)
   router.map(routes.uploadSticker, uploadStickerController as any)
+  router.map(routes.uploadSurface, uploadSurfaceController as any)
 
   return {
     fetch: (request: Request) => router.fetch(request),
