@@ -1,5 +1,6 @@
 import { css } from 'remix/ui'
 
+import { CopyButton } from '../../assets/copy-button.tsx'
 import { routes } from '../../routes.ts'
 import { Document } from '../../ui/document.tsx'
 import { CsrfField } from '../../ui/form.tsx'
@@ -42,6 +43,7 @@ export function InvitationsPage() {
               inv.to === null ? (
                 <div key={inv.id} mix={pendingRowStyle}>
                   <input value={inv.url} readOnly mix={urlInputStyle} />
+                  <CopyButton value={inv.url} />
                   <form
                     method="post"
                     action={routes.invitations.destroy.href({ id: inv.id })}
