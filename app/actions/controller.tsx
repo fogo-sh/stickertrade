@@ -25,6 +25,8 @@ import { StickerPage } from './sticker-page.tsx'
 import { StickersPage } from './stickers-page.tsx'
 import { UsersPage } from './users-page.tsx'
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 function notFound(): Response {
   return new Response('Not Found', { status: 404 })
 }
@@ -73,6 +75,7 @@ export default createController(routes, {
           user={user}
           stickers={stickerRows.map((s) => ({
             id: s.id,
+            slug: s.slug,
             name: s.name,
             image_url: s.image_url,
             owner: s.owner_id
@@ -118,6 +121,7 @@ export default createController(routes, {
           user={getCurrentUser(context)}
           stickers={rows.map((s) => ({
             id: s.id,
+            slug: s.slug,
             name: s.name,
             image_url: s.image_url,
             owner: s.owner_id
@@ -147,7 +151,16 @@ export default createController(routes, {
     // -------- Sticker show --------
     async sticker(context) {
       const db = context.get(Database)
-      const sticker = await db.findOne(stickers, { where: { id: context.params.id } })
+      const param = context.params.slug
+
+      // Backwards compatibility: old UUID URLs 301-redirect to the slug URL.
+      if (UUID_REGEX.test(param)) {
+        const byId = await db.findOne(stickers, { where: { id: param } })
+        if (!byId) return notFound()
+        return redirect(routes.sticker.href({ slug: byId.slug }), 301)
+      }
+
+      const sticker = await db.findOne(stickers, { where: { slug: param } })
       if (!sticker) return notFound()
       let owner: { username: string; avatar_url: string | null } | null = null
       if (sticker.owner_id) {
@@ -159,6 +172,7 @@ export default createController(routes, {
           user={getCurrentUser(context)}
           sticker={{
             id: sticker.id,
+            slug: sticker.slug,
             name: sticker.name,
             image_url: sticker.image_url,
             owner,
@@ -186,6 +200,7 @@ export default createController(routes, {
             avatar_url: profileUser.avatar_url ?? null,
             stickers: profileStickers.map((s) => ({
               id: s.id,
+              slug: s.slug,
               name: s.name,
               image_url: s.image_url,
             })),

@@ -8,6 +8,7 @@ import { createController } from 'remix/router'
 
 import { getCurrentUser } from '../../data/current-user.ts'
 import { stickers } from '../../data/schema.ts'
+import { generateStickerSlug } from '../../data/slug.ts'
 import { processStickerUpload } from '../../data/upload-image.ts'
 import {
   issuesToFieldErrors,
@@ -76,16 +77,18 @@ export default createController(routes.uploadSticker, {
       const db = context.get(Database)
       const now = Date.now()
       const id = randomUUID()
+      const slug = generateStickerSlug(name)
       await db.create(stickers, {
         id,
         name,
+        slug,
         image_url: storedImageUrl,
         owner_id: user.id,
         created_at: now,
         updated_at: now,
       })
 
-      return redirect(routes.sticker.href({ id }), 303)
+      return redirect(routes.sticker.href({ slug }), 303)
     },
   },
 })

@@ -101,6 +101,7 @@ export default createController(routes.admin, {
             const owner = s.owner_id ? ownerById.get(s.owner_id) ?? null : null
             return {
               id: s.id,
+              slug: s.slug,
               name: s.name,
               image_url: s.image_url,
               owner: owner ? { username: owner.username, avatar_url: owner.avatar_url ?? null } : null,

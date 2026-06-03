@@ -29,6 +29,8 @@ const editStickerSchema = f.object({
   image: f.file(optionalImage),
 })
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 function notFound() {
   return new Response('Not Found', { status: 404 })
 }
@@ -50,7 +52,13 @@ export default createController(routes.editSticker, {
       if (!user) return redirect(routes.login.index.href(), 303)
 
       const db = context.get(Database)
-      const sticker = await db.findOne(stickers, { where: { id: context.params.id } })
+      const param = context.params.slug
+      if (UUID_REGEX.test(param)) {
+        const byId = await db.findOne(stickers, { where: { id: param } })
+        if (!byId) return notFound()
+        return redirect(routes.editSticker.index.href({ slug: byId.slug }), 301)
+      }
+      const sticker = await db.findOne(stickers, { where: { slug: param } })
       if (!sticker) return notFound()
       if (sticker.owner_id !== user.id && user.role !== 'ADMIN') {
         return new Response('Forbidden', { status: 403 })
@@ -63,7 +71,12 @@ export default createController(routes.editSticker, {
       return context.render(
         <EditStickerPage
           user={user}
-          sticker={{ id: sticker.id, name: sticker.name, image_url: sticker.image_url }}
+          sticker={{
+            id: sticker.id,
+            slug: sticker.slug,
+            name: sticker.name,
+            image_url: sticker.image_url,
+          }}
           flash={flash}
         />,
       )
@@ -74,7 +87,9 @@ export default createController(routes.editSticker, {
       if (!user) return redirect(routes.login.index.href(), 303)
 
       const db = context.get(Database)
-      const sticker = await db.findOne(stickers, { where: { id: context.params.id } })
+      // POST: look up by slug only. A POST to /sticker/<uuid>/edit is a
+      // stale form submission -- return 404 so the user re-navigates.
+      const sticker = await db.findOne(stickers, { where: { slug: context.params.slug } })
       if (!sticker) return notFound()
       if (sticker.owner_id !== user.id && user.role !== 'ADMIN') {
         return new Response('Forbidden', { status: 403 })
@@ -95,7 +110,12 @@ export default createController(routes.editSticker, {
           return context.render(
             <EditStickerPage
               user={user}
-              sticker={{ id: sticker.id, name: sticker.name, image_url: sticker.image_url }}
+              sticker={{
+                id: sticker.id,
+                slug: sticker.slug,
+                name: sticker.name,
+                image_url: sticker.image_url,
+              }}
               errors={{ image: verified.error.message }}
             />,
             { status: verified.error.status },
@@ -114,6 +134,7 @@ export default createController(routes.editSticker, {
             user={user}
             sticker={{
               id: sticker.id,
+              slug: sticker.slug,
               name: String(formData.get('name') ?? ''),
               image_url: sticker.image_url,
             }}
@@ -138,7 +159,12 @@ export default createController(routes.editSticker, {
           return context.render(
             <EditStickerPage
               user={user}
-              sticker={{ id: sticker.id, name, image_url: sticker.image_url }}
+              sticker={{
+                id: sticker.id,
+                slug: sticker.slug,
+                name,
+                image_url: sticker.image_url,
+              }}
               errors={{ image: message }}
             />,
             { status: 400 },
@@ -156,7 +182,7 @@ export default createController(routes.editSticker, {
 
       const session = context.get(Session)
       session.flash('sticker_flash', 'Sticker updated.')
-      return redirect(routes.sticker.href({ id: sticker.id }), 303)
+      return redirect(routes.sticker.href({ slug: sticker.slug }), 303)
     },
   },
 })

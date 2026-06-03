@@ -12,7 +12,7 @@ export interface ProfilePageProps {
   profile: {
     username: string
     avatar_url: string | null
-    stickers: { id: string; name: string; image_url: string }[]
+    stickers: { id: string; slug: string; name: string; image_url: string }[]
   }
 }
 
@@ -55,7 +55,7 @@ export function ProfilePage() {
                 {isOwner ? (
                   <div mix={overlayStyle}>
                     <a
-                      href={routes.editSticker.index.href({ id: sticker.id })}
+                      href={routes.editSticker.index.href({ slug: sticker.slug })}
                       mix={editBtnStyle}
                       aria-label="edit sticker"
                     >

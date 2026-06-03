@@ -8,6 +8,7 @@ import { colors } from '../../ui/theme.ts'
 
 export interface AdminStickerRow {
   id: string
+  slug: string
   name: string
   image_url: string
   owner: { username: string; avatar_url: string | null } | null
@@ -60,12 +61,12 @@ export function AdminStickersPage() {
             {stickers.map((s) => (
               <tr key={s.id}>
                 <td mix={cellStyle}>
-                  <a href={routes.sticker.href({ id: s.id })}>
+                  <a href={routes.sticker.href({ slug: s.slug })}>
                     <img src={s.image_url} alt={s.name} mix={previewStyle} />
                   </a>
                 </td>
                 <td mix={cellStyle}>
-                  <a href={routes.sticker.href({ id: s.id })} mix={css({ '&:hover': { textDecoration: 'underline' } })}>
+                  <a href={routes.sticker.href({ slug: s.slug })} mix={css({ '&:hover': { textDecoration: 'underline' } })}>
                     {s.name}
                   </a>
                 </td>

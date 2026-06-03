@@ -15,7 +15,7 @@ import { colors } from '../ui/theme.ts'
 
 export interface EditStickerPageProps {
   user: HeaderUser
-  sticker: { id: string; name: string; image_url: string }
+  sticker: { id: string; slug: string; name: string; image_url: string }
   errors?: Record<string, string>
   flash?: string
 }
@@ -36,7 +36,7 @@ export function EditStickerPage() {
 
         <form
           method="post"
-          action={routes.editSticker.action.href({ id: sticker.id })}
+          action={routes.editSticker.action.href({ slug: sticker.slug })}
           encType="multipart/form-data"
         >
           <CsrfField />
@@ -48,7 +48,7 @@ export function EditStickerPage() {
           {errors._form ? <p mix={errorStyle}>{errors._form}</p> : null}
           <div mix={css({ display: 'flex', gap: '0.5rem', alignItems: 'center' })}>
             <SubmitButton label="save changes" />
-            <a href={routes.sticker.href({ id: sticker.id })} mix={cancelLinkStyle}>
+            <a href={routes.sticker.href({ slug: sticker.slug })} mix={cancelLinkStyle}>
               cancel
             </a>
           </div>
