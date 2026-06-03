@@ -14,6 +14,7 @@ import {
   loginAs,
   postForm,
   postMultipart,
+  seedSurface,
 } from './helpers.ts'
 
 async function seedUser(
@@ -1107,17 +1108,10 @@ describe('surfaces', () => {
     const env = await createTestEnv()
     try {
       const ownerId = await seedUser(env, 'sf-shower', 'sf-showerpass')
-      const id = randomUUID()
-      const slug = generateContentSlug('My Fridge')
-      await env.db.create(surfaces, {
-        id,
+      const { slug } = await seedSurface(env, {
+        ownerId,
         name: 'My Fridge',
-        slug,
         description: 'lots of magnets and stickers',
-        image_url: '/images/banner.png',
-        owner_id: ownerId,
-        created_at: Date.now(),
-        updated_at: Date.now(),
       })
 
       const res = await env.fetch(new Request(buildUrl(routes.surface.href({ slug }))))
@@ -1134,17 +1128,7 @@ describe('surfaces', () => {
     const env = await createTestEnv()
     try {
       const ownerId = await seedUser(env, 'sf-rd', 'sf-rdpass')
-      const id = randomUUID()
-      const slug = generateContentSlug('Vintage Surface')
-      await env.db.create(surfaces, {
-        id,
-        name: 'Vintage Surface',
-        slug,
-        image_url: '/images/banner.png',
-        owner_id: ownerId,
-        created_at: Date.now(),
-        updated_at: Date.now(),
-      })
+      const { id, slug } = await seedSurface(env, { ownerId, name: 'Vintage Surface' })
 
       const res = await env.fetch(new Request(buildUrl(`/surface/${id}`)))
       assert.equal(res.status, 301)
@@ -1169,18 +1153,7 @@ describe('surfaces', () => {
     const env = await createTestEnv()
     try {
       const ownerId = await seedUser(env, 'sf-renamer', 'sf-renamerpass')
-      const id = randomUUID()
-      const originalName = 'Old Name'
-      const slug = generateContentSlug(originalName)
-      await env.db.create(surfaces, {
-        id,
-        name: originalName,
-        slug,
-        image_url: '/images/banner.png',
-        owner_id: ownerId,
-        created_at: Date.now(),
-        updated_at: Date.now(),
-      })
+      const { id, slug } = await seedSurface(env, { ownerId, name: 'Old Name' })
 
       const sessionCookie = await loginAs(env, 'sf-renamer', 'sf-renamerpass')
       const { token, cookie } = await fetchCsrf(
@@ -1211,17 +1184,7 @@ describe('surfaces', () => {
     try {
       const ownerId = await seedUser(env, 'sf-owner', 'sf-ownerpass')
       await seedUser(env, 'sf-intruder', 'sf-intruderpass')
-      const id = randomUUID()
-      const slug = generateContentSlug('Guarded')
-      await env.db.create(surfaces, {
-        id,
-        name: 'Guarded',
-        slug,
-        image_url: '/images/banner.png',
-        owner_id: ownerId,
-        created_at: Date.now(),
-        updated_at: Date.now(),
-      })
+      const { slug } = await seedSurface(env, { ownerId, name: 'Guarded' })
 
       const sessionCookie = await loginAs(env, 'sf-intruder', 'sf-intruderpass')
       const res = await env.fetch(
@@ -1239,17 +1202,7 @@ describe('surfaces', () => {
     const env = await createTestEnv()
     try {
       const ownerId = await seedUser(env, 'sf-deleter', 'sf-deleterpass')
-      const id = randomUUID()
-      const slug = generateContentSlug('Goner')
-      await env.db.create(surfaces, {
-        id,
-        name: 'Goner',
-        slug,
-        image_url: '/images/banner.png',
-        owner_id: ownerId,
-        created_at: Date.now(),
-        updated_at: Date.now(),
-      })
+      const { id, slug } = await seedSurface(env, { ownerId, name: 'Goner' })
 
       const sessionCookie = await loginAs(env, 'sf-deleter', 'sf-deleterpass')
       const { token, cookie } = await fetchCsrf(
@@ -1277,16 +1230,10 @@ describe('surfaces', () => {
     const env = await createTestEnv()
     try {
       const ownerId = await seedUser(env, 'sf-profile', 'sf-profilepass')
-      const slug = generateContentSlug('On Profile')
-      await env.db.create(surfaces, {
-        id: randomUUID(),
+      await seedSurface(env, {
+        ownerId,
         name: 'On Profile',
-        slug,
         description: 'visible on profile',
-        image_url: '/images/banner.png',
-        owner_id: ownerId,
-        created_at: Date.now(),
-        updated_at: Date.now(),
       })
 
       const res = await env.fetch(
@@ -1343,16 +1290,7 @@ describe('surfaces', () => {
     const env = await createTestEnv()
     try {
       const ownerId = await seedUser(env, 'sf-sotd', 'sf-sotdpass')
-      const slug = generateContentSlug('Daily Pick')
-      await env.db.create(surfaces, {
-        id: randomUUID(),
-        name: 'Daily Pick',
-        slug,
-        image_url: '/images/banner.png',
-        owner_id: ownerId,
-        created_at: Date.now(),
-        updated_at: Date.now(),
-      })
+      await seedSurface(env, { ownerId, name: 'Daily Pick' })
 
       const res = await env.fetch(new Request(buildUrl('/')))
       assert.equal(res.status, 200)
@@ -1380,15 +1318,7 @@ describe('surfaces', () => {
     const env = await createTestEnv()
     try {
       const ownerId = await seedUser(env, 'sf-api-list', 'sf-api-listpass')
-      await env.db.create(surfaces, {
-        id: randomUUID(),
-        name: 'api listed',
-        slug: generateContentSlug('api listed'),
-        image_url: '/images/banner.png',
-        owner_id: ownerId,
-        created_at: Date.now(),
-        updated_at: Date.now(),
-      })
+      await seedSurface(env, { ownerId, name: 'api listed' })
 
       const res = await env.fetch(new Request(buildUrl(routes.api.surfacesIndex.href())))
       assert.equal(res.status, 200)
@@ -1407,15 +1337,7 @@ describe('surfaces', () => {
     const env = await createTestEnv()
     try {
       const ownerId = await seedUser(env, 'sf-api-user', 'sf-api-userpass')
-      await env.db.create(surfaces, {
-        id: randomUUID(),
-        name: 'belongs to user',
-        slug: generateContentSlug('belongs to user'),
-        image_url: '/images/banner.png',
-        owner_id: ownerId,
-        created_at: Date.now(),
-        updated_at: Date.now(),
-      })
+      await seedSurface(env, { ownerId, name: 'belongs to user' })
 
       const res = await env.fetch(
         new Request(buildUrl(routes.api.userSurfaces.href({ username: 'sf-api-user' }))),
@@ -1440,16 +1362,7 @@ describe('surfaces', () => {
       const { createTokenForUser } = await import('../app/data/api-tokens.ts')
       const { plaintext } = await createTokenForUser(env.db, { id: intruderId }, 'tok')
 
-      const id = randomUUID()
-      await env.db.create(surfaces, {
-        id,
-        name: 'hands off',
-        slug: generateContentSlug('hands off'),
-        image_url: '/images/banner.png',
-        owner_id: ownerId,
-        created_at: Date.now(),
-        updated_at: Date.now(),
-      })
+      const { id } = await seedSurface(env, { ownerId, name: 'hands off' })
 
       const res = await env.fetch(
         new Request(buildUrl(routes.api.surfaceUpdate.href({ id })), {
@@ -1471,16 +1384,7 @@ describe('surfaces', () => {
     const env = await createTestEnv()
     try {
       const ownerId = await seedUser(env, 'sf-patcher', 'sf-patcherpass')
-      const id = randomUUID()
-      await env.db.create(surfaces, {
-        id,
-        name: 'Patchable',
-        slug: generateContentSlug('Patchable'),
-        image_url: '/images/banner.png',
-        owner_id: ownerId,
-        created_at: Date.now(),
-        updated_at: Date.now(),
-      })
+      const { id } = await seedSurface(env, { ownerId, name: 'Patchable' })
 
       // Mint a bearer token for the owner via the same pattern other API tests use.
       const ownerRow = await env.db.findOne(users, { where: { id: ownerId } })
@@ -1542,16 +1446,7 @@ describe('surfaces', () => {
       const ownerId = await seedUser(env, 'sf-victim', 'sf-victimpass')
       await seedUser(env, 'sf-admin', 'sf-adminpass', UserRoles.Admin)
 
-      const id = randomUUID()
-      await env.db.create(surfaces, {
-        id,
-        name: 'To Be Deleted',
-        slug: generateContentSlug('To Be Deleted'),
-        image_url: '/images/banner.png',
-        owner_id: ownerId,
-        created_at: Date.now(),
-        updated_at: Date.now(),
-      })
+      const { id } = await seedSurface(env, { ownerId, name: 'To Be Deleted' })
 
       const sessionCookie = await loginAs(env, 'sf-admin', 'sf-adminpass')
       const { token, cookie } = await fetchCsrf(env, routes.admin.surfaces.href(), sessionCookie)
@@ -1622,16 +1517,7 @@ describe('surfaces', () => {
     const env = await createTestEnv()
     try {
       const ownerId = await seedUser(env, 'sf-killer', 'sf-killerpass')
-      const id = randomUUID()
-      await env.db.create(surfaces, {
-        id,
-        name: 'Doomed',
-        slug: generateContentSlug('Doomed'),
-        image_url: '/images/banner.png',
-        owner_id: ownerId,
-        created_at: Date.now(),
-        updated_at: Date.now(),
-      })
+      const { id } = await seedSurface(env, { ownerId, name: 'Doomed' })
 
       const ownerRow = await env.db.findOne(users, { where: { id: ownerId } })
       assert.ok(ownerRow)

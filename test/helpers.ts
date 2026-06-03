@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -40,7 +41,8 @@ import uploadStickerController from '../app/actions/upload-sticker/controller.ts
 import uploadSurfaceController from '../app/actions/upload-surface/controller.tsx'
 import { render } from '../app/middleware/render.tsx'
 import { routes } from '../app/routes.ts'
-import { users, type User } from '../app/data/schema.ts'
+import { surfaceImages, surfaces, users, type User } from '../app/data/schema.ts'
+import { generateContentSlug } from '../app/data/slug.ts'
 
 export interface TestEnv {
   fetch: (request: Request) => Promise<Response>
@@ -234,6 +236,50 @@ export async function postMultipart(
       body: options.body,
     }),
   )
+}
+
+export interface SeedSurfaceOptions {
+  ownerId: string
+  name: string
+  description?: string | null
+  imageUrl?: string
+}
+
+/**
+ * Create a surface with one primary image. Returns the surface id, slug,
+ * and the primary image's id.
+ *
+ * Defaults: name is the only required field besides ownerId. imageUrl
+ * defaults to /images/banner.png — fine for tests that don't care about
+ * the file contents.
+ */
+export async function seedSurface(
+  env: TestEnv,
+  opts: SeedSurfaceOptions,
+): Promise<{ id: string; slug: string; primaryImageId: string }> {
+  const id = randomUUID()
+  const primaryImageId = randomUUID()
+  const slug = generateContentSlug(opts.name)
+  const now = Date.now()
+  await env.db.transaction(async (tx) => {
+    await tx.create(surfaces, {
+      id,
+      name: opts.name,
+      slug,
+      ...(opts.description ? { description: opts.description } : {}),
+      owner_id: opts.ownerId,
+      created_at: now,
+      updated_at: now,
+    })
+    await tx.create(surfaceImages, {
+      id: primaryImageId,
+      surface_id: id,
+      image_url: opts.imageUrl ?? '/images/banner.png',
+      is_primary: true,
+      created_at: now,
+    })
+  })
+  return { id, slug, primaryImageId }
 }
 
 export async function loginAs(

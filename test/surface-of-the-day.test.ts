@@ -12,7 +12,7 @@ import { createSqliteDatabaseAdapter } from 'remix/data-table/sqlite'
 import { createMigrationRunner } from 'remix/data-table/migrations'
 import { loadMigrations } from 'remix/data-table/migrations/node'
 
-import { surfaces, surfaceFeatures, users } from '../app/data/schema.ts'
+import { surfaceImages, surfaces, surfaceFeatures, users } from '../app/data/schema.ts'
 import { getSurfaceOfTheDay } from '../app/data/surface-of-the-day.ts'
 
 interface TestEnv {
@@ -57,14 +57,22 @@ async function makeUser(env: TestEnv, username: string): Promise<string> {
 async function makeSurface(env: TestEnv, ownerId: string, name: string): Promise<string> {
   const id = randomUUID()
   const now = Date.now()
-  await env.db.create(surfaces, {
-    id,
-    name,
-    slug: `${name.toLowerCase().replace(/\s+/g, '-')}-${id.slice(0, 6)}`,
-    image_url: '/uploads/test.png',
-    owner_id: ownerId,
-    created_at: now,
-    updated_at: now,
+  await env.db.transaction(async (tx) => {
+    await tx.create(surfaces, {
+      id,
+      name,
+      slug: `${name.toLowerCase().replace(/\s+/g, '-')}-${id.slice(0, 6)}`,
+      owner_id: ownerId,
+      created_at: now,
+      updated_at: now,
+    })
+    await tx.create(surfaceImages, {
+      id: randomUUID(),
+      surface_id: id,
+      image_url: '/uploads/test.png',
+      is_primary: true,
+      created_at: now,
+    })
   })
   return id
 }
