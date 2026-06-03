@@ -1,4 +1,5 @@
 import type { Sticker, Surface, SurfaceImage, User } from '../../data/schema.ts'
+import { sortGalleryImages } from '../../data/surface-images.ts'
 
 export interface JsonSticker {
   id: string
@@ -80,14 +81,7 @@ export function serializeSurface(
   images: SurfaceImage[],
   owner: Pick<User, 'username' | 'avatar_url'>,
 ): JsonSurface {
-  // Sort primary first, then by created_at asc so tied non-primary
-  // images come back in upload order.
-  const sorted = [...images].sort((a, b) => {
-    const aPrimary = Boolean(a.is_primary)
-    const bPrimary = Boolean(b.is_primary)
-    if (aPrimary !== bPrimary) return aPrimary ? -1 : 1
-    return a.created_at - b.created_at
-  })
+  const sorted = sortGalleryImages(images)
   return {
     id: surface.id,
     name: surface.name,

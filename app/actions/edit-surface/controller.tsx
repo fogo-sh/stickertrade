@@ -8,6 +8,7 @@ import { createController } from 'remix/router'
 import { getCurrentUser } from '../../data/current-user.ts'
 import { surfaceImages, surfaces } from '../../data/schema.ts'
 import { looksLikeUuid } from '../../data/slug.ts'
+import { sortGalleryImages } from '../../data/surface-images.ts'
 import {
   issuesToFieldErrors,
   surfaceDescriptionSchema,
@@ -23,19 +24,6 @@ const editSurfaceSchema = f.object({
 
 function notFound() {
   return new Response('Not Found', { status: 404 })
-}
-
-// `db.findMany` `orderBy` only accepts a single `[col, dir]` tuple in this
-// codebase; secondary sort happens in JS. The list is at most 8 rows.
-function sortGalleryImages<T extends { is_primary: unknown; created_at: number }>(
-  rows: T[],
-): T[] {
-  return rows.slice().sort((a, b) => {
-    const ap = Boolean(a.is_primary) ? 1 : 0
-    const bp = Boolean(b.is_primary) ? 1 : 0
-    if (ap !== bp) return bp - ap // is_primary DESC
-    return a.created_at - b.created_at // created_at ASC
-  })
 }
 
 export default createController(routes.editSurface, {

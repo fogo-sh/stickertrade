@@ -581,13 +581,19 @@ export default createController(routes.api, {
       }
 
       const imageId = randomUUID()
-      await db.create(surfaceImages, {
-        id: imageId,
-        surface_id: surface.id,
-        image_url: storedUrl,
-        is_primary: false,
-        created_at: Date.now(),
-      })
+      try {
+        await db.create(surfaceImages, {
+          id: imageId,
+          surface_id: surface.id,
+          image_url: storedUrl,
+          is_primary: false,
+          created_at: Date.now(),
+        })
+      } catch (error) {
+        // DB write failed after the file was stored. Clean up the orphaned file.
+        await safeRemoveStoredUpload(storedUrl)
+        throw error
+      }
 
       const created = await db.findOne(surfaceImages, { where: { id: imageId } })
       return new Response(JSON.stringify(serializeSurfaceImage(created!)), {

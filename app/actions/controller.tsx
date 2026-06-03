@@ -13,6 +13,7 @@ import { getDevLog, getDevLogs } from '../data/dev-logs.ts'
 import { roadmapTasks } from '../data/roadmap.ts'
 import { apiTokens, stickers, surfaceImages, surfaces, users, type Surface } from '../data/schema.ts'
 import { looksLikeUuid } from '../data/slug.ts'
+import { sortGalleryImages } from '../data/surface-images.ts'
 import { getSurfaceOfTheDay } from '../data/surface-of-the-day.ts'
 import { uploadStorage } from '../data/uploads.ts'
 import { tokenNameSchema } from '../data/validators.ts'
@@ -242,21 +243,11 @@ export default createController(routes, {
       const imageRows = await db.findMany(surfaceImages, {
         where: { surface_id: surface.id },
       })
-      // orderBy in this codebase supports only single-column sort; do the
-      // primary-first ordering in JS (matches the edit-surface controller pattern).
-      const images = imageRows
-        .slice()
-        .sort((a, b) => {
-          const aPrimary = Boolean(a.is_primary)
-          const bPrimary = Boolean(b.is_primary)
-          if (aPrimary !== bPrimary) return aPrimary ? -1 : 1
-          return a.created_at - b.created_at
-        })
-        .map((img) => ({
-          id: img.id,
-          image_url: img.image_url,
-          is_primary: Boolean(img.is_primary),
-        }))
+      const images = sortGalleryImages(imageRows).map((img) => ({
+        id: img.id,
+        image_url: img.image_url,
+        is_primary: Boolean(img.is_primary),
+      }))
 
       const currentUser = getCurrentUser(context)
       const canEdit =

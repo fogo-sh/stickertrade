@@ -10,6 +10,7 @@ import {
   ProcessImageError,
   processSurfaceUpload,
 } from '../../data/upload-image.ts'
+import { uploadStorage } from '../../data/uploads.ts'
 import { routes } from '../../routes.ts'
 import { readVerifiedUploadFormData } from '../../utils/upload.ts'
 
@@ -17,6 +18,16 @@ const MAX_GALLERY_FILES = 8
 
 function notFound() {
   return new Response('Not Found', { status: 404 })
+}
+
+async function safeRemoveStoredUpload(url: string | null | undefined) {
+  if (!url || !url.startsWith('/uploads/')) return
+  const key = url.slice('/uploads/'.length)
+  try {
+    await uploadStorage.remove(key)
+  } catch {
+    // ignore
+  }
 }
 
 export default createController(routes.addSurfaceImage, {
@@ -83,13 +94,19 @@ export default createController(routes.addSurfaceImage, {
         return new Response(message, { status })
       }
 
-      await db.create(surfaceImages, {
-        id: randomUUID(),
-        surface_id: surface.id,
-        image_url: storedUrl,
-        is_primary: false,
-        created_at: Date.now(),
-      })
+      try {
+        await db.create(surfaceImages, {
+          id: randomUUID(),
+          surface_id: surface.id,
+          image_url: storedUrl,
+          is_primary: false,
+          created_at: Date.now(),
+        })
+      } catch (error) {
+        // DB write failed after the file was stored. Clean up the orphaned file.
+        await safeRemoveStoredUpload(storedUrl)
+        throw error
+      }
 
       return redirect(
         routes.editSurface.index.href({ slug: surface.slug }),
