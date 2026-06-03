@@ -1,11 +1,26 @@
 import { createRouter, type MiddlewareContext } from 'remix/router'
 import { asyncContext } from 'remix/middleware/async-context'
 import { compression } from 'remix/middleware/compression'
-import { formData } from 'remix/middleware/form-data'
 import { logger } from 'remix/middleware/logger'
 import { staticFiles } from 'remix/middleware/static'
 
+import rootController from './actions/controller.tsx'
+import adminController from './actions/admin/controller.tsx'
+import apiController from './actions/api/controller.tsx'
+import changePasswordController from './actions/change-password/controller.tsx'
+import editProfileController from './actions/edit-profile/controller.tsx'
+import editStickerController from './actions/edit-sticker/controller.tsx'
+import invitationsController from './actions/invitations/controller.tsx'
+import invitationController from './actions/invitation/controller.tsx'
+import loginController from './actions/login/controller.tsx'
+import removeStickerController from './actions/remove-sticker/controller.tsx'
+import uploadStickerController from './actions/upload-sticker/controller.tsx'
+import { appSession, loadAuth } from './data/auth.ts'
+import { loadDatabase } from './middleware/database.ts'
+import { formDataExceptUploads } from './middleware/form-data.ts'
 import { csrfOrBearer } from './middleware/csrf-or-bearer.ts'
+import { render } from './middleware/render.tsx'
+import { routes } from './routes.ts'
 
 /**
  * Comma-separated list of allowed public origins for CSRF Origin/Referer checks.
@@ -26,26 +41,14 @@ function parsePublicOrigin(raw: string | undefined): string | string[] | undefin
   return list.length === 1 ? list[0] : list
 }
 
-import rootController from './actions/controller.tsx'
-import adminController from './actions/admin/controller.tsx'
-import apiController from './actions/api/controller.tsx'
-import changePasswordController from './actions/change-password/controller.tsx'
-import editProfileController from './actions/edit-profile/controller.tsx'
-import editStickerController from './actions/edit-sticker/controller.tsx'
-import invitationsController from './actions/invitations/controller.tsx'
-import invitationController from './actions/invitation/controller.tsx'
-import loginController from './actions/login/controller.tsx'
-import removeStickerController from './actions/remove-sticker/controller.tsx'
-import uploadStickerController from './actions/upload-sticker/controller.tsx'
-import { appSession, loadAuth } from './data/auth.ts'
-import { loadDatabase } from './middleware/database.ts'
-import { render } from './middleware/render.tsx'
-import { routes } from './routes.ts'
-
 const stack = [
   compression(),
   staticFiles('./public', { index: false }),
-  formData(),
+  // Parses application/x-www-form-urlencoded eagerly so simple forms
+  // (login, password, invitations) can use `get(FormData)` directly.
+  // Multipart bodies skip parsing here; upload-handling controllers parse
+  // them via `readUploadFormData()` so they can render inline errors.
+  formDataExceptUploads(),
   appSession(),
   csrfOrBearer({ origin: parsePublicOrigin(process.env.PUBLIC_ORIGIN) }),
   asyncContext(),

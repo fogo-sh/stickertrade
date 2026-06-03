@@ -6,7 +6,14 @@ import bcrypt from 'bcryptjs'
 
 import { invitations, stickers, users, UserRoles } from '../app/data/schema.ts'
 import { routes } from '../app/routes.ts'
-import { buildUrl, createTestEnv, fetchCsrf, loginAs, postForm } from './helpers.ts'
+import {
+  buildUrl,
+  createTestEnv,
+  fetchCsrf,
+  loginAs,
+  postForm,
+  postMultipart,
+} from './helpers.ts'
 
 async function seedUser(
   env: Awaited<ReturnType<typeof createTestEnv>>,
@@ -66,12 +73,14 @@ describe('login', () => {
     const env = await createTestEnv()
     try {
       await seedUser(env, 'alice', 'goodpass')
-      const body = new FormData()
-      body.set('username', 'alice')
-      body.set('password', 'goodpass')
-      // No _csrf, no Origin header.
+      // No _csrf token, no Origin header. URL-encoded body so CSRF middleware
+      // actually runs (multipart bodies are handled by upload controllers).
       const res = await env.fetch(
-        new Request(buildUrl(routes.login.action.href()), { method: 'POST', body }),
+        new Request(buildUrl(routes.login.action.href()), {
+          method: 'POST',
+          headers: { 'content-type': 'application/x-www-form-urlencoded' },
+          body: 'username=alice&password=goodpass',
+        }),
       )
       assert.equal(res.status, 403)
     } finally {
@@ -89,8 +98,11 @@ describe('login', () => {
       const res = await env.fetch(
         new Request(buildUrl(routes.login.action.href()), {
           method: 'POST',
-          headers: { origin: 'https://stickertrade.ca' },
-          body: new FormData(),
+          headers: {
+            origin: 'https://stickertrade.ca',
+            'content-type': 'application/x-www-form-urlencoded',
+          },
+          body: '',
         }),
       )
       assert.equal(res.status, 403)
@@ -112,8 +124,11 @@ describe('login', () => {
       const res = await env.fetch(
         new Request(buildUrl(routes.login.action.href()), {
           method: 'POST',
-          headers: { origin: 'https://stickertrade.ca' },
-          body: new FormData(),
+          headers: {
+            origin: 'https://stickertrade.ca',
+            'content-type': 'application/x-www-form-urlencoded',
+          },
+          body: '',
         }),
       )
       assert.equal(res.status, 403)
@@ -344,7 +359,7 @@ describe('edit profile', () => {
       const body = new FormData()
       body.set('_csrf', token)
       body.set('avatar', file)
-      const res = await postForm(env, routes.editProfile.action.href(), { cookie, body })
+      const res = await postMultipart(env, routes.editProfile.action.href(), { cookie, body })
       assert.equal(res.status, 303)
       assert.equal(res.headers.get('location'), routes.editProfile.index.href())
 
@@ -631,6 +646,73 @@ describe('api: stickers', () => {
     }
   })
 
+  it('POST /api/stickers rejects oversized files with a tagged JSON error', async () => {
+    const env = await createTestEnv()
+    try {
+      const userId = await seedUser(env, 'libby', 'libbypass')
+      const { createTokenForUser } = await import('../app/data/api-tokens.ts')
+      const { plaintext } = await createTokenForUser(env.db, { id: userId }, 'tok')
+
+      // 11 MiB payload — exceeds the 10 MiB limit.
+      const huge = new Uint8Array(11 * 1024 * 1024)
+      const file = new File([huge], 'huge.png', { type: 'image/png' })
+
+      const body = new FormData()
+      body.set('name', 'too big')
+      body.set('image', file)
+
+      const res = await env.fetch(
+        new Request(buildUrl(routes.api.stickerCreate.href()), {
+          method: 'POST',
+          headers: { authorization: `Bearer ${plaintext}` },
+          body,
+        }),
+      )
+      assert.equal(res.status, 413)
+      const payload = (await res.json()) as {
+        error: string
+        message: string
+        max_bytes: number
+      }
+      assert.equal(payload.error, 'file_too_large')
+      assert.match(payload.message, /max .* MiB/)
+      assert.equal(payload.max_bytes, 10 * 1024 * 1024)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('POST /api/stickers rejects unsupported image types', async () => {
+    const env = await createTestEnv()
+    try {
+      const userId = await seedUser(env, 'lana', 'lanapass')
+      const { createTokenForUser } = await import('../app/data/api-tokens.ts')
+      const { plaintext } = await createTokenForUser(env.db, { id: userId }, 'tok')
+
+      // A small file with a bogus type.
+      const small = new Uint8Array(100)
+      const file = new File([small], 'evil.gif', { type: 'image/gif' })
+
+      const body = new FormData()
+      body.set('name', 'no gifs')
+      body.set('image', file)
+
+      const res = await env.fetch(
+        new Request(buildUrl(routes.api.stickerCreate.href()), {
+          method: 'POST',
+          headers: { authorization: `Bearer ${plaintext}` },
+          body,
+        }),
+      )
+      assert.equal(res.status, 400)
+      const payload = (await res.json()) as { error: string; message: string }
+      assert.equal(payload.error, 'unsupported_image_type')
+      assert.match(payload.message, /png or jpeg/i)
+    } finally {
+      env.cleanup()
+    }
+  })
+
   it('PATCH /api/stickers/:id renames when owned', async () => {
     const env = await createTestEnv()
     try {
@@ -756,6 +838,37 @@ describe('api: stickers', () => {
         stickers: Array<{ name: string }>
       }
       assert.equal(stickersPayload.stickers[0]?.name, 'q1')
+    } finally {
+      env.cleanup()
+    }
+  })
+})
+
+describe('upload errors (html form)', () => {
+  it('POST /upload-sticker rejects oversized files with a friendly message', async () => {
+    const env = await createTestEnv()
+    try {
+      await seedUser(env, 'wendy', 'wendypass')
+      const sessionCookie = await loginAs(env, 'wendy', 'wendypass')
+      const { token, cookie } = await fetchCsrf(
+        env,
+        routes.uploadSticker.index.href(),
+        sessionCookie,
+      )
+
+      // 11 MiB payload — over the 10 MiB limit.
+      const huge = new Uint8Array(11 * 1024 * 1024)
+      const file = new File([huge], 'huge.png', { type: 'image/png' })
+
+      const body = new FormData()
+      body.set('_csrf', token)
+      body.set('name', 'too big')
+      body.set('image', file)
+
+      const res = await postMultipart(env, routes.uploadSticker.action.href(), { cookie, body })
+      assert.equal(res.status, 413)
+      const html = await res.text()
+      assert.match(html, /max .* MiB/)
     } finally {
       env.cleanup()
     }

@@ -2,15 +2,23 @@ import { csrf, type CsrfOptions } from 'remix/middleware/csrf'
 import type { Middleware } from 'remix/router'
 
 /**
- * Wraps the standard CSRF middleware so that requests to the JSON API surface
- * (`/api/*`) and requests carrying an `Authorization: Bearer ...` header skip
- * CSRF entirely. API clients authenticate with bearer tokens (not session
- * cookies), so the synchronizer token model doesn't apply to them — and they
- * have no way to read a token anyway. Auth failures inside the API return
- * 401 (handled by the controller), not a CSRF 403.
+ * Wraps the standard CSRF middleware so it short-circuits cleanly for
+ * requests that handle their own auth/CSRF posture:
  *
- * Inside the browser, session-cookie auth + form posts go through CSRF as
- * usual.
+ *  - `/api/*` routes: clients send `Authorization: Bearer ...`, not session
+ *    cookies, so the synchronizer-token model doesn't apply. Auth failures
+ *    return 401 from the controller rather than a 403 from CSRF.
+ *  - Requests with an `Authorization: Bearer` header anywhere on the site
+ *    (rare, but possible) similarly skip CSRF.
+ *  - `multipart/form-data` requests: the controller parses the body itself
+ *    via `readUploadFormData()` because the global form-data middleware
+ *    isn't allowed to consume it (it would throw on multipart limit errors
+ *    before the controller could render a friendly response). The
+ *    controller then re-verifies the `_csrf` field against the session
+ *    token using `assertCsrfToken()` from `app/utils/csrf.ts`.
+ *
+ * Everything else (the normal HTML form path) goes through the standard
+ * middleware unchanged.
  */
 export function csrfOrBearer(options?: CsrfOptions): Middleware {
   const csrfMiddleware = csrf(options)
@@ -21,6 +29,10 @@ export function csrfOrBearer(options?: CsrfOptions): Middleware {
     }
     const authHeader = context.request.headers.get('authorization') ?? ''
     if (/^Bearer\s+\S+/i.test(authHeader)) {
+      return next()
+    }
+    const contentType = context.request.headers.get('content-type') ?? ''
+    if (contentType.startsWith('multipart/form-data')) {
       return next()
     }
     return csrfMiddleware(context, next)

@@ -8,6 +8,8 @@ import { stickers } from '../../data/schema.ts'
 import { processStickerUpload } from '../../data/upload-image.ts'
 import { uploadStorage } from '../../data/uploads.ts'
 import { routes } from '../../routes.ts'
+import { assertCsrfToken } from '../../utils/csrf.ts'
+import { readUploadFormData } from '../../utils/upload.ts'
 import { EditStickerPage } from '../edit-sticker-page.tsx'
 
 function notFound() {
@@ -61,7 +63,33 @@ export default createController(routes.editSticker, {
         return new Response('Forbidden', { status: 403 })
       }
 
-      const formData = context.get(FormData)
+      // Two flows hit this action: a multipart submit with a new image,
+      // or a url-encoded submit that only changes the name. The global
+      // form-data middleware parses the url-encoded body for us; we parse
+      // the multipart body here so upload-too-large errors render inline.
+      const contentType = context.request.headers.get('content-type') ?? ''
+      const isMultipart = contentType.startsWith('multipart/form-data')
+
+      let formData: FormData
+      if (isMultipart) {
+        const parsed = await readUploadFormData(context.request)
+        if (!parsed.success) {
+          return context.render(
+            <EditStickerPage
+              user={user}
+              sticker={{ id: sticker.id, name: sticker.name, image_url: sticker.image_url }}
+              errors={{ image: parsed.error.message }}
+            />,
+            { status: parsed.error.status },
+          )
+        }
+        formData = parsed.value
+        const denied = assertCsrfToken(context, formData.get('_csrf'))
+        if (denied) return denied
+      } else {
+        formData = context.get(FormData)
+      }
+
       const name = String(formData.get('name') ?? '').trim()
       const file = formData.get('image')
       const hasNewImage = file instanceof File && file.size > 0
@@ -96,11 +124,12 @@ export default createController(routes.editSticker, {
         try {
           storedUrl = await processStickerUpload(file as File)
         } catch (error) {
+          const message = error instanceof Error ? error.message : 'Upload failed'
           return context.render(
             <EditStickerPage
               user={user}
               sticker={{ id: sticker.id, name, image_url: sticker.image_url }}
-              errors={{ image: error instanceof Error ? error.message : 'Upload failed' }}
+              errors={{ image: message }}
             />,
             { status: 400 },
           )

@@ -7,6 +7,21 @@ import { uploadStorage } from './uploads.ts'
 const ALLOWED_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp'])
 const MAX_BYTES = 10 * 1024 * 1024 // 10 MB
 
+/**
+ * Typed errors thrown by `processImageUpload`. Controllers can branch on
+ * `error.code` to render a stable error code (in JSON) or a friendly
+ * message (in HTML).
+ */
+export class ProcessImageError extends Error {
+  constructor(
+    public readonly code: 'unsupported_image_type' | 'file_too_large',
+    message: string,
+  ) {
+    super(message)
+    this.name = 'ProcessImageError'
+  }
+}
+
 export interface ProcessImageOptions {
   /** Subdirectory under tmp/uploads to store the file in. */
   folder: string
@@ -22,16 +37,24 @@ export interface ProcessImageOptions {
 /**
  * Validate, optimize, and persist an image upload. Returns the public URL
  * to use for the resulting database column (e.g. avatar_url, image_url).
+ * Throws `ProcessImageError` for expected validation failures so
+ * controllers can render them as user-facing responses.
  */
 export async function processImageUpload(
   file: File,
   options: ProcessImageOptions,
 ): Promise<string> {
   if (!ALLOWED_TYPES.has(file.type)) {
-    throw new Error(`unsupported image type: ${file.type}`)
+    throw new ProcessImageError(
+      'unsupported_image_type',
+      'unsupported image type; please upload a png or jpeg',
+    )
   }
   if (file.size > MAX_BYTES) {
-    throw new Error(`image too large (max ${MAX_BYTES / 1024 / 1024} MB)`)
+    throw new ProcessImageError(
+      'file_too_large',
+      `image is too large; max ${MAX_BYTES / 1024 / 1024} MiB per file`,
+    )
   }
 
   const buffer = new Uint8Array(await file.arrayBuffer())
