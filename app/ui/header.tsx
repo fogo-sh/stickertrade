@@ -24,6 +24,9 @@ export function Header(handle: Handle<HeaderProps>) {
           <h1 mix={css({ fontSize: '1.25rem', fontWeight: 600 })}>stickertrade</h1>
         </a>
         <nav mix={navStyle}>
+          <a href={routes.surfaces.href()} mix={menuLinkStyle}>
+            surfaces
+          </a>
           {user ? <UserMenu user={user} /> : <a href={routes.login.index.href()}>login</a>}
         </nav>
       </header>

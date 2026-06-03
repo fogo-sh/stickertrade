@@ -30,6 +30,11 @@ export function HomePage() {
           <section mix={sotdSectionStyle}>
             <h2 mix={sotdHeadingStyle}>Surface of the Day</h2>
             <SurfaceCard surface={surfaceOfTheDay} />
+            <div mix={seeAllStyle}>
+              <a href={routes.surfaces.href()} mix={seeAllLinkStyle}>
+                see all surfaces →
+              </a>
+            </div>
           </section>
         ) : null}
         <a href={routes.stickers.href()} mix={sectionHeading}>
