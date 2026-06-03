@@ -8,8 +8,7 @@ import { stickers } from '../../data/schema.ts'
 import { processStickerUpload } from '../../data/upload-image.ts'
 import { uploadStorage } from '../../data/uploads.ts'
 import { routes } from '../../routes.ts'
-import { assertCsrfToken } from '../../utils/csrf.ts'
-import { readUploadFormData } from '../../utils/upload.ts'
+import { readVerifiedUploadFormData } from '../../utils/upload.ts'
 import { EditStickerPage } from '../edit-sticker-page.tsx'
 
 function notFound() {
@@ -72,8 +71,9 @@ export default createController(routes.editSticker, {
 
       let formData: FormData
       if (isMultipart) {
-        const parsed = await readUploadFormData(context.request)
+        const parsed = await readVerifiedUploadFormData(context)
         if (!parsed.success) {
+          if (parsed.kind === 'csrf') return parsed.response
           return context.render(
             <EditStickerPage
               user={user}
@@ -84,8 +84,6 @@ export default createController(routes.editSticker, {
           )
         }
         formData = parsed.value
-        const denied = assertCsrfToken(context, formData.get('_csrf'))
-        if (denied) return denied
       } else {
         formData = context.get(FormData)
       }

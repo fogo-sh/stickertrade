@@ -8,8 +8,7 @@ import { getCurrentUser } from '../../data/current-user.ts'
 import { stickers } from '../../data/schema.ts'
 import { processStickerUpload } from '../../data/upload-image.ts'
 import { routes } from '../../routes.ts'
-import { assertCsrfToken } from '../../utils/csrf.ts'
-import { readUploadFormData } from '../../utils/upload.ts'
+import { readVerifiedUploadFormData } from '../../utils/upload.ts'
 import { UploadStickerPage } from '../upload-sticker-page.tsx'
 
 export default createController(routes.uploadSticker, {
@@ -24,17 +23,15 @@ export default createController(routes.uploadSticker, {
       const user = getCurrentUser(context)
       if (!user) return redirect(routes.login.index.href(), 303)
 
-      const parsed = await readUploadFormData(context.request)
+      const parsed = await readVerifiedUploadFormData(context)
       if (!parsed.success) {
+        if (parsed.kind === 'csrf') return parsed.response
         return context.render(
           <UploadStickerPage user={user} errors={{ image: parsed.error.message }} />,
           { status: parsed.error.status },
         )
       }
       const formData = parsed.value
-
-      const denied = assertCsrfToken(context, formData.get('_csrf'))
-      if (denied) return denied
 
       const name = String(formData.get('name') ?? '').trim()
       const file = formData.get('image')

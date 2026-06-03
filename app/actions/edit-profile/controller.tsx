@@ -9,8 +9,7 @@ import { users } from '../../data/schema.ts'
 import { processAvatarUpload } from '../../data/upload-image.ts'
 import { uploadStorage } from '../../data/uploads.ts'
 import { routes } from '../../routes.ts'
-import { assertCsrfToken } from '../../utils/csrf.ts'
-import { readUploadFormData } from '../../utils/upload.ts'
+import { readVerifiedUploadFormData } from '../../utils/upload.ts'
 import { EditProfilePage } from '../edit-profile-page.tsx'
 
 async function safeRemoveStoredUpload(url: string | null) {
@@ -86,16 +85,15 @@ export default createController(routes.editProfile, {
 
       let formData: FormData
       if (isMultipart) {
-        const parsed = await readUploadFormData(context.request)
+        const parsed = await readVerifiedUploadFormData(context)
         if (!parsed.success) {
+          if (parsed.kind === 'csrf') return parsed.response
           return context.render(
             <EditProfilePage user={user} avatarErrors={{ avatar: parsed.error.message }} />,
             { status: parsed.error.status },
           )
         }
         formData = parsed.value
-        const denied = assertCsrfToken(context, formData.get('_csrf'))
-        if (denied) return denied
       } else {
         formData = context.get(FormData)
       }
