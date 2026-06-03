@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { generateStickerSlug, looksLikeUuid, slugifyName } from '../app/data/slug.ts'
+import { generateContentSlug, looksLikeUuid, slugifyName } from '../app/data/slug.ts'
 
 describe('slugifyName', () => {
   it('lowercases and hyphenates spaces', () => {
@@ -32,20 +32,20 @@ describe('slugifyName', () => {
   })
 })
 
-describe('generateStickerSlug', () => {
+describe('generateContentSlug', () => {
   it('produces <slug-part>-<6 lowercase alphanumerics>', () => {
-    const slug = generateStickerSlug('Dino Sticker')
+    const slug = generateContentSlug('Dino Sticker')
     assert.match(slug, /^dino-sticker-[a-z0-9]{6}$/)
   })
 
   it('produces just the suffix when the name slugifies to empty', () => {
-    const slug = generateStickerSlug('🦖')
+    const slug = generateContentSlug('🦖')
     assert.match(slug, /^[a-z0-9]{6}$/)
   })
 
   it('produces different suffixes across calls', () => {
-    const a = generateStickerSlug('test')
-    const b = generateStickerSlug('test')
+    const a = generateContentSlug('test')
+    const b = generateContentSlug('test')
     assert.notEqual(a, b)
   })
 })

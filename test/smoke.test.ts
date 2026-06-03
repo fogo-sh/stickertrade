@@ -4,8 +4,15 @@ import { describe, it } from 'node:test'
 
 import bcrypt from 'bcryptjs'
 
-import { invitations, stickers, users, UserRoles } from '../app/data/schema.ts'
-import { generateStickerSlug } from '../app/data/slug.ts'
+import {
+  invitations,
+  stickers,
+  surfaceImages,
+  surfaces,
+  users,
+  UserRoles,
+} from '../app/data/schema.ts'
+import { generateContentSlug } from '../app/data/slug.ts'
 import { routes } from '../app/routes.ts'
 import {
   buildUrl,
@@ -14,6 +21,7 @@ import {
   loginAs,
   postForm,
   postMultipart,
+  seedSurface,
 } from './helpers.ts'
 
 async function seedUser(
@@ -260,7 +268,7 @@ describe('admin', () => {
       await env.db.create(stickers, {
         id: stickerId,
         name: 'soon-gone',
-        slug: generateStickerSlug('soon-gone'),
+        slug: generateContentSlug('soon-gone'),
         image_url: '/images/banner.png',
         owner_id: aliceId,
         created_at: Date.now(),
@@ -404,7 +412,7 @@ describe('edit sticker', () => {
       const ownerId = await seedUser(env, 'grace', 'gracepass')
       const stickerId = randomUUID()
       const stickerName = 'old name'
-      const stickerSlug = generateStickerSlug(stickerName)
+      const stickerSlug = generateContentSlug(stickerName)
       await env.db.create(stickers, {
         id: stickerId,
         name: stickerName,
@@ -447,7 +455,7 @@ describe('edit sticker', () => {
       await seedUser(env, 'intruder', 'intruderpass')
       const stickerId = randomUUID()
       const stickerName = 'mine'
-      const stickerSlug = generateStickerSlug(stickerName)
+      const stickerSlug = generateContentSlug(stickerName)
       await env.db.create(stickers, {
         id: stickerId,
         name: stickerName,
@@ -479,7 +487,7 @@ describe('sticker URL backwards compatibility', () => {
       const ownerId = await seedUser(env, 'redirector', 'redirectorpass')
       const stickerId = randomUUID()
       const stickerName = 'Vintage'
-      const stickerSlug = generateStickerSlug(stickerName)
+      const stickerSlug = generateContentSlug(stickerName)
       await env.db.create(stickers, {
         id: stickerId,
         name: stickerName,
@@ -515,7 +523,7 @@ describe('sticker URL backwards compatibility', () => {
       const ownerId = await seedUser(env, 'edit-redirector', 'edit-redirectorpass')
       const stickerId = randomUUID()
       const stickerName = 'Antique'
-      const stickerSlug = generateStickerSlug(stickerName)
+      const stickerSlug = generateContentSlug(stickerName)
       await env.db.create(stickers, {
         id: stickerId,
         name: stickerName,
@@ -639,7 +647,7 @@ describe('api: stickers', () => {
       await env.db.create(stickers, {
         id: stickerId,
         name: 'public sticker',
-        slug: generateStickerSlug('public sticker'),
+        slug: generateContentSlug('public sticker'),
         image_url: '/images/banner.png',
         owner_id: ownerId,
         created_at: Date.now(),
@@ -814,7 +822,7 @@ describe('api: stickers', () => {
       await env.db.create(stickers, {
         id: stickerId,
         name: 'old',
-        slug: generateStickerSlug('old'),
+        slug: generateContentSlug('old'),
         image_url: '/images/banner.png',
         owner_id: userId,
         created_at: Date.now(),
@@ -850,7 +858,7 @@ describe('api: stickers', () => {
       await env.db.create(stickers, {
         id: stickerId,
         name: 'natefoo',
-        slug: generateStickerSlug('natefoo'),
+        slug: generateContentSlug('natefoo'),
         image_url: '/images/banner.png',
         owner_id: ownerId,
         created_at: Date.now(),
@@ -883,7 +891,7 @@ describe('api: stickers', () => {
       await env.db.create(stickers, {
         id: stickerId,
         name: 'going away',
-        slug: generateStickerSlug('going away'),
+        slug: generateContentSlug('going away'),
         image_url: '/images/banner.png',
         owner_id: userId,
         created_at: Date.now(),
@@ -911,7 +919,7 @@ describe('api: stickers', () => {
       await env.db.create(stickers, {
         id: randomUUID(),
         name: 'q1',
-        slug: generateStickerSlug('q1'),
+        slug: generateContentSlug('q1'),
         image_url: '/images/banner.png',
         owner_id: userId,
         created_at: Date.now(),
@@ -990,7 +998,7 @@ describe('og tags', () => {
       const ownerId = await seedUser(env, 'roxie', 'roxiepass')
       const stickerId = randomUUID()
       const stickerName = 'cool og sticker'
-      const stickerSlug = generateStickerSlug(stickerName)
+      const stickerSlug = generateContentSlug(stickerName)
       await env.db.create(stickers, {
         id: stickerId,
         name: stickerName,
@@ -1051,6 +1059,798 @@ describe('dev logs', () => {
       assert.match(res.headers.get('content-type') ?? '', /rss/)
       const body = await res.text()
       assert.match(body, /<rss/)
+    } finally {
+      env.cleanup()
+    }
+  })
+})
+
+describe('surfaces', () => {
+  it('lets an authed user upload a surface and lands on the slug URL', async () => {
+    const env = await createTestEnv()
+    try {
+      await seedUser(env, 'sf-uploader', 'sf-uploaderpass')
+      const sessionCookie = await loginAs(env, 'sf-uploader', 'sf-uploaderpass')
+      const { token, cookie } = await fetchCsrf(
+        env,
+        routes.uploadSurface.index.href(),
+        sessionCookie,
+      )
+
+      // Tiny valid PNG generated by sharp — same pattern used by the
+      // existing avatar / sticker upload tests in this file.
+      const sharp = (await import('sharp')).default
+      const png = await sharp({
+        create: { width: 100, height: 100, channels: 3, background: { r: 128, g: 64, b: 200 } },
+      })
+        .png()
+        .toBuffer()
+      const view = new Uint8Array(new ArrayBuffer(png.byteLength))
+      view.set(png)
+      const file = new File([view], 'surface.png', { type: 'image/png' })
+
+      const body = new FormData()
+      body.set('_csrf', token)
+      body.set('name', 'My Laptop')
+      body.set('description', 'Years of stickers')
+      body.set('image', file)
+
+      const res = await postMultipart(env, routes.uploadSurface.action.href(), { cookie, body })
+      assert.equal(res.status, 303)
+      const location = res.headers.get('location')
+      assert.ok(location && location.startsWith('/surface/my-laptop-'))
+
+      const uploader = await env.db.findOne(users, { where: { username: 'sf-uploader' } })
+      assert.ok(uploader)
+      const created = await env.db.findOne(surfaces, { where: { owner_id: uploader.id } })
+      assert.ok(created)
+      assert.equal(created.name, 'My Laptop')
+      assert.equal(created.description, 'Years of stickers')
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('shows a surface by slug', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'sf-shower', 'sf-showerpass')
+      const { slug } = await seedSurface(env, {
+        ownerId,
+        name: 'My Fridge',
+        description: 'lots of magnets and stickers',
+      })
+
+      const res = await env.fetch(new Request(buildUrl(routes.surface.href({ slug }))))
+      assert.equal(res.status, 200)
+      const html = await res.text()
+      assert.ok(html.includes('My Fridge'))
+      assert.ok(html.includes('lots of magnets and stickers'))
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('301-redirects /surface/<uuid> to the slug URL', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'sf-rd', 'sf-rdpass')
+      const { id, slug } = await seedSurface(env, { ownerId, name: 'Vintage Surface' })
+
+      const res = await env.fetch(new Request(buildUrl(`/surface/${id}`)))
+      assert.equal(res.status, 301)
+      assert.equal(res.headers.get('location'), `/surface/${slug}`)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('returns 404 for /surface/<uuid> with no matching surface', async () => {
+    const env = await createTestEnv()
+    try {
+      const phantom = randomUUID()
+      const res = await env.fetch(new Request(buildUrl(`/surface/${phantom}`)))
+      assert.equal(res.status, 404)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('lets the owner rename a surface and keeps the slug frozen', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'sf-renamer', 'sf-renamerpass')
+      const { id, slug } = await seedSurface(env, { ownerId, name: 'Old Name' })
+
+      const sessionCookie = await loginAs(env, 'sf-renamer', 'sf-renamerpass')
+      const { token, cookie } = await fetchCsrf(
+        env,
+        routes.editSurface.index.href({ slug }),
+        sessionCookie,
+      )
+      const body = new FormData()
+      body.set('_csrf', token)
+      body.set('name', 'New Shiny Name')
+      body.set('description', 'now with words')
+      const res = await postForm(env, routes.editSurface.action.href({ slug }), { cookie, body })
+      assert.equal(res.status, 303)
+      assert.equal(res.headers.get('location'), `/surface/${slug}`)
+
+      const updated = await env.db.findOne(surfaces, { where: { id } })
+      assert.ok(updated)
+      assert.equal(updated.name, 'New Shiny Name')
+      assert.equal(updated.description, 'now with words')
+      assert.equal(updated.slug, slug, 'slug should be frozen on rename')
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('refuses surface edits by non-owner non-admin users', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'sf-owner', 'sf-ownerpass')
+      await seedUser(env, 'sf-intruder', 'sf-intruderpass')
+      const { slug } = await seedSurface(env, { ownerId, name: 'Guarded' })
+
+      const sessionCookie = await loginAs(env, 'sf-intruder', 'sf-intruderpass')
+      const res = await env.fetch(
+        new Request(buildUrl(routes.editSurface.index.href({ slug })), {
+          headers: { cookie: sessionCookie },
+        }),
+      )
+      assert.equal(res.status, 403)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('lets the owner remove a surface', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'sf-deleter', 'sf-deleterpass')
+      const { id, slug } = await seedSurface(env, { ownerId, name: 'Goner' })
+
+      const sessionCookie = await loginAs(env, 'sf-deleter', 'sf-deleterpass')
+      const { token, cookie } = await fetchCsrf(
+        env,
+        routes.surface.href({ slug }),
+        sessionCookie,
+      )
+      const body = new FormData()
+      body.set('_csrf', token)
+      const res = await postForm(
+        env,
+        routes.removeSurface.action.href({ username: 'sf-deleter', surfaceId: id }),
+        { cookie, body },
+      )
+      assert.equal(res.status, 303)
+
+      const remaining = await env.db.findOne(surfaces, { where: { id } })
+      assert.equal(remaining, null)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('renders surfaces on the profile page', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'sf-profile', 'sf-profilepass')
+      await seedSurface(env, {
+        ownerId,
+        name: 'On Profile',
+        description: 'visible on profile',
+      })
+
+      const res = await env.fetch(
+        new Request(buildUrl(routes.profile.href({ username: 'sf-profile' }))),
+      )
+      assert.equal(res.status, 200)
+      const html = await res.text()
+      assert.ok(html.includes('On Profile'))
+      assert.ok(/<p[^>]*>\s*surfaces\s*<\/p>/.test(html), 'expected "surfaces" section heading')
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('shows an upload-surface affordance on the owner profile even with zero surfaces', async () => {
+    const env = await createTestEnv()
+    try {
+      await seedUser(env, 'sf-empty', 'sf-emptypass')
+      const sessionCookie = await loginAs(env, 'sf-empty', 'sf-emptypass')
+      const res = await env.fetch(
+        new Request(buildUrl(routes.profile.href({ username: 'sf-empty' })), {
+          headers: { cookie: sessionCookie },
+        }),
+      )
+      assert.equal(res.status, 200)
+      const html = await res.text()
+      // Section heading renders without the count when zero.
+      assert.ok(/<p[^>]*>\s*surfaces\s*<\/p>/.test(html), 'expected empty "surfaces" heading')
+      // Upload affordance links to /upload-surface.
+      assert.ok(html.includes(routes.uploadSurface.index.href()))
+      assert.ok(html.includes('upload a surface'))
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('does NOT show the upload-surface affordance to non-owners with zero surfaces', async () => {
+    const env = await createTestEnv()
+    try {
+      await seedUser(env, 'sf-stranger', 'sf-strangerpass')
+      const res = await env.fetch(
+        new Request(buildUrl(routes.profile.href({ username: 'sf-stranger' }))),
+      )
+      assert.equal(res.status, 200)
+      const html = await res.text()
+      // Empty surfaces section is hidden for non-owners.
+      assert.ok(!html.includes('upload a surface'))
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('renders the surface of the day on the home page when one exists', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'sf-sotd', 'sf-sotdpass')
+      await seedSurface(env, { ownerId, name: 'Daily Pick' })
+
+      const res = await env.fetch(new Request(buildUrl('/')))
+      assert.equal(res.status, 200)
+      const html = await res.text()
+      assert.ok(html.includes('Surface of the Day'))
+      assert.ok(html.includes('Daily Pick'))
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('omits the surface of the day block when there are no surfaces', async () => {
+    const env = await createTestEnv()
+    try {
+      const res = await env.fetch(new Request(buildUrl('/')))
+      assert.equal(res.status, 200)
+      const html = await res.text()
+      assert.ok(!html.includes('Surface of the Day'))
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('GET /api/surfaces lists surfaces', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'sf-api-list', 'sf-api-listpass')
+      await seedSurface(env, { ownerId, name: 'api listed' })
+
+      const res = await env.fetch(new Request(buildUrl(routes.api.surfacesIndex.href())))
+      assert.equal(res.status, 200)
+      const payload = (await res.json()) as {
+        surfaces: Array<{ name: string; owner: { username: string } }>
+      }
+      assert.ok(Array.isArray(payload.surfaces))
+      assert.equal(payload.surfaces[0]?.name, 'api listed')
+      assert.equal(payload.surfaces[0]?.owner.username, 'sf-api-list')
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('GET /api/users/:username/surfaces returns the user surfaces', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'sf-api-user', 'sf-api-userpass')
+      await seedSurface(env, { ownerId, name: 'belongs to user' })
+
+      const res = await env.fetch(
+        new Request(buildUrl(routes.api.userSurfaces.href({ username: 'sf-api-user' }))),
+      )
+      assert.equal(res.status, 200)
+      const payload = (await res.json()) as {
+        user: { username: string }
+        surfaces: Array<{ name: string }>
+      }
+      assert.equal(payload.user.username, 'sf-api-user')
+      assert.equal(payload.surfaces[0]?.name, 'belongs to user')
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('PATCH /api/surfaces/:id forbids non-owner with bearer token', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'sf-api-owner', 'sf-api-ownerpass')
+      const intruderId = await seedUser(env, 'sf-api-intruder', 'sf-api-intruderpass')
+      const { createTokenForUser } = await import('../app/data/api-tokens.ts')
+      const { plaintext } = await createTokenForUser(env.db, { id: intruderId }, 'tok')
+
+      const { id } = await seedSurface(env, { ownerId, name: 'hands off' })
+
+      const res = await env.fetch(
+        new Request(buildUrl(routes.api.surfaceUpdate.href({ id })), {
+          method: 'PATCH',
+          headers: {
+            authorization: `Bearer ${plaintext}`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({ name: 'stolen' }),
+        }),
+      )
+      assert.equal(res.status, 403)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('PATCH /api/surfaces/:id supports three-state description (set / clear / untouched)', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'sf-patcher', 'sf-patcherpass')
+      const { id } = await seedSurface(env, { ownerId, name: 'Patchable' })
+
+      // Mint a bearer token for the owner via the same pattern other API tests use.
+      const ownerRow = await env.db.findOne(users, { where: { id: ownerId } })
+      assert.ok(ownerRow)
+      const { createTokenForUser } = await import('../app/data/api-tokens.ts')
+      const created = await createTokenForUser(env.db, ownerRow, 'patch-test')
+      const apiToken = created.plaintext
+
+      const headers = {
+        'content-type': 'application/json',
+        authorization: `Bearer ${apiToken}`,
+      }
+      const patchUrl = buildUrl(routes.api.surfaceUpdate.href({ id }))
+
+      // 1. Set description from null → "hello"
+      let res = await env.fetch(
+        new Request(patchUrl, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify({ name: 'Patchable', description: 'hello' }),
+        }),
+      )
+      assert.equal(res.status, 200)
+      let row = await env.db.findOne(surfaces, { where: { id } })
+      assert.equal(row?.description, 'hello')
+
+      // 2. Untouched: omit description from payload — should stay "hello"
+      res = await env.fetch(
+        new Request(patchUrl, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify({ name: 'Patchable Renamed' }),
+        }),
+      )
+      assert.equal(res.status, 200)
+      row = await env.db.findOne(surfaces, { where: { id } })
+      assert.equal(row?.name, 'Patchable Renamed')
+      assert.equal(row?.description, 'hello', 'description should be untouched when omitted')
+
+      // 3. Clear description: send explicit null (or empty string)
+      res = await env.fetch(
+        new Request(patchUrl, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify({ name: 'Patchable Renamed', description: null }),
+        }),
+      )
+      assert.equal(res.status, 200)
+      row = await env.db.findOne(surfaces, { where: { id } })
+      assert.equal(row?.description, null, 'description should be cleared when explicitly null')
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('lets an admin delete a surface', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'sf-victim', 'sf-victimpass')
+      await seedUser(env, 'sf-admin', 'sf-adminpass', UserRoles.Admin)
+
+      const { id } = await seedSurface(env, { ownerId, name: 'To Be Deleted' })
+
+      const sessionCookie = await loginAs(env, 'sf-admin', 'sf-adminpass')
+      const { token, cookie } = await fetchCsrf(env, routes.admin.surfaces.href(), sessionCookie)
+      const body = new FormData()
+      body.set('_csrf', token)
+      const res = await postForm(env, routes.admin.deleteSurface.href({ id }), {
+        cookie,
+        body,
+      })
+      assert.equal(res.status, 303)
+
+      const remaining = await env.db.findOne(surfaces, { where: { id } })
+      assert.equal(remaining, null)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('POST /api/surfaces creates a surface with bearer auth', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'sf-creator', 'sf-creatorpass')
+      const ownerRow = await env.db.findOne(users, { where: { id: ownerId } })
+      assert.ok(ownerRow)
+      const { createTokenForUser } = await import('../app/data/api-tokens.ts')
+      const created = await createTokenForUser(env.db, ownerRow, 'create-test')
+      const apiToken = created.plaintext
+
+      // Tiny valid PNG generated by sharp
+      const sharp = (await import('sharp')).default
+      const png = await sharp({
+        create: { width: 100, height: 100, channels: 3, background: { r: 200, g: 100, b: 50 } },
+      })
+        .png()
+        .toBuffer()
+      const view = new Uint8Array(new ArrayBuffer(png.byteLength))
+      view.set(png)
+      const file = new File([view], 'created.png', { type: 'image/png' })
+
+      const body = new FormData()
+      body.set('name', 'Created Via API')
+      body.set('description', 'made it via curl')
+      body.set('image', file)
+
+      const res = await env.fetch(
+        new Request(buildUrl(routes.api.surfaceCreate.href()), {
+          method: 'POST',
+          headers: { authorization: `Bearer ${apiToken}` },
+          body,
+        }),
+      )
+      assert.equal(res.status, 201)
+      const payload = await res.json()
+      assert.ok(payload.surface)
+      assert.equal(payload.surface.name, 'Created Via API')
+      assert.match(payload.surface.slug, /^created-via-api-[a-z0-9]{6}$/)
+      assert.equal(payload.surface.description, 'made it via curl')
+
+      // Confirm row in DB.
+      const row = await env.db.findOne(surfaces, { where: { id: payload.surface.id } })
+      assert.ok(row)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('DELETE /api/surfaces/:id removes the surface for the owner', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'sf-killer', 'sf-killerpass')
+      const { id } = await seedSurface(env, { ownerId, name: 'Doomed' })
+
+      const ownerRow = await env.db.findOne(users, { where: { id: ownerId } })
+      assert.ok(ownerRow)
+      const { createTokenForUser } = await import('../app/data/api-tokens.ts')
+      const created = await createTokenForUser(env.db, ownerRow, 'delete-test')
+      const apiToken = created.plaintext
+
+      const res = await env.fetch(
+        new Request(buildUrl(routes.api.surfaceDestroy.href({ id })), {
+          method: 'DELETE',
+          headers: { authorization: `Bearer ${apiToken}` },
+        }),
+      )
+      assert.equal(res.status, 204)
+
+      const remaining = await env.db.findOne(surfaces, { where: { id } })
+      assert.equal(remaining, null)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('upload-surface accepts up to 8 images; first is primary', async () => {
+    const env = await createTestEnv()
+    try {
+      await seedUser(env, 'gallery-uploader', 'pass')
+      const sessionCookie = await loginAs(env, 'gallery-uploader', 'pass')
+      const { token, cookie } = await fetchCsrf(env, routes.uploadSurface.index.href(), sessionCookie)
+
+      // Generate 3 tiny PNGs via sharp.
+      const sharp = (await import('sharp')).default
+      async function makePng(colorR: number): Promise<File> {
+        const buf = await sharp({
+          create: { width: 50, height: 50, channels: 3, background: { r: colorR, g: 0, b: 0 } },
+        }).png().toBuffer()
+        const view = new Uint8Array(new ArrayBuffer(buf.byteLength))
+        view.set(buf)
+        return new File([view], 'g.png', { type: 'image/png' })
+      }
+
+      const body = new FormData()
+      body.set('_csrf', token)
+      body.set('name', 'Triple Surface')
+      body.append('image', await makePng(100))
+      body.append('image', await makePng(150))
+      body.append('image', await makePng(200))
+
+      const res = await postMultipart(env, routes.uploadSurface.action.href(), { cookie, body })
+      assert.equal(res.status, 303)
+
+      // The created surface has 3 images, first is primary.
+      const owner = await env.db.findOne(users, { where: { username: 'gallery-uploader' } })
+      assert.ok(owner)
+      const created = await env.db.findOne(surfaces, { where: { owner_id: owner.id } })
+      assert.ok(created)
+      const images = await env.db.findMany(surfaceImages, {
+        where: { surface_id: created.id },
+        orderBy: ['created_at', 'asc'],
+      })
+      assert.equal(images.length, 3)
+      assert.equal(Boolean(images[0]!.is_primary), true, 'first image should be primary')
+      assert.equal(Boolean(images[1]!.is_primary), false)
+      assert.equal(Boolean(images[2]!.is_primary), false)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('upload-surface rejects 9+ images', async () => {
+    const env = await createTestEnv()
+    try {
+      await seedUser(env, 'too-many', 'pass')
+      const sessionCookie = await loginAs(env, 'too-many', 'pass')
+      const { token, cookie } = await fetchCsrf(env, routes.uploadSurface.index.href(), sessionCookie)
+
+      const sharp = (await import('sharp')).default
+      const buf = await sharp({
+        create: { width: 30, height: 30, channels: 3, background: { r: 0, g: 0, b: 0 } },
+      }).png().toBuffer()
+      const view = new Uint8Array(new ArrayBuffer(buf.byteLength))
+      view.set(buf)
+
+      const body = new FormData()
+      body.set('_csrf', token)
+      body.set('name', 'Too Many')
+      for (let i = 0; i < 9; i++) {
+        body.append('image', new File([view], 'g.png', { type: 'image/png' }))
+      }
+
+      const res = await postMultipart(env, routes.uploadSurface.action.href(), { cookie, body })
+      assert.equal(res.status, 400)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('add-surface-image appends a non-primary image', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'adder', 'pass')
+      const { id, slug } = await seedSurface(env, { ownerId, name: 'Growable' })
+      const sessionCookie = await loginAs(env, 'adder', 'pass')
+      const { token, cookie } = await fetchCsrf(env, routes.editSurface.index.href({ slug }), sessionCookie)
+
+      const sharp = (await import('sharp')).default
+      const buf = await sharp({
+        create: { width: 30, height: 30, channels: 3, background: { r: 50, g: 50, b: 50 } },
+      }).png().toBuffer()
+      const view = new Uint8Array(new ArrayBuffer(buf.byteLength))
+      view.set(buf)
+      const file = new File([view], 'g.png', { type: 'image/png' })
+
+      const body = new FormData()
+      body.set('_csrf', token)
+      body.set('image', file)
+      const res = await postMultipart(env, routes.addSurfaceImage.action.href({ slug }), { cookie, body })
+      assert.equal(res.status, 303)
+
+      const images = await env.db.findMany(surfaceImages, {
+        where: { surface_id: id },
+        orderBy: ['created_at', 'asc'],
+      })
+      assert.equal(images.length, 2)
+      assert.equal(Boolean(images[0]!.is_primary), true)
+      assert.equal(Boolean(images[1]!.is_primary), false)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('set-primary-surface-image swaps which image is primary', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'swapper', 'pass')
+      const { id, slug, primaryImageId } = await seedSurface(env, { ownerId, name: 'Swap Me' })
+
+      // Add a second image directly.
+      const secondId = randomUUID()
+      await env.db.create(surfaceImages, {
+        id: secondId,
+        surface_id: id,
+        image_url: '/images/banner.png',
+        is_primary: false,
+        created_at: Date.now() + 1,
+      })
+
+      const sessionCookie = await loginAs(env, 'swapper', 'pass')
+      const { token, cookie } = await fetchCsrf(env, routes.editSurface.index.href({ slug }), sessionCookie)
+
+      const body = new FormData()
+      body.set('_csrf', token)
+      const res = await postForm(env, routes.setPrimarySurfaceImage.action.href({ slug, imageId: secondId }), { cookie, body })
+      assert.equal(res.status, 303)
+
+      const updatedFirst = await env.db.findOne(surfaceImages, { where: { id: primaryImageId } })
+      const updatedSecond = await env.db.findOne(surfaceImages, { where: { id: secondId } })
+      assert.equal(Boolean(updatedFirst?.is_primary), false)
+      assert.equal(Boolean(updatedSecond?.is_primary), true)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('remove-surface-image promotes next-oldest when removing primary', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'remover', 'pass')
+      const { id, slug, primaryImageId } = await seedSurface(env, { ownerId, name: 'Two-Image' })
+
+      // Add a second image.
+      const secondId = randomUUID()
+      await env.db.create(surfaceImages, {
+        id: secondId,
+        surface_id: id,
+        image_url: '/images/banner.png',
+        is_primary: false,
+        created_at: Date.now() + 1,
+      })
+
+      const sessionCookie = await loginAs(env, 'remover', 'pass')
+      const { token, cookie } = await fetchCsrf(env, routes.editSurface.index.href({ slug }), sessionCookie)
+
+      const body = new FormData()
+      body.set('_csrf', token)
+      const res = await postForm(env, routes.removeSurfaceImage.action.href({ slug, imageId: primaryImageId }), { cookie, body })
+      assert.equal(res.status, 303)
+
+      const promoted = await env.db.findOne(surfaceImages, { where: { id: secondId } })
+      assert.equal(Boolean(promoted?.is_primary), true, 'second image should be promoted to primary')
+      const removed = await env.db.findOne(surfaceImages, { where: { id: primaryImageId } })
+      assert.equal(removed, null)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('remove-surface-image rejects removing the last image', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'last-image', 'pass')
+      const { slug, primaryImageId } = await seedSurface(env, { ownerId, name: 'Only One' })
+
+      const sessionCookie = await loginAs(env, 'last-image', 'pass')
+      const { token, cookie } = await fetchCsrf(env, routes.editSurface.index.href({ slug }), sessionCookie)
+
+      const body = new FormData()
+      body.set('_csrf', token)
+      const res = await postForm(env, routes.removeSurfaceImage.action.href({ slug, imageId: primaryImageId }), { cookie, body })
+      assert.equal(res.status, 400)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('GET /api/surfaces/:id includes images array', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'api-images', 'pass')
+      const { id } = await seedSurface(env, { ownerId, name: 'Has Images' })
+
+      const res = await env.fetch(new Request(buildUrl(routes.api.surfaceShow.href({ id }))))
+      assert.equal(res.status, 200)
+      const body = await res.json()
+      assert.ok(Array.isArray(body.surface.images))
+      assert.equal(body.surface.images.length, 1)
+      assert.equal(body.surface.images[0].is_primary, true)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('POST /api/surfaces/:id/images appends a non-primary image with bearer auth', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'api-adder', 'pass')
+      const { id } = await seedSurface(env, { ownerId, name: 'Growable' })
+
+      const ownerRow = await env.db.findOne(users, { where: { id: ownerId } })
+      assert.ok(ownerRow)
+      const { createTokenForUser } = await import('../app/data/api-tokens.ts')
+      const token = (await createTokenForUser(env.db, ownerRow, 'add-test')).plaintext
+
+      const sharp = (await import('sharp')).default
+      const buf = await sharp({
+        create: { width: 30, height: 30, channels: 3, background: { r: 100, g: 100, b: 100 } },
+      }).png().toBuffer()
+      const view = new Uint8Array(new ArrayBuffer(buf.byteLength))
+      view.set(buf)
+
+      const body = new FormData()
+      body.set('image', new File([view], 'g.png', { type: 'image/png' }))
+
+      const res = await env.fetch(
+        new Request(buildUrl(routes.api.surfaceImageCreate.href({ id })), {
+          method: 'POST',
+          headers: { authorization: `Bearer ${token}` },
+          body,
+        }),
+      )
+      assert.equal(res.status, 201)
+      const created = await res.json()
+      assert.equal(created.is_primary, false)
+      assert.ok(created.image_url)
+
+      const all = await env.db.findMany(surfaceImages, { where: { surface_id: id } })
+      assert.equal(all.length, 2)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('POST /api/surfaces/:id/images/:imageId/primary swaps the primary', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'api-swapper', 'pass')
+      const { id, primaryImageId } = await seedSurface(env, { ownerId, name: 'API Swap' })
+
+      const secondId = randomUUID()
+      await env.db.create(surfaceImages, {
+        id: secondId,
+        surface_id: id,
+        image_url: '/images/banner.png',
+        is_primary: false,
+        created_at: Date.now() + 1,
+      })
+
+      const ownerRow = await env.db.findOne(users, { where: { id: ownerId } })
+      assert.ok(ownerRow)
+      const { createTokenForUser } = await import('../app/data/api-tokens.ts')
+      const token = (await createTokenForUser(env.db, ownerRow, 'primary-test')).plaintext
+
+      const res = await env.fetch(
+        new Request(buildUrl(routes.api.surfaceImageSetPrimary.href({ id, imageId: secondId })), {
+          method: 'POST',
+          headers: { authorization: `Bearer ${token}` },
+        }),
+      )
+      assert.equal(res.status, 200)
+
+      const updatedFirst = await env.db.findOne(surfaceImages, { where: { id: primaryImageId } })
+      const updatedSecond = await env.db.findOne(surfaceImages, { where: { id: secondId } })
+      assert.equal(Boolean(updatedFirst?.is_primary), false)
+      assert.equal(Boolean(updatedSecond?.is_primary), true)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('DELETE /api/surfaces/:id/images/:imageId rejects removing the last image', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'api-lastimg', 'pass')
+      const { id, primaryImageId } = await seedSurface(env, { ownerId, name: 'Only One' })
+
+      const ownerRow = await env.db.findOne(users, { where: { id: ownerId } })
+      assert.ok(ownerRow)
+      const { createTokenForUser } = await import('../app/data/api-tokens.ts')
+      const token = (await createTokenForUser(env.db, ownerRow, 'last-test')).plaintext
+
+      const res = await env.fetch(
+        new Request(buildUrl(routes.api.surfaceImageDestroy.href({ id, imageId: primaryImageId })), {
+          method: 'DELETE',
+          headers: { authorization: `Bearer ${token}` },
+        }),
+      )
+      assert.equal(res.status, 400)
     } finally {
       env.cleanup()
     }

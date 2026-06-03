@@ -5,16 +5,22 @@ import { logger } from 'remix/middleware/logger'
 import { staticFiles } from 'remix/middleware/static'
 
 import rootController from './actions/controller.tsx'
+import addSurfaceImageController from './actions/add-surface-image/controller.tsx'
 import adminController from './actions/admin/controller.tsx'
 import apiController from './actions/api/controller.tsx'
 import changePasswordController from './actions/change-password/controller.tsx'
 import editProfileController from './actions/edit-profile/controller.tsx'
 import editStickerController from './actions/edit-sticker/controller.tsx'
+import editSurfaceController from './actions/edit-surface/controller.tsx'
 import invitationsController from './actions/invitations/controller.tsx'
 import invitationController from './actions/invitation/controller.tsx'
 import loginController from './actions/login/controller.tsx'
 import removeStickerController from './actions/remove-sticker/controller.tsx'
+import removeSurfaceController from './actions/remove-surface/controller.tsx'
+import removeSurfaceImageController from './actions/remove-surface-image/controller.tsx'
+import setPrimarySurfaceImageController from './actions/set-primary-surface-image/controller.tsx'
 import uploadStickerController from './actions/upload-sticker/controller.tsx'
+import uploadSurfaceController from './actions/upload-surface/controller.tsx'
 import { appSession, loadAuth } from './data/auth.ts'
 import { loadDatabase } from './middleware/database.ts'
 import { formDataExceptUploads } from './middleware/form-data.ts'
@@ -78,6 +84,12 @@ router.map(routes.login, loginController)
 router.map(routes.changePassword, changePasswordController)
 router.map(routes.editProfile, editProfileController)
 router.map(routes.editSticker, editStickerController)
+router.map(routes.editSurface, editSurfaceController)
 router.map(routes.api, apiController)
 router.map(routes.removeSticker, removeStickerController)
+router.map(routes.removeSurface, removeSurfaceController)
 router.map(routes.uploadSticker, uploadStickerController)
+router.map(routes.uploadSurface, uploadSurfaceController)
+router.map(routes.addSurfaceImage, addSurfaceImageController)
+router.map(routes.removeSurfaceImage, removeSurfaceImageController)
+router.map(routes.setPrimarySurfaceImage, setPrimarySurfaceImageController)

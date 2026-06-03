@@ -7,14 +7,30 @@ import { inList } from 'remix/data-table/operators'
 import { createController } from 'remix/router'
 
 import { getCurrentUser } from '../../data/current-user.ts'
-import { stickers, users } from '../../data/schema.ts'
-import { ProcessImageError, processStickerUpload } from '../../data/upload-image.ts'
+import { stickers, surfaces, surfaceImages, users } from '../../data/schema.ts'
+import type { SurfaceImage } from '../../data/schema.ts'
+import { generateContentSlug } from '../../data/slug.ts'
+import {
+  ProcessImageError,
+  processStickerUpload,
+  processSurfaceUpload,
+} from '../../data/upload-image.ts'
 import { uploadStorage } from '../../data/uploads.ts'
-import { stickerNameSchema } from '../../data/validators.ts'
+import {
+  stickerNameSchema,
+  surfaceDescriptionSchema,
+  surfaceNameSchema,
+} from '../../data/validators.ts'
 import { routes } from '../../routes.ts'
 import { readUploadFormData } from '../../utils/upload.ts'
 import { jsonError, jsonOk } from './json.ts'
-import { serializeSticker, serializeUser, serializeUserStub } from './serializers.ts'
+import {
+  serializeSticker,
+  serializeSurface,
+  serializeSurfaceImage,
+  serializeUser,
+  serializeUserStub,
+} from './serializers.ts'
 
 const apiStickerCreateSchema = f.object({
   name: f.field(stickerNameSchema),
@@ -22,6 +38,14 @@ const apiStickerCreateSchema = f.object({
     s.instanceof_(File).refine((file) => file.size > 0, 'Please attach an image'),
   ),
 })
+
+const apiSurfaceCreateSchema = f.object({
+  name: f.field(surfaceNameSchema),
+  description: f.field(s.optional(surfaceDescriptionSchema)),
+})
+
+const MAX_GALLERY_FILES = 8
+const MAX_TOTAL_BYTES = 88 * 1024 * 1024 // 8 files × ~11 MB each
 
 const PAGE_SIZE = 50
 
@@ -222,6 +246,439 @@ export default createController(routes.api, {
         user: serializeUserStub(u),
         stickers: rows.map((s) => serializeSticker(s, u)),
       })
+    },
+
+    // -------- GET /api/surfaces --------
+    async surfacesIndex(context) {
+      const db = context.get(Database)
+      const page = readPage(context.url)
+      const rows = await db.findMany(surfaces, {
+        orderBy: ['created_at', 'desc'],
+        limit: PAGE_SIZE + 1,
+        offset: page * PAGE_SIZE,
+      })
+      const hasMore = rows.length > PAGE_SIZE
+      const slice = rows.slice(0, PAGE_SIZE)
+      const ownerIds = Array.from(new Set(slice.map((s) => s.owner_id)))
+      const ownerRows = ownerIds.length
+        ? await db.findMany(users, { where: inList('id', ownerIds) })
+        : []
+      const ownerById = new Map(ownerRows.map((u) => [u.id, u]))
+
+      const surfaceIds = slice.map((s) => s.id)
+      const allImages = surfaceIds.length
+        ? await db.findMany(surfaceImages, { where: inList('surface_id', surfaceIds) })
+        : []
+      const imagesBySurfaceId = new Map<string, SurfaceImage[]>()
+      for (const img of allImages) {
+        const arr = imagesBySurfaceId.get(img.surface_id) ?? []
+        arr.push(img)
+        imagesBySurfaceId.set(img.surface_id, arr)
+      }
+
+      return jsonOk({
+        surfaces: slice.flatMap((surface) => {
+          // owner_id is NOT NULL on surfaces. If the hydrated owner is
+          // somehow missing (deleted concurrently), drop the row rather
+          // than emit a malformed entry.
+          const owner = ownerById.get(surface.owner_id)
+          if (!owner) return []
+          const images = imagesBySurfaceId.get(surface.id) ?? []
+          return [serializeSurface(surface, images, owner)]
+        }),
+        page,
+        has_more: hasMore,
+      })
+    },
+
+    // -------- GET /api/surfaces/:id --------
+    async surfaceShow(context) {
+      const db = context.get(Database)
+      const surface = await db.findOne(surfaces, { where: { id: context.params.id } })
+      if (!surface) return jsonError(404, 'Not Found')
+      const owner = await db.findOne(users, { where: { id: surface.owner_id } })
+      if (!owner) return jsonError(404, 'Not Found')
+      const images = await db.findMany(surfaceImages, {
+        where: { surface_id: surface.id },
+      })
+      return jsonOk({ surface: serializeSurface(surface, images, owner) })
+    },
+
+    // -------- POST /api/surfaces --------
+    async surfaceCreate(context) {
+      const user = getCurrentUser(context)
+      if (!user) return jsonError(401, 'Unauthorized')
+
+      const uploadParsed = await readUploadFormData(context.request, {
+        maxFiles: MAX_GALLERY_FILES,
+        maxTotalSize: MAX_TOTAL_BYTES,
+      })
+      if (!uploadParsed.success) {
+        return jsonError(uploadParsed.error.status, uploadParsed.error.code, {
+          message: uploadParsed.error.message,
+          ...uploadParsed.error.extras,
+        })
+      }
+
+      const parsed = s.parseSafe(apiSurfaceCreateSchema, uploadParsed.value)
+      if (!parsed.success) {
+        return jsonError(400, 'Validation failed', { issues: parsed.issues })
+      }
+      const { name, description } = parsed.value
+
+      const allImageFields = uploadParsed.value.getAll('image')
+      const files = allImageFields.filter(
+        (v): v is File => v instanceof File && v.size > 0,
+      )
+      if (files.length === 0) {
+        return jsonError(400, 'no_image', {
+          message: 'please attach at least one image',
+        })
+      }
+      if (files.length > MAX_GALLERY_FILES) {
+        return jsonError(400, 'too_many_images', {
+          message: `at most ${MAX_GALLERY_FILES} images per surface`,
+          max: MAX_GALLERY_FILES,
+        })
+      }
+
+      // Process each file. On any failure, clean up already-stored URLs.
+      const storedUrls: string[] = []
+      for (const file of files) {
+        try {
+          const url = await processSurfaceUpload(file)
+          storedUrls.push(url)
+        } catch (error) {
+          for (const url of storedUrls) await safeRemoveStoredUpload(url)
+          if (error instanceof ProcessImageError) {
+            const status = error.code === 'file_too_large' ? 413 : 400
+            return jsonError(status, error.code, { message: error.message })
+          }
+          return jsonError(400, 'upload_failed', {
+            message: error instanceof Error ? error.message : 'Upload failed',
+          })
+        }
+      }
+
+      const db = context.get(Database)
+      const now = Date.now()
+      const id = randomUUID()
+      const slug = generateContentSlug(name)
+
+      try {
+        await db.transaction(async (tx) => {
+          await tx.create(surfaces, {
+            id,
+            name,
+            slug,
+            ...(description == null ? {} : { description }),
+            owner_id: user.id,
+            created_at: now,
+            updated_at: now,
+          })
+          for (let i = 0; i < storedUrls.length; i++) {
+            await tx.create(surfaceImages, {
+              id: randomUUID(),
+              surface_id: id,
+              image_url: storedUrls[i]!,
+              is_primary: i === 0,
+              created_at: now + i,
+            })
+          }
+        })
+      } catch (error) {
+        for (const url of storedUrls) await safeRemoveStoredUpload(url)
+        throw error
+      }
+
+      const created = await db.findOne(surfaces, { where: { id } })
+      const images = await db.findMany(surfaceImages, { where: { surface_id: id } })
+      return jsonOk(
+        { surface: serializeSurface(created!, images, user as never) },
+        { status: 201 },
+      )
+    },
+
+    // -------- PATCH /api/surfaces/:id --------
+    async surfaceUpdate(context) {
+      const user = getCurrentUser(context)
+      if (!user) return jsonError(401, 'Unauthorized')
+
+      const db = context.get(Database)
+      const surface = await db.findOne(surfaces, { where: { id: context.params.id } })
+      if (!surface) return jsonError(404, 'Not Found')
+      if (surface.owner_id !== user.id && user.role !== 'ADMIN') {
+        return jsonError(403, 'Forbidden')
+      }
+
+      // Accept either JSON ({"name":"...","description":"..."}) or a
+      // form-encoded body. `hasDescription` distinguishes "field absent"
+      // from "field present and empty" — the former leaves description
+      // alone, the latter clears it.
+      let rawName: unknown
+      let rawDescription: unknown
+      let hasDescription = false
+      const contentType = context.request.headers.get('content-type') ?? ''
+      if (contentType.includes('application/json')) {
+        try {
+          const payload = (await context.request.json()) as {
+            name?: unknown
+            description?: unknown
+          }
+          rawName = payload.name
+          if ('description' in payload) {
+            hasDescription = true
+            rawDescription = payload.description
+          }
+        } catch {
+          return jsonError(400, 'Invalid JSON body')
+        }
+      } else {
+        const form = context.get(FormData)
+        rawName = form.get('name')
+        if (form.has('description')) {
+          hasDescription = true
+          rawDescription = form.get('description')
+        }
+      }
+
+      const nameResult = s.parseSafe(surfaceNameSchema, rawName)
+      if (!nameResult.success) {
+        return jsonError(400, 'Validation failed', { issues: nameResult.issues })
+      }
+      const name = nameResult.value
+
+      const changes: Partial<{
+        name: string
+        description: string | undefined
+        updated_at: number
+      }> = {
+        name,
+        updated_at: Date.now(),
+      }
+
+      if (hasDescription) {
+        const descResult = s.parseSafe(surfaceDescriptionSchema, rawDescription ?? '')
+        if (!descResult.success) {
+          return jsonError(400, 'Validation failed', { issues: descResult.issues })
+        }
+        // surfaceDescriptionSchema turns whitespace-only input into null.
+        // Match the edit-surface controller pattern: cast null to undefined
+        // to satisfy the column type while still writing NULL to SQLite.
+        if (descResult.value === null) {
+          changes.description = null as unknown as undefined
+        } else {
+          changes.description = descResult.value
+        }
+      }
+
+      await db.update(surfaces, surface.id, changes)
+      const updated = await db.findOne(surfaces, { where: { id: surface.id } })
+      const owner = await db.findOne(users, { where: { id: updated!.owner_id } })
+      if (!owner) return jsonError(404, 'Not Found')
+      const images = await db.findMany(surfaceImages, {
+        where: { surface_id: surface.id },
+      })
+      return jsonOk({ surface: serializeSurface(updated!, images, owner) })
+    },
+
+    // -------- DELETE /api/surfaces/:id --------
+    async surfaceDestroy(context) {
+      const user = getCurrentUser(context)
+      if (!user) return jsonError(401, 'Unauthorized')
+
+      const db = context.get(Database)
+      const surface = await db.findOne(surfaces, { where: { id: context.params.id } })
+      if (!surface) return jsonError(404, 'Not Found')
+      if (surface.owner_id !== user.id && user.role !== 'ADMIN') {
+        return jsonError(403, 'Forbidden')
+      }
+      const images = await db.findMany(surfaceImages, {
+        where: { surface_id: surface.id },
+      })
+      await db.delete(surfaces, surface.id)
+      for (const img of images) {
+        await safeRemoveStoredUpload(img.image_url)
+      }
+      return new Response(null, { status: 204 })
+    },
+
+    // -------- GET /api/users/:username/surfaces --------
+    async userSurfaces(context) {
+      const db = context.get(Database)
+      const u = await db.findOne(users, { where: { username: context.params.username } })
+      if (!u) return jsonError(404, 'Not Found')
+      const rows = await db.findMany(surfaces, {
+        where: { owner_id: u.id },
+        orderBy: ['created_at', 'desc'],
+      })
+
+      const surfaceIds = rows.map((s) => s.id)
+      const allImages = surfaceIds.length
+        ? await db.findMany(surfaceImages, { where: inList('surface_id', surfaceIds) })
+        : []
+      const imagesBySurfaceId = new Map<string, SurfaceImage[]>()
+      for (const img of allImages) {
+        const arr = imagesBySurfaceId.get(img.surface_id) ?? []
+        arr.push(img)
+        imagesBySurfaceId.set(img.surface_id, arr)
+      }
+
+      return jsonOk({
+        user: serializeUserStub(u),
+        surfaces: rows.map((surface) =>
+          serializeSurface(surface, imagesBySurfaceId.get(surface.id) ?? [], u),
+        ),
+      })
+    },
+
+    // -------- POST /api/surfaces/:id/images --------
+    async surfaceImageCreate(context) {
+      const user = getCurrentUser(context)
+      if (!user) return jsonError(401, 'Unauthorized')
+
+      const db = context.get(Database)
+      const surface = await db.findOne(surfaces, { where: { id: context.params.id } })
+      if (!surface) return jsonError(404, 'Not Found')
+      if (surface.owner_id !== user.id && user.role !== 'ADMIN') {
+        return jsonError(403, 'Forbidden')
+      }
+
+      const currentCount = await db.count(surfaceImages, {
+        where: { surface_id: surface.id },
+      })
+      if (currentCount >= MAX_GALLERY_FILES) {
+        return jsonError(400, 'too_many_images', { max: MAX_GALLERY_FILES })
+      }
+
+      const parsed = await readUploadFormData(context.request, {
+        maxFiles: 1,
+        maxTotalSize: 10 * 1024 * 1024 + 1024,
+      })
+      if (!parsed.success) {
+        return jsonError(parsed.error.status, parsed.error.code, {
+          message: parsed.error.message,
+          ...parsed.error.extras,
+        })
+      }
+
+      const file = parsed.value.get('image')
+      if (!(file instanceof File) || file.size === 0) {
+        return jsonError(400, 'no_image')
+      }
+
+      let storedUrl: string
+      try {
+        storedUrl = await processSurfaceUpload(file)
+      } catch (error) {
+        if (error instanceof ProcessImageError) {
+          const status = error.code === 'file_too_large' ? 413 : 400
+          return jsonError(status, error.code, { message: error.message })
+        }
+        return jsonError(400, 'upload_failed', {
+          message: error instanceof Error ? error.message : 'Upload failed',
+        })
+      }
+
+      const imageId = randomUUID()
+      try {
+        await db.create(surfaceImages, {
+          id: imageId,
+          surface_id: surface.id,
+          image_url: storedUrl,
+          is_primary: false,
+          created_at: Date.now(),
+        })
+      } catch (error) {
+        // DB write failed after the file was stored. Clean up the orphaned file.
+        await safeRemoveStoredUpload(storedUrl)
+        throw error
+      }
+
+      const created = await db.findOne(surfaceImages, { where: { id: imageId } })
+      return new Response(JSON.stringify(serializeSurfaceImage(created!)), {
+        status: 201,
+        headers: { 'content-type': 'application/json; charset=utf-8' },
+      })
+    },
+
+    // -------- DELETE /api/surfaces/:id/images/:imageId --------
+    async surfaceImageDestroy(context) {
+      const user = getCurrentUser(context)
+      if (!user) return jsonError(401, 'Unauthorized')
+
+      const db = context.get(Database)
+      const surface = await db.findOne(surfaces, { where: { id: context.params.id } })
+      if (!surface) return jsonError(404, 'Not Found')
+      if (surface.owner_id !== user.id && user.role !== 'ADMIN') {
+        return jsonError(403, 'Forbidden')
+      }
+
+      const image = await db.findOne(surfaceImages, {
+        where: { id: context.params.imageId },
+      })
+      if (!image) return jsonError(404, 'Not Found')
+      if (image.surface_id !== surface.id) return jsonError(400, 'Bad Request')
+
+      const count = await db.count(surfaceImages, {
+        where: { surface_id: surface.id },
+      })
+      if (count <= 1) return jsonError(400, 'last_image')
+
+      const wasPrimary = Boolean(image.is_primary)
+      await db.delete(surfaceImages, image.id)
+      await safeRemoveStoredUpload(image.image_url)
+
+      if (wasPrimary) {
+        const remaining = await db.findMany(surfaceImages, {
+          where: { surface_id: surface.id },
+          orderBy: ['created_at', 'asc'],
+          limit: 1,
+        })
+        if (remaining[0]) {
+          await db.update(surfaceImages, remaining[0].id, { is_primary: true })
+        }
+      }
+
+      return new Response(null, { status: 204 })
+    },
+
+    // -------- POST /api/surfaces/:id/images/:imageId/primary --------
+    async surfaceImageSetPrimary(context) {
+      const user = getCurrentUser(context)
+      if (!user) return jsonError(401, 'Unauthorized')
+
+      const db = context.get(Database)
+      const surface = await db.findOne(surfaces, { where: { id: context.params.id } })
+      if (!surface) return jsonError(404, 'Not Found')
+      if (surface.owner_id !== user.id && user.role !== 'ADMIN') {
+        return jsonError(403, 'Forbidden')
+      }
+
+      const image = await db.findOne(surfaceImages, {
+        where: { id: context.params.imageId },
+      })
+      if (!image) return jsonError(404, 'Not Found')
+      if (image.surface_id !== surface.id) return jsonError(400, 'Bad Request')
+
+      await db.transaction(async (tx) => {
+        const primaries = await tx.findMany(surfaceImages, {
+          where: { surface_id: surface.id, is_primary: true },
+        })
+        for (const p of primaries) {
+          if (p.id !== image.id) {
+            await tx.update(surfaceImages, p.id, { is_primary: false })
+          }
+        }
+        await tx.update(surfaceImages, image.id, { is_primary: true })
+      })
+
+      const owner = await db.findOne(users, { where: { id: surface.owner_id } })
+      if (!owner) return jsonError(404, 'Not Found')
+      const allImages = await db.findMany(surfaceImages, {
+        where: { surface_id: surface.id },
+      })
+      return jsonOk({ surface: serializeSurface(surface, allImages, owner) })
     },
 
     // -------- Catch-all: any other /api/* URL --------

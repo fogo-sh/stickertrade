@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -25,19 +26,26 @@ import { createMemorySessionStorage } from 'remix/session-storage/memory'
 import { createRouter, type MiddlewareContext } from 'remix/router'
 
 import rootController from '../app/actions/controller.tsx'
+import addSurfaceImageController from '../app/actions/add-surface-image/controller.tsx'
 import adminController from '../app/actions/admin/controller.tsx'
 import apiController from '../app/actions/api/controller.tsx'
 import changePasswordController from '../app/actions/change-password/controller.tsx'
 import editProfileController from '../app/actions/edit-profile/controller.tsx'
 import editStickerController from '../app/actions/edit-sticker/controller.tsx'
+import editSurfaceController from '../app/actions/edit-surface/controller.tsx'
 import invitationsController from '../app/actions/invitations/controller.tsx'
 import invitationController from '../app/actions/invitation/controller.tsx'
 import loginController from '../app/actions/login/controller.tsx'
 import removeStickerController from '../app/actions/remove-sticker/controller.tsx'
+import removeSurfaceController from '../app/actions/remove-surface/controller.tsx'
+import removeSurfaceImageController from '../app/actions/remove-surface-image/controller.tsx'
+import setPrimarySurfaceImageController from '../app/actions/set-primary-surface-image/controller.tsx'
 import uploadStickerController from '../app/actions/upload-sticker/controller.tsx'
+import uploadSurfaceController from '../app/actions/upload-surface/controller.tsx'
 import { render } from '../app/middleware/render.tsx'
 import { routes } from '../app/routes.ts'
-import { users, type User } from '../app/data/schema.ts'
+import { surfaceImages, surfaces, users, type User } from '../app/data/schema.ts'
+import { generateContentSlug } from '../app/data/slug.ts'
 
 export interface TestEnv {
   fetch: (request: Request) => Promise<Response>
@@ -135,9 +143,15 @@ export async function createTestEnv(options: CreateTestEnvOptions = {}): Promise
   router.map(routes.changePassword, changePasswordController as any)
   router.map(routes.editProfile, editProfileController as any)
   router.map(routes.editSticker, editStickerController as any)
+  router.map(routes.editSurface, editSurfaceController as any)
   router.map(routes.api, apiController as any)
   router.map(routes.removeSticker, removeStickerController as any)
+  router.map(routes.removeSurface, removeSurfaceController as any)
   router.map(routes.uploadSticker, uploadStickerController as any)
+  router.map(routes.uploadSurface, uploadSurfaceController as any)
+  router.map(routes.addSurfaceImage, addSurfaceImageController as any)
+  router.map(routes.removeSurfaceImage, removeSurfaceImageController as any)
+  router.map(routes.setPrimarySurfaceImage, setPrimarySurfaceImageController as any)
 
   return {
     fetch: (request: Request) => router.fetch(request),
@@ -228,6 +242,50 @@ export async function postMultipart(
       body: options.body,
     }),
   )
+}
+
+export interface SeedSurfaceOptions {
+  ownerId: string
+  name: string
+  description?: string | null
+  imageUrl?: string
+}
+
+/**
+ * Create a surface with one primary image. Returns the surface id, slug,
+ * and the primary image's id.
+ *
+ * Defaults: name is the only required field besides ownerId. imageUrl
+ * defaults to /images/banner.png — fine for tests that don't care about
+ * the file contents.
+ */
+export async function seedSurface(
+  env: TestEnv,
+  opts: SeedSurfaceOptions,
+): Promise<{ id: string; slug: string; primaryImageId: string }> {
+  const id = randomUUID()
+  const primaryImageId = randomUUID()
+  const slug = generateContentSlug(opts.name)
+  const now = Date.now()
+  await env.db.transaction(async (tx) => {
+    await tx.create(surfaces, {
+      id,
+      name: opts.name,
+      slug,
+      ...(opts.description ? { description: opts.description } : {}),
+      owner_id: opts.ownerId,
+      created_at: now,
+      updated_at: now,
+    })
+    await tx.create(surfaceImages, {
+      id: primaryImageId,
+      surface_id: id,
+      image_url: opts.imageUrl ?? '/images/banner.png',
+      is_primary: true,
+      created_at: now,
+    })
+  })
+  return { id, slug, primaryImageId }
 }
 
 export async function loginAs(

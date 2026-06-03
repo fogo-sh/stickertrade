@@ -11,11 +11,14 @@ import { getCurrentUser } from '../data/current-user.ts'
 import { buildDevLogsFeed } from '../data/dev-logs-feed.ts'
 import { getDevLog, getDevLogs } from '../data/dev-logs.ts'
 import { roadmapTasks } from '../data/roadmap.ts'
-import { apiTokens, stickers, users } from '../data/schema.ts'
+import { apiTokens, stickers, surfaceImages, surfaces, users, type Surface } from '../data/schema.ts'
 import { looksLikeUuid } from '../data/slug.ts'
+import { sortGalleryImages } from '../data/surface-images.ts'
+import { getSurfaceOfTheDay } from '../data/surface-of-the-day.ts'
 import { uploadStorage } from '../data/uploads.ts'
 import { tokenNameSchema } from '../data/validators.ts'
 import { routes } from '../routes.ts'
+import type { SurfaceCardSurface } from '../ui/surface-card.tsx'
 import { BrandPage } from './brand-page.tsx'
 import { DevLogPage } from './dev-log-page.tsx'
 import { DevLogsIndexPage } from './dev-logs-index-page.tsx'
@@ -24,10 +27,37 @@ import { ProfilePage } from './profile-page.tsx'
 import { RoadmapPage } from './roadmap-page.tsx'
 import { StickerPage } from './sticker-page.tsx'
 import { StickersPage } from './stickers-page.tsx'
+import { SurfacePage } from './surface-page.tsx'
+import { SurfacesPage } from './surfaces-page.tsx'
 import { UsersPage } from './users-page.tsx'
 
 function notFound(): Response {
   return new Response('Not Found', { status: 404 })
+}
+
+const MISSING_IMAGE = '/images/banner.png'
+
+/**
+ * Build a `surface.id -> primary image_url` map for a batch of surfaces.
+ * Surfaces without a primary fall back to a placeholder image at the call site.
+ */
+export async function buildPrimaryImageMap(
+  db: any,
+  surfaceRows: Surface[],
+): Promise<Map<string, string>> {
+  if (surfaceRows.length === 0) return new Map()
+  const ids = surfaceRows.map((s) => s.id)
+  // Fetch all images for these surfaces and filter primaries in JS — the
+  // remix/data-table `where` clause API doesn't compose inList with another
+  // equality cleanly, so this is the portable shape.
+  const allImages = await db.findMany(surfaceImages, {
+    where: inList('surface_id', ids),
+  })
+  const map = new Map<string, string>()
+  for (const img of allImages) {
+    if (img.is_primary) map.set(img.surface_id, img.image_url)
+  }
+  return map
 }
 
 export default createController(routes, {
@@ -52,10 +82,11 @@ export default createController(routes, {
     async home(context) {
       const db = context.get(Database)
       const user = getCurrentUser(context)
-      const stickerRows = await db.findMany(stickers, {
-        orderBy: ['created_at', 'desc'],
-        limit: 12,
-      })
+      const [stickerRows, userRows, sotd] = await Promise.all([
+        db.findMany(stickers, { orderBy: ['created_at', 'desc'], limit: 12 }),
+        db.findMany(users, { orderBy: ['updated_at', 'desc'], limit: 8 }),
+        getSurfaceOfTheDay(db),
+      ])
       const ownerIds = Array.from(
         new Set(stickerRows.map((s) => s.owner_id).filter((id): id is string => !!id)),
       )
@@ -64,10 +95,21 @@ export default createController(routes, {
         : []
       const ownerById = new Map(ownerRows.map((o) => [o.id, o]))
 
-      const userRows = await db.findMany(users, {
-        orderBy: ['updated_at', 'desc'],
-        limit: 8,
-      })
+      let sotdProp: SurfaceCardSurface | null = null
+      if (sotd) {
+        const owner = await db.findOne(users, { where: { id: sotd.owner_id } })
+        if (owner) {
+          const sotdMap = await buildPrimaryImageMap(db, [sotd])
+          sotdProp = {
+            id: sotd.id,
+            slug: sotd.slug,
+            name: sotd.name,
+            description: sotd.description,
+            image_url: sotdMap.get(sotd.id) ?? MISSING_IMAGE,
+            owner: { username: owner.username, avatar_url: owner.avatar_url ?? null },
+          }
+        }
+      }
 
       return context.render(
         <HomePage
@@ -89,6 +131,7 @@ export default createController(routes, {
             username: u.username,
             avatar_url: u.avatar_url ?? null,
           }))}
+          surfaceOfTheDay={sotdProp}
         />,
       )
     },
@@ -147,6 +190,85 @@ export default createController(routes, {
       )
     },
 
+    // -------- Surfaces index --------
+    async surfaces(context) {
+      const db = context.get(Database)
+      const rows = await db.findMany(surfaces, {
+        orderBy: ['created_at', 'desc'],
+        limit: 50,
+      })
+      const ownerIds = Array.from(new Set(rows.map((s) => s.owner_id)))
+      const ownerRows = ownerIds.length
+        ? await db.findMany(users, { where: inList('id', ownerIds) })
+        : []
+      const ownerById = new Map(ownerRows.map((u) => [u.id, u]))
+      const primaryMap = await buildPrimaryImageMap(db, rows)
+      return context.render(
+        <SurfacesPage
+          user={getCurrentUser(context)}
+          surfaces={rows.map((s) => {
+            const owner = ownerById.get(s.owner_id)
+            return {
+              id: s.id,
+              slug: s.slug,
+              name: s.name,
+              description: s.description,
+              image_url: primaryMap.get(s.id) ?? MISSING_IMAGE,
+              owner: owner
+                ? { username: owner.username, avatar_url: owner.avatar_url ?? null }
+                : { username: 'unknown', avatar_url: null },
+            }
+          })}
+        />,
+      )
+    },
+
+    // -------- Surface show --------
+    async surface(context) {
+      const db = context.get(Database)
+      const param = context.params.slug
+
+      // Backwards compatibility: UUID URLs 301-redirect to the slug URL.
+      if (looksLikeUuid(param)) {
+        const byId = await db.findOne(surfaces, { where: { id: param } })
+        if (!byId) return notFound()
+        return redirect(`/surface/${encodeURIComponent(byId.slug)}`, 301)
+      }
+
+      const surface = await db.findOne(surfaces, { where: { slug: param } })
+      if (!surface) return notFound()
+      const owner = await db.findOne(users, { where: { id: surface.owner_id } })
+      if (!owner) return notFound() // shouldn't happen due to CASCADE FK
+
+      const imageRows = await db.findMany(surfaceImages, {
+        where: { surface_id: surface.id },
+      })
+      const images = sortGalleryImages(imageRows).map((img) => ({
+        id: img.id,
+        image_url: img.image_url,
+        is_primary: Boolean(img.is_primary),
+      }))
+
+      const currentUser = getCurrentUser(context)
+      const canEdit =
+        currentUser != null &&
+        (currentUser.id === surface.owner_id || currentUser.role === 'ADMIN')
+      return context.render(
+        <SurfacePage
+          user={currentUser}
+          surface={{
+            id: surface.id,
+            slug: surface.slug,
+            name: surface.name,
+            description: surface.description,
+            owner: { username: owner.username, avatar_url: owner.avatar_url ?? null },
+          }}
+          images={images}
+          canEdit={canEdit}
+        />,
+      )
+    },
+
     // -------- Sticker show --------
     async sticker(context) {
       const db = context.get(Database)
@@ -187,10 +309,17 @@ export default createController(routes, {
         where: { username: context.params.username },
       })
       if (!profileUser) return notFound()
-      const profileStickers = await db.findMany(stickers, {
-        where: { owner_id: profileUser.id },
-        orderBy: ['created_at', 'desc'],
-      })
+      const [profileStickers, profileSurfaces] = await Promise.all([
+        db.findMany(stickers, {
+          where: { owner_id: profileUser.id },
+          orderBy: ['created_at', 'desc'],
+        }),
+        db.findMany(surfaces, {
+          where: { owner_id: profileUser.id },
+          orderBy: ['created_at', 'desc'],
+        }),
+      ])
+      const primaryMap = await buildPrimaryImageMap(db, profileSurfaces)
       return context.render(
         <ProfilePage
           user={getCurrentUser(context)}
@@ -202,6 +331,17 @@ export default createController(routes, {
               slug: s.slug,
               name: s.name,
               image_url: s.image_url,
+            })),
+            surfaces: profileSurfaces.map((s) => ({
+              id: s.id,
+              slug: s.slug,
+              name: s.name,
+              description: s.description,
+              image_url: primaryMap.get(s.id) ?? MISSING_IMAGE,
+              owner: {
+                username: profileUser.username,
+                avatar_url: profileUser.avatar_url ?? null,
+              },
             })),
           }}
         />,

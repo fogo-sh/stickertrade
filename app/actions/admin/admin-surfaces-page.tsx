@@ -6,7 +6,7 @@ import { CsrfField } from '../../ui/form.tsx'
 import type { HeaderUser } from '../../ui/header.tsx'
 import { colors } from '../../ui/theme.ts'
 
-export interface AdminStickerRow {
+export interface AdminSurfaceRow {
   id: string
   slug: string
   name: string
@@ -15,33 +15,33 @@ export interface AdminStickerRow {
   createdRelative: string
 }
 
-export function AdminStickersPage() {
+export function AdminSurfacesPage() {
   return ({
     user,
-    stickers,
+    surfaces,
     page,
     hasNext,
   }: {
     user: HeaderUser
-    stickers: AdminStickerRow[]
+    surfaces: AdminSurfaceRow[]
     page: number
     hasNext: boolean
   }) => (
-    <Document title="stickertrade - admin / stickers" user={user}>
+    <Document title="stickertrade - admin / surfaces" user={user}>
       <main>
         <div mix={headerStyle}>
-          <p mix={css({ fontSize: '1.25rem', fontWeight: 600 })}>stickers (page {page})</p>
+          <p mix={css({ fontSize: '1.25rem', fontWeight: 600 })}>surfaces (page {page})</p>
           <nav mix={css({ display: 'flex', gap: '0.5rem' })}>
             {page > 0 ? (
               <a
-                href={routes.admin.stickers.href() + `?page=${page - 1}`}
+                href={routes.admin.surfaces.href() + `?page=${page - 1}`}
                 mix={navLinkStyle}
               >
                 ← prev
               </a>
             ) : null}
             {hasNext ? (
-              <a href={routes.admin.stickers.href() + `?page=${page + 1}`} mix={navLinkStyle}>
+              <a href={routes.admin.surfaces.href() + `?page=${page + 1}`} mix={navLinkStyle}>
                 next →
               </a>
             ) : null}
@@ -58,15 +58,15 @@ export function AdminStickersPage() {
             </tr>
           </thead>
           <tbody>
-            {stickers.map((s) => (
+            {surfaces.map((s) => (
               <tr key={s.id}>
                 <td mix={cellStyle}>
-                  <a href={routes.sticker.href({ slug: s.slug })}>
+                  <a href={routes.surface.href({ slug: s.slug })}>
                     <img src={s.image_url} alt={s.name} mix={previewStyle} />
                   </a>
                 </td>
                 <td mix={cellStyle}>
-                  <a href={routes.sticker.href({ slug: s.slug })} mix={css({ '&:hover': { textDecoration: 'underline' } })}>
+                  <a href={routes.surface.href({ slug: s.slug })} mix={css({ '&:hover': { textDecoration: 'underline' } })}>
                     {s.name}
                   </a>
                 </td>
@@ -86,7 +86,7 @@ export function AdminStickersPage() {
                 </td>
                 <td mix={cellStyle}>{s.createdRelative} ago</td>
                 <td mix={cellStyle}>
-                  <form method="post" action={routes.admin.deleteSticker.href({ id: s.id })}>
+                  <form method="post" action={routes.admin.deleteSurface.href({ id: s.id })}>
                     <CsrfField />
                     <button type="submit" mix={dangerBtnStyle}>
                       delete

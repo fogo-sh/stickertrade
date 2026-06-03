@@ -11,18 +11,32 @@ export const routes = route({
   brand: '/brand',
   roadmap: '/roadmap',
   stickers: '/stickers',
+  surfaces: '/surfaces',
   users: '/users',
 
   // Sticker show page (slug, not UUID)
   sticker: '/sticker/:slug',
   editSticker: form('/sticker/:slug/edit'),
 
+  // Surface show page (slug, not UUID)
+  surface: '/surface/:slug',
+  editSurface: form('/surface/:slug/edit'),
+
   // Profile page
   profile: '/profile/:username',
   removeSticker: form('/profile/:username/remove-sticker/:stickerId'),
+  removeSurface: form('/profile/:username/remove-surface/:surfaceId'),
 
   // Sticker upload (GET form, POST action)
   uploadSticker: form('/upload-sticker'),
+
+  // Surface upload (GET form, POST action)
+  uploadSurface: form('/upload-surface'),
+
+  // Surface gallery management (POST-only form actions)
+  addSurfaceImage: form('/surface/:slug/images'),
+  removeSurfaceImage: form('/surface/:slug/images/:imageId/remove'),
+  setPrimarySurfaceImage: form('/surface/:slug/images/:imageId/primary'),
 
   // Auth + account
   login: form('/login'),
@@ -51,6 +65,8 @@ export const routes = route({
     deleteUser: post('/users/:id/delete'),
     stickers: get('/stickers'),
     deleteSticker: post('/stickers/:id/delete'),
+    surfaces: get('/surfaces'),
+    deleteSurface: post('/surfaces/:id/delete'),
   }),
 
   // API token management (HTML pages, not API endpoints).
@@ -67,6 +83,15 @@ export const routes = route({
     stickerDestroy: del('/stickers/:id'),
     userShow: get('/users/:username'),
     userStickers: get('/users/:username/stickers'),
+    surfacesIndex: get('/surfaces'),
+    surfaceShow: get('/surfaces/:id'),
+    surfaceCreate: post('/surfaces'),
+    surfaceUpdate: patch('/surfaces/:id'),
+    surfaceDestroy: del('/surfaces/:id'),
+    userSurfaces: get('/users/:username/surfaces'),
+    surfaceImageCreate: post('/surfaces/:id/images'),
+    surfaceImageDestroy: del('/surfaces/:id/images/:imageId'),
+    surfaceImageSetPrimary: post('/surfaces/:id/images/:imageId/primary'),
     // Catch-all for any other /api/* URL so unknown endpoints return a
     // JSON 404 instead of the router's plain-text default.
     notFound: '/*path',

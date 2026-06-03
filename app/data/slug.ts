@@ -5,7 +5,7 @@ const SUFFIX_LENGTH = 6
 const SLUG_PART_MAX = 40
 
 /**
- * Reduce a sticker name to a URL-safe slug fragment.
+ * Reduce a name to a URL-safe slug fragment.
  *
  * - Lowercases.
  * - Replaces any run of non-`[a-z0-9]` chars with a single hyphen.
@@ -24,10 +24,13 @@ export function slugifyName(name: string): string {
 }
 
 /**
- * Build a full sticker slug: `<slug-part>-<6 lowercase alphanumerics>`.
+ * Build a full content slug: `<slug-part>-<6 lowercase alphanumerics>`.
  * If `slugifyName(name)` is empty, returns just the 6-char suffix.
+ *
+ * Used by both stickers and surfaces (and any future named content type)
+ * since the alphabet, suffix length, and 40-char cap are universal.
  */
-export function generateStickerSlug(name: string): string {
+export function generateContentSlug(name: string): string {
   const slugPart = slugifyName(name)
   const suffix = randomSuffix()
   return slugPart === '' ? suffix : `${slugPart}-${suffix}`
