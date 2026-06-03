@@ -17,6 +17,7 @@ import { getSurfaceOfTheDay } from '../data/surface-of-the-day.ts'
 import { uploadStorage } from '../data/uploads.ts'
 import { tokenNameSchema } from '../data/validators.ts'
 import { routes } from '../routes.ts'
+import type { SurfaceCardSurface } from '../ui/surface-card.tsx'
 import { BrandPage } from './brand-page.tsx'
 import { DevLogPage } from './dev-log-page.tsx'
 import { DevLogsIndexPage } from './dev-logs-index-page.tsx'
@@ -55,10 +56,11 @@ export default createController(routes, {
     async home(context) {
       const db = context.get(Database)
       const user = getCurrentUser(context)
-      const stickerRows = await db.findMany(stickers, {
-        orderBy: ['created_at', 'desc'],
-        limit: 12,
-      })
+      const [stickerRows, userRows, sotd] = await Promise.all([
+        db.findMany(stickers, { orderBy: ['created_at', 'desc'], limit: 12 }),
+        db.findMany(users, { orderBy: ['updated_at', 'desc'], limit: 8 }),
+        getSurfaceOfTheDay(db),
+      ])
       const ownerIds = Array.from(
         new Set(stickerRows.map((s) => s.owner_id).filter((id): id is string => !!id)),
       )
@@ -67,20 +69,7 @@ export default createController(routes, {
         : []
       const ownerById = new Map(ownerRows.map((o) => [o.id, o]))
 
-      const userRows = await db.findMany(users, {
-        orderBy: ['updated_at', 'desc'],
-        limit: 8,
-      })
-
-      const sotd = await getSurfaceOfTheDay(db)
-      let sotdProp: {
-        id: string
-        slug: string
-        name: string
-        description: string | null
-        image_url: string
-        owner: { username: string; avatar_url: string | null }
-      } | null = null
+      let sotdProp: SurfaceCardSurface | null = null
       if (sotd) {
         const owner = await db.findOne(users, { where: { id: sotd.owner_id } })
         if (owner) {

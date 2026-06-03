@@ -5,7 +5,7 @@ import { Document } from '../ui/document.tsx'
 import { CsrfField } from '../ui/form.tsx'
 import type { HeaderUser } from '../ui/header.tsx'
 import { StickerCard, UploadStickerCard } from '../ui/sticker-card.tsx'
-import { SurfaceCard } from '../ui/surface-card.tsx'
+import { SurfaceCard, type SurfaceCardSurface } from '../ui/surface-card.tsx'
 import { colors } from '../ui/theme.ts'
 
 export interface ProfilePageProps {
@@ -14,14 +14,7 @@ export interface ProfilePageProps {
     username: string
     avatar_url: string | null
     stickers: { id: string; slug: string; name: string; image_url: string }[]
-    surfaces: Array<{
-      id: string
-      slug: string
-      name: string
-      description: string | null
-      image_url: string
-      owner: { username: string; avatar_url: string | null }
-    }>
+    surfaces: SurfaceCardSurface[]
   }
 }
 
@@ -91,7 +84,7 @@ export function ProfilePage() {
           </div>
           {profile.surfaces.length > 0 ? (
             <section mix={surfacesSectionStyle}>
-              <h2>Surfaces ({profile.surfaces.length})</h2>
+              <p mix={sectionHeading}>surfaces ({profile.surfaces.length})</p>
               {profile.surfaces.map((s) => (
                 <SurfaceCard key={s.id} surface={s} showOwner={false} />
               ))}

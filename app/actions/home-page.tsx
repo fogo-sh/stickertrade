@@ -4,7 +4,7 @@ import { routes } from '../routes.ts'
 import { Document } from '../ui/document.tsx'
 import type { HeaderUser } from '../ui/header.tsx'
 import { StickerCard, UploadStickerCard, type StickerCardSticker } from '../ui/sticker-card.tsx'
-import { SurfaceCard } from '../ui/surface-card.tsx'
+import { SurfaceCard, type SurfaceCardSurface } from '../ui/surface-card.tsx'
 import { colors } from '../ui/theme.ts'
 import { UserCard, type UserCardUser } from '../ui/user-card.tsx'
 
@@ -12,14 +12,7 @@ export interface HomePageProps {
   user: HeaderUser | null
   stickers: StickerCardSticker[]
   users: UserCardUser[]
-  surfaceOfTheDay: {
-    id: string
-    slug: string
-    name: string
-    description: string | null
-    image_url: string
-    owner: { username: string; avatar_url: string | null }
-  } | null
+  surfaceOfTheDay: SurfaceCardSurface | null
 }
 
 export function HomePage() {

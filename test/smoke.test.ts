@@ -1295,7 +1295,7 @@ describe('surfaces', () => {
       assert.equal(res.status, 200)
       const html = await res.text()
       assert.ok(html.includes('On Profile'))
-      assert.ok(html.includes('Surfaces (1)'))
+      assert.ok(html.includes('surfaces (1)'))
     } finally {
       env.cleanup()
     }
