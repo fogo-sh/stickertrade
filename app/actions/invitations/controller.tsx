@@ -4,8 +4,9 @@ import { Database } from 'remix/data-table'
 import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
 
-import { config, invitations, users } from '../../data/schema.ts'
 import { getCurrentUser } from '../../data/current-user.ts'
+import { absoluteUrl } from '../../data/public-origin.ts'
+import { config, invitations, users } from '../../data/schema.ts'
 import { routes } from '../../routes.ts'
 import { formatRelative } from '../../utils/time.ts'
 import { InvitationsPage, type InvitationRow } from './invitations-page.tsx'
@@ -28,13 +29,12 @@ export default createController(routes.invitations, {
         orderBy: ['created_at', 'desc'],
       })
 
-      const origin = new URL(context.request.url).origin
       const invs: InvitationRow[] = []
       for (const row of rows) {
         const accepter = await db.findOne(users, { where: { invitation_id: row.id } })
         invs.push({
           id: row.id,
-          url: `${origin}${routes.invitation.index.href({ id: row.id })}`,
+          url: absoluteUrl(routes.invitation.index.href({ id: row.id })),
           to: accepter
             ? {
                 username: accepter.username,
