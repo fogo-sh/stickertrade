@@ -434,6 +434,7 @@ describe('edit sticker', () => {
       const updated = await env.db.findOne(stickers, { where: { id: stickerId } })
       assert.ok(updated)
       assert.equal(updated.name, 'new shiny name')
+      assert.equal(updated.slug, stickerSlug, 'slug should be frozen on rename')
     } finally {
       env.cleanup()
     }
@@ -489,9 +490,7 @@ describe('sticker URL backwards compatibility', () => {
         updated_at: Date.now(),
       })
 
-      const res = await env.fetch(
-        new Request(buildUrl(`/sticker/${stickerId}`), { redirect: 'manual' }),
-      )
+      const res = await env.fetch(new Request(buildUrl(`/sticker/${stickerId}`)))
       assert.equal(res.status, 301)
       assert.equal(res.headers.get('location'), `/sticker/${stickerSlug}`)
     } finally {
