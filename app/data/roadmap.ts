@@ -80,6 +80,14 @@ const sourceTasks: Array<Omit<RoadmapTask, 'id'>> = [
 - [x] Per-user token management UI on /account/profile
 `),
   },
+  {
+    title: 'Slug URLs for stickers 🐌',
+    description: md(`
+- [x] Public sticker URLs are now \`/sticker/<name>-<6chars>\` instead of full UUIDs
+- [x] Old UUID URLs 301-redirect to the new slug URL
+- [x] JSON API and admin actions keep UUID params (intentional)
+`),
+  },
 
   // ---- Currently in focus ----
   {
