@@ -22,7 +22,7 @@ import {
   MultipartParseError,
   parseFormData,
   type ParseFormDataOptions,
-} from '@remix-run/form-data-parser'
+} from 'remix/form-data-parser'
 
 /** Single source of truth for upload limits, kept simple on purpose. */
 export const UPLOAD_LIMITS = {

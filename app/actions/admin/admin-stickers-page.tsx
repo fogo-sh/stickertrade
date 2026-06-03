@@ -31,12 +31,14 @@ export function AdminStickersPage() {
         <div mix={headerStyle}>
           <p mix={css({ fontSize: '1.25rem', fontWeight: 600 })}>stickers (page {page})</p>
           <nav mix={css({ display: 'flex', gap: '0.5rem' })}>
-            <a
-              href={routes.admin.stickers.href() + `?page=${Math.max(0, page - 1)}`}
-              mix={navLinkStyle}
-            >
-              ← prev
-            </a>
+            {page > 0 ? (
+              <a
+                href={routes.admin.stickers.href() + `?page=${page - 1}`}
+                mix={navLinkStyle}
+              >
+                ← prev
+              </a>
+            ) : null}
             {hasNext ? (
               <a href={routes.admin.stickers.href() + `?page=${page + 1}`} mix={navLinkStyle}>
                 next →

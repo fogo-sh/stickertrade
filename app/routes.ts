@@ -67,5 +67,8 @@ export const routes = route({
     stickerDestroy: del('/stickers/:id'),
     userShow: get('/users/:username'),
     userStickers: get('/users/:username/stickers'),
+    // Catch-all for any other /api/* URL so unknown endpoints return a
+    // JSON 404 instead of the router's plain-text default.
+    notFound: '/*path',
   }),
 })

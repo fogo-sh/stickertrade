@@ -221,5 +221,10 @@ export default createController(routes.api, {
         stickers: rows.map((s) => serializeSticker(s, u)),
       })
     },
+
+    // -------- Catch-all: any other /api/* URL --------
+    notFound() {
+      return jsonError(404, 'Not Found')
+    },
   },
 })
