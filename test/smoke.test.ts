@@ -1429,6 +1429,75 @@ describe('surfaces', () => {
     }
   })
 
+  it('PATCH /api/surfaces/:id supports three-state description (set / clear / untouched)', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'sf-patcher', 'sf-patcherpass')
+      const id = randomUUID()
+      await env.db.create(surfaces, {
+        id,
+        name: 'Patchable',
+        slug: generateContentSlug('Patchable'),
+        image_url: '/images/banner.png',
+        owner_id: ownerId,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      })
+
+      // Mint a bearer token for the owner via the same pattern other API tests use.
+      const ownerRow = await env.db.findOne(users, { where: { id: ownerId } })
+      assert.ok(ownerRow)
+      const { createTokenForUser } = await import('../app/data/api-tokens.ts')
+      const created = await createTokenForUser(env.db, ownerRow, 'patch-test')
+      const apiToken = created.plaintext
+
+      const headers = {
+        'content-type': 'application/json',
+        authorization: `Bearer ${apiToken}`,
+      }
+      const patchUrl = buildUrl(routes.api.surfaceUpdate.href({ id }))
+
+      // 1. Set description from null → "hello"
+      let res = await env.fetch(
+        new Request(patchUrl, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify({ name: 'Patchable', description: 'hello' }),
+        }),
+      )
+      assert.equal(res.status, 200)
+      let row = await env.db.findOne(surfaces, { where: { id } })
+      assert.equal(row?.description, 'hello')
+
+      // 2. Untouched: omit description from payload — should stay "hello"
+      res = await env.fetch(
+        new Request(patchUrl, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify({ name: 'Patchable Renamed' }),
+        }),
+      )
+      assert.equal(res.status, 200)
+      row = await env.db.findOne(surfaces, { where: { id } })
+      assert.equal(row?.name, 'Patchable Renamed')
+      assert.equal(row?.description, 'hello', 'description should be untouched when omitted')
+
+      // 3. Clear description: send explicit null (or empty string)
+      res = await env.fetch(
+        new Request(patchUrl, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify({ name: 'Patchable Renamed', description: null }),
+        }),
+      )
+      assert.equal(res.status, 200)
+      row = await env.db.findOne(surfaces, { where: { id } })
+      assert.equal(row?.description, null, 'description should be cleared when explicitly null')
+    } finally {
+      env.cleanup()
+    }
+  })
+
   it('lets an admin delete a surface', async () => {
     const env = await createTestEnv()
     try {
