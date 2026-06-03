@@ -20,6 +20,7 @@ export const stickers = table({
   columns: {
     id: c.text().primaryKey(),
     name: c.text().notNull(),
+    slug: c.text().notNull().unique(),
     image_url: c.text().notNull(),
     owner_id: c.text(),
     created_at: c.integer().notNull(),
