@@ -44,12 +44,13 @@ export async function getSurfaceOfTheDay(db: Database): Promise<Surface | null> 
       created_at: Date.now(),
     })
     return chosen
-  } catch {
-    // Lost the race. Re-read whatever the winning request wrote.
+  } catch (err) {
+    // Lost the race? Re-read whatever the winning request wrote. If
+    // there's no winner row, the original error wasn't a race — re-throw.
     const winner = await db.findOne(surfaceFeatures, {
       where: { featured_date: todayUtc },
     })
-    if (!winner) return null
+    if (!winner) throw err
     return db.findOne(surfaces, { where: { id: winner.surface_id } })
   }
 }
