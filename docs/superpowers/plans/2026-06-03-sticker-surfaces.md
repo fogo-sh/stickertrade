@@ -172,7 +172,7 @@ export const surfaces = table({
   },
 })
 
-export const surface_features = table({
+export const surfaceFeatures = table({
   name: 'surface_features',
   columns: {
     id: c.integer().primaryKey().autoIncrement(),
@@ -187,7 +187,7 @@ Also add the type exports:
 
 ```ts
 export type Surface = TableRow<typeof surfaces>
-export type SurfaceFeature = TableRow<typeof surface_features>
+export type SurfaceFeature = TableRow<typeof surfaceFeatures>
 ```
 
 - [ ] **Step 2.2: Create migration up.sql**
@@ -425,7 +425,7 @@ import { createSqliteDatabaseAdapter } from 'remix/data-table/sqlite'
 import { createMigrationRunner } from 'remix/data-table/migrations'
 import { loadMigrations } from 'remix/data-table/migrations/node'
 
-import { surfaces, surface_features, users } from '../app/data/schema.ts'
+import { surfaces, surfaceFeatures, users } from '../app/data/schema.ts'
 import { getSurfaceOfTheDay } from '../app/data/surface-of-the-day.ts'
 
 interface TestEnv {
@@ -508,7 +508,7 @@ describe('getSurfaceOfTheDay', () => {
 
       // A feature row was persisted for today.
       const today = new Date().toISOString().slice(0, 10)
-      const feature = await env.db.findOne(surface_features, {
+      const feature = await env.db.findOne(surfaceFeatures, {
         where: { featured_date: today },
       })
       assert.ok(feature)
@@ -534,7 +534,7 @@ describe('getSurfaceOfTheDay', () => {
       assert.equal(second.id, third.id)
 
       // Only one feature row.
-      const count = await env.db.count(surface_features)
+      const count = await env.db.count(surfaceFeatures)
       assert.equal(count, 1)
     } finally {
       cleanup(env)
@@ -550,7 +550,7 @@ describe('getSurfaceOfTheDay', () => {
 
       // Force today's pick to be Alpha.
       const today = new Date().toISOString().slice(0, 10)
-      await env.db.create(surface_features, {
+      await env.db.create(surfaceFeatures, {
         surface_id: aId,
         featured_date: today,
         created_at: Date.now(),
@@ -565,7 +565,7 @@ describe('getSurfaceOfTheDay', () => {
       assert.equal(result.id, bId)
 
       // The new feature row points at Beta.
-      const features = await env.db.findMany(surface_features, {})
+      const features = await env.db.findMany(surfaceFeatures, {})
       assert.equal(features.length, 1)
       assert.equal(features[0]!.surface_id, bId)
     } finally {
@@ -580,7 +580,7 @@ describe('getSurfaceOfTheDay', () => {
       const aId = await makeSurface(env, ownerId, 'Solo')
 
       const today = new Date().toISOString().slice(0, 10)
-      await env.db.create(surface_features, {
+      await env.db.create(surfaceFeatures, {
         surface_id: aId,
         featured_date: today,
         created_at: Date.now(),
@@ -612,7 +612,7 @@ Create `app/data/surface-of-the-day.ts`:
 ```ts
 import type { Database } from 'remix/data-table'
 
-import { surfaces, surface_features, type Surface } from './schema.ts'
+import { surfaces, surfaceFeatures, type Surface } from './schema.ts'
 
 /**
  * Lazy daily-pick algorithm. First request of the UTC day persists a
@@ -628,7 +628,7 @@ export async function getSurfaceOfTheDay(db: Database): Promise<Surface | null> 
   const todayUtc = new Date().toISOString().slice(0, 10)
 
   // 1. Did we already pick today?
-  const existing = await db.findOne(surface_features, {
+  const existing = await db.findOne(surfaceFeatures, {
     where: { featured_date: todayUtc },
   })
   if (existing) {
@@ -636,7 +636,7 @@ export async function getSurfaceOfTheDay(db: Database): Promise<Surface | null> 
     if (surface) return surface
     // Surface was deleted after being picked. Drop the stale feature row
     // and fall through to re-roll.
-    await db.delete(surface_features, existing.id)
+    await db.delete(surfaceFeatures, existing.id)
   }
 
   // 2. Roll.
@@ -650,7 +650,7 @@ export async function getSurfaceOfTheDay(db: Database): Promise<Surface | null> 
 
   // 3. Persist. UNIQUE on featured_date prevents concurrent double-writes.
   try {
-    await db.create(surface_features, {
+    await db.create(surfaceFeatures, {
       surface_id: chosen.id,
       featured_date: todayUtc,
       created_at: Date.now(),
@@ -658,7 +658,7 @@ export async function getSurfaceOfTheDay(db: Database): Promise<Surface | null> 
     return chosen
   } catch {
     // Lost the race. Re-read whatever the winning request wrote.
-    const winner = await db.findOne(surface_features, {
+    const winner = await db.findOne(surfaceFeatures, {
       where: { featured_date: todayUtc },
     })
     if (!winner) return null

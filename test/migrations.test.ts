@@ -89,62 +89,132 @@ describe('add_sticker_slug migration', () => {
 const SURFACES_MIGRATION_ID = '20260603100000'
 
 describe('add_surfaces migration', () => {
-  it('creates surfaces and surface_features tables with the expected constraints', async () => {
+  async function setup() {
     const tmpDir = mkdtempSync(path.join(tmpdir(), 'stickertrade-mig-test-'))
     const dbPath = path.join(tmpDir, 'mig.sqlite')
     const sqlite = new DatabaseSync(dbPath)
     sqlite.exec('PRAGMA foreign_keys = ON')
+    const adapter = createSqliteDatabaseAdapter(sqlite)
+    const allMigrations = await loadMigrations('./migrations')
+    const runner = createMigrationRunner(adapter, allMigrations)
+    await runner.up({ to: SURFACES_MIGRATION_ID })
+    return { tmpDir, sqlite }
+  }
 
+  function teardown({ tmpDir, sqlite }: { tmpDir: string; sqlite: DatabaseSync }) {
+    sqlite.close()
+    rmSync(tmpDir, { recursive: true, force: true })
+  }
+
+  it('creates tables and enforces unique slug + featured_date', async () => {
+    const env = await setup()
     try {
-      const adapter = createSqliteDatabaseAdapter(sqlite)
-      const allMigrations = await loadMigrations('./migrations')
-      const runner = createMigrationRunner(adapter, allMigrations)
-      await runner.up({ to: SURFACES_MIGRATION_ID })
-
-      // Verify the tables exist by inserting a user + surface and reading back.
+      const { sqlite } = env
       const userId = randomUUID()
       sqlite.prepare(
         'INSERT INTO users (id, username, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
       ).run(userId, 'surfacefan', 'hash', Date.now(), Date.now())
 
-      const surfaceId = randomUUID()
+      const surfaceAId = randomUUID()
       sqlite.prepare(
         'INSERT INTO surfaces (id, name, slug, description, image_url, owner_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      ).run(surfaceId, 'My laptop', 'my-laptop-abc123', null, '/uploads/x.png', userId, Date.now(), Date.now())
+      ).run(surfaceAId, 'My laptop', 'my-laptop-abc123', null, '/uploads/x.png', userId, Date.now(), Date.now())
 
-      // Unique slug constraint
+      // Duplicate slug fails.
       assert.throws(() => {
         sqlite.prepare(
           'INSERT INTO surfaces (id, name, slug, image_url, owner_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
         ).run(randomUUID(), 'Other', 'my-laptop-abc123', '/uploads/y.png', userId, Date.now(), Date.now())
       }, /UNIQUE/)
 
-      // surface_features table + unique featured_date
+      // Feature row for today.
       sqlite.prepare(
         'INSERT INTO surface_features (surface_id, featured_date, created_at) VALUES (?, ?, ?)',
-      ).run(surfaceId, '2026-06-03', Date.now())
+      ).run(surfaceAId, '2026-06-03', Date.now())
+
+      // Same surface, same date → fails.
+      assert.throws(() => {
+        sqlite.prepare(
+          'INSERT INTO surface_features (surface_id, featured_date, created_at) VALUES (?, ?, ?)',
+        ).run(surfaceAId, '2026-06-03', Date.now())
+      }, /UNIQUE/)
+
+      // DIFFERENT surface, same date → also fails (one pick per day, globally).
+      const surfaceBId = randomUUID()
+      sqlite.prepare(
+        'INSERT INTO surfaces (id, name, slug, image_url, owner_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      ).run(surfaceBId, 'Other surface', 'other-surface-xyz', '/uploads/z.png', userId, Date.now(), Date.now())
 
       assert.throws(() => {
         sqlite.prepare(
           'INSERT INTO surface_features (surface_id, featured_date, created_at) VALUES (?, ?, ?)',
-        ).run(surfaceId, '2026-06-03', Date.now())
+        ).run(surfaceBId, '2026-06-03', Date.now())
       }, /UNIQUE/)
+    } finally {
+      teardown(env)
+    }
+  })
 
-      // CASCADE on user delete removes the surface
-      sqlite.prepare('DELETE FROM users WHERE id = ?').run(userId)
+  it('cascades surface delete to surface_features', async () => {
+    const env = await setup()
+    try {
+      const { sqlite } = env
+      const userId = randomUUID()
+      sqlite.prepare(
+        'INSERT INTO users (id, username, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+      ).run(userId, 'cascadetest', 'hash', Date.now(), Date.now())
+
+      const surfaceId = randomUUID()
+      sqlite.prepare(
+        'INSERT INTO surfaces (id, name, slug, image_url, owner_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      ).run(surfaceId, 'X', 'x-aaa111', '/uploads/x.png', userId, Date.now(), Date.now())
+
+      sqlite.prepare(
+        'INSERT INTO surface_features (surface_id, featured_date, created_at) VALUES (?, ?, ?)',
+      ).run(surfaceId, '2026-06-04', Date.now())
+
+      sqlite.prepare('DELETE FROM surfaces WHERE id = ?').run(surfaceId)
+
       const remaining = sqlite
-        .prepare('SELECT COUNT(*) AS n FROM surfaces WHERE id = ?')
-        .get(surfaceId) as { n: number }
-      assert.equal(remaining.n, 0, 'deleting user should cascade to surfaces')
-
-      // ... and that cascade hits surface_features too
-      const remainingFeature = sqlite
         .prepare('SELECT COUNT(*) AS n FROM surface_features WHERE surface_id = ?')
         .get(surfaceId) as { n: number }
-      assert.equal(remainingFeature.n, 0, 'deleting surface should cascade to features')
+      assert.equal(remaining.n, 0, 'deleting a surface should cascade to its features')
     } finally {
-      sqlite.close()
-      rmSync(tmpDir, { recursive: true, force: true })
+      teardown(env)
+    }
+  })
+
+  it('cascades user delete to surfaces (and transitively to features)', async () => {
+    const env = await setup()
+    try {
+      const { sqlite } = env
+      const userId = randomUUID()
+      sqlite.prepare(
+        'INSERT INTO users (id, username, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+      ).run(userId, 'goingbye', 'hash', Date.now(), Date.now())
+
+      const surfaceId = randomUUID()
+      sqlite.prepare(
+        'INSERT INTO surfaces (id, name, slug, image_url, owner_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      ).run(surfaceId, 'Y', 'y-bbb222', '/uploads/y.png', userId, Date.now(), Date.now())
+
+      sqlite.prepare(
+        'INSERT INTO surface_features (surface_id, featured_date, created_at) VALUES (?, ?, ?)',
+      ).run(surfaceId, '2026-06-05', Date.now())
+
+      sqlite.prepare('DELETE FROM users WHERE id = ?').run(userId)
+
+      const surfacesLeft = sqlite
+        .prepare('SELECT COUNT(*) AS n FROM surfaces WHERE id = ?')
+        .get(surfaceId) as { n: number }
+      assert.equal(surfacesLeft.n, 0, 'deleting a user should cascade to surfaces')
+
+      const featuresLeft = sqlite
+        .prepare('SELECT COUNT(*) AS n FROM surface_features WHERE surface_id = ?')
+        .get(surfaceId) as { n: number }
+      assert.equal(featuresLeft.n, 0, 'deleting a user should transitively cascade to features')
+    } finally {
+      teardown(env)
     }
   })
 })

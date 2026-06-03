@@ -21,3 +21,4 @@ CREATE TABLE surface_features (
 
 CREATE UNIQUE INDEX surface_features_featured_date_unique
   ON surface_features(featured_date);
+CREATE INDEX surface_features_surface_id_idx ON surface_features(surface_id);

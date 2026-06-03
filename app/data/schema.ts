@@ -74,7 +74,7 @@ export const surfaces = table({
   },
 })
 
-export const surface_features = table({
+export const surfaceFeatures = table({
   name: 'surface_features',
   columns: {
     id: c.integer().primaryKey().autoIncrement(),
@@ -90,7 +90,7 @@ export type Invitation = TableRow<typeof invitations>
 export type Config = TableRow<typeof config>
 export type ApiToken = TableRow<typeof apiTokens>
 export type Surface = TableRow<typeof surfaces>
-export type SurfaceFeature = TableRow<typeof surface_features>
+export type SurfaceFeature = TableRow<typeof surfaceFeatures>
 
 export const UserRoles = {
   User: 'USER',
