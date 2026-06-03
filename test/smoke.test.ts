@@ -1342,8 +1342,7 @@ describe('surfaces', () => {
     const env = await createTestEnv()
     try {
       const ownerId = await seedUser(env, 'sf-victim', 'sf-victimpass')
-      const adminId = await seedUser(env, 'sf-admin', 'sf-adminpass')
-      await env.db.update(users, adminId, { role: 'ADMIN' })
+      await seedUser(env, 'sf-admin', 'sf-adminpass', UserRoles.Admin)
 
       const id = randomUUID()
       await env.db.create(surfaces, {

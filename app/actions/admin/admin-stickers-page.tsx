@@ -81,7 +81,7 @@ export function AdminStickersPage() {
                       <span>{s.owner.username}</span>
                     </a>
                   ) : (
-                    <span mix={css({ opacity: 0.6, fontStyle: 'italic' })}>orphan</span>
+                    <span mix={css({ opacity: 0.6, fontStyle: 'italic' })}>(deleted)</span>
                   )}
                 </td>
                 <td mix={cellStyle}>{s.createdRelative} ago</td>
