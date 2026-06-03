@@ -7,9 +7,12 @@ import { getCurrentUser } from '../../data/current-user.ts'
 import { stickers, surfaces, users } from '../../data/schema.ts'
 import { routes } from '../../routes.ts'
 import { formatRelative } from '../../utils/time.ts'
+import { buildPrimaryImageMap } from '../controller.tsx'
 import { AdminStickersPage } from './admin-stickers-page.tsx'
 import { AdminSurfacesPage } from './admin-surfaces-page.tsx'
 import { AdminUsersPage } from './admin-users-page.tsx'
+
+const MISSING_IMAGE = '/images/banner.png'
 
 const PAGE_SIZE = 30
 
@@ -142,6 +145,7 @@ export default createController(routes.admin, {
         ? await db.findMany(users, { where: inList('id', ownerIds) })
         : []
       const ownerById = new Map(ownerRows.map((o) => [o.id, o]))
+      const primaryMap = await buildPrimaryImageMap(db, slice)
 
       return context.render(
         <AdminSurfacesPage
@@ -154,7 +158,7 @@ export default createController(routes.admin, {
               id: s.id,
               slug: s.slug,
               name: s.name,
-              image_url: s.image_url,
+              image_url: primaryMap.get(s.id) ?? MISSING_IMAGE,
               owner: owner ? { username: owner.username, avatar_url: owner.avatar_url ?? null } : null,
               createdRelative: formatRelative(s.created_at),
             }

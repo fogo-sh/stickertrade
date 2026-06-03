@@ -11,7 +11,7 @@ import { getCurrentUser } from '../data/current-user.ts'
 import { buildDevLogsFeed } from '../data/dev-logs-feed.ts'
 import { getDevLog, getDevLogs } from '../data/dev-logs.ts'
 import { roadmapTasks } from '../data/roadmap.ts'
-import { apiTokens, stickers, surfaceImages, surfaces, users } from '../data/schema.ts'
+import { apiTokens, stickers, surfaceImages, surfaces, users, type Surface } from '../data/schema.ts'
 import { looksLikeUuid } from '../data/slug.ts'
 import { getSurfaceOfTheDay } from '../data/surface-of-the-day.ts'
 import { uploadStorage } from '../data/uploads.ts'
@@ -32,6 +32,31 @@ import { UsersPage } from './users-page.tsx'
 
 function notFound(): Response {
   return new Response('Not Found', { status: 404 })
+}
+
+const MISSING_IMAGE = '/images/banner.png'
+
+/**
+ * Build a `surface.id -> primary image_url` map for a batch of surfaces.
+ * Surfaces without a primary fall back to a placeholder image at the call site.
+ */
+export async function buildPrimaryImageMap(
+  db: any,
+  surfaceRows: Surface[],
+): Promise<Map<string, string>> {
+  if (surfaceRows.length === 0) return new Map()
+  const ids = surfaceRows.map((s) => s.id)
+  // Fetch all images for these surfaces and filter primaries in JS — the
+  // remix/data-table `where` clause API doesn't compose inList with another
+  // equality cleanly, so this is the portable shape.
+  const allImages = await db.findMany(surfaceImages, {
+    where: inList('surface_id', ids),
+  })
+  const map = new Map<string, string>()
+  for (const img of allImages) {
+    if (img.is_primary) map.set(img.surface_id, img.image_url)
+  }
+  return map
 }
 
 export default createController(routes, {
@@ -73,12 +98,13 @@ export default createController(routes, {
       if (sotd) {
         const owner = await db.findOne(users, { where: { id: sotd.owner_id } })
         if (owner) {
+          const sotdMap = await buildPrimaryImageMap(db, [sotd])
           sotdProp = {
             id: sotd.id,
             slug: sotd.slug,
             name: sotd.name,
             description: sotd.description,
-            image_url: sotd.image_url,
+            image_url: sotdMap.get(sotd.id) ?? MISSING_IMAGE,
             owner: { username: owner.username, avatar_url: owner.avatar_url ?? null },
           }
         }
@@ -175,6 +201,7 @@ export default createController(routes, {
         ? await db.findMany(users, { where: inList('id', ownerIds) })
         : []
       const ownerById = new Map(ownerRows.map((u) => [u.id, u]))
+      const primaryMap = await buildPrimaryImageMap(db, rows)
       return context.render(
         <SurfacesPage
           user={getCurrentUser(context)}
@@ -185,7 +212,7 @@ export default createController(routes, {
               slug: s.slug,
               name: s.name,
               description: s.description,
-              image_url: s.image_url,
+              image_url: primaryMap.get(s.id) ?? MISSING_IMAGE,
               owner: owner
                 ? { username: owner.username, avatar_url: owner.avatar_url ?? null }
                 : { username: 'unknown', avatar_url: null },
@@ -301,6 +328,7 @@ export default createController(routes, {
           orderBy: ['created_at', 'desc'],
         }),
       ])
+      const primaryMap = await buildPrimaryImageMap(db, profileSurfaces)
       return context.render(
         <ProfilePage
           user={getCurrentUser(context)}
@@ -318,7 +346,7 @@ export default createController(routes, {
               slug: s.slug,
               name: s.name,
               description: s.description,
-              image_url: s.image_url,
+              image_url: primaryMap.get(s.id) ?? MISSING_IMAGE,
               owner: {
                 username: profileUser.username,
                 avatar_url: profileUser.avatar_url ?? null,
