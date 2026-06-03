@@ -33,6 +33,11 @@ export const routes = route({
   // Surface upload (GET form, POST action)
   uploadSurface: form('/upload-surface'),
 
+  // Surface gallery management (POST-only form actions)
+  addSurfaceImage: form('/surface/:slug/images'),
+  removeSurfaceImage: form('/surface/:slug/images/:imageId/remove'),
+  setPrimarySurfaceImage: form('/surface/:slug/images/:imageId/primary'),
+
   // Auth + account
   login: form('/login'),
   logout: post('/logout'),

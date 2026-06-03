@@ -26,6 +26,7 @@ import { createMemorySessionStorage } from 'remix/session-storage/memory'
 import { createRouter, type MiddlewareContext } from 'remix/router'
 
 import rootController from '../app/actions/controller.tsx'
+import addSurfaceImageController from '../app/actions/add-surface-image/controller.tsx'
 import adminController from '../app/actions/admin/controller.tsx'
 import apiController from '../app/actions/api/controller.tsx'
 import changePasswordController from '../app/actions/change-password/controller.tsx'
@@ -37,6 +38,8 @@ import invitationController from '../app/actions/invitation/controller.tsx'
 import loginController from '../app/actions/login/controller.tsx'
 import removeStickerController from '../app/actions/remove-sticker/controller.tsx'
 import removeSurfaceController from '../app/actions/remove-surface/controller.tsx'
+import removeSurfaceImageController from '../app/actions/remove-surface-image/controller.tsx'
+import setPrimarySurfaceImageController from '../app/actions/set-primary-surface-image/controller.tsx'
 import uploadStickerController from '../app/actions/upload-sticker/controller.tsx'
 import uploadSurfaceController from '../app/actions/upload-surface/controller.tsx'
 import { render } from '../app/middleware/render.tsx'
@@ -146,6 +149,9 @@ export async function createTestEnv(options: CreateTestEnvOptions = {}): Promise
   router.map(routes.removeSurface, removeSurfaceController as any)
   router.map(routes.uploadSticker, uploadStickerController as any)
   router.map(routes.uploadSurface, uploadSurfaceController as any)
+  router.map(routes.addSurfaceImage, addSurfaceImageController as any)
+  router.map(routes.removeSurfaceImage, removeSurfaceImageController as any)
+  router.map(routes.setPrimarySurfaceImage, setPrimarySurfaceImageController as any)
 
   return {
     fetch: (request: Request) => router.fetch(request),
