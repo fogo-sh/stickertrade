@@ -60,6 +60,8 @@ export const routes = route({
     deleteUser: post('/users/:id/delete'),
     stickers: get('/stickers'),
     deleteSticker: post('/stickers/:id/delete'),
+    surfaces: get('/surfaces'),
+    deleteSurface: post('/surfaces/:id/delete'),
   }),
 
   // API token management (HTML pages, not API endpoints).

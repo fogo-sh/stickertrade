@@ -1337,4 +1337,39 @@ describe('surfaces', () => {
       env.cleanup()
     }
   })
+
+  it('lets an admin delete a surface', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'sf-victim', 'sf-victimpass')
+      const adminId = await seedUser(env, 'sf-admin', 'sf-adminpass')
+      await env.db.update(users, adminId, { role: 'ADMIN' })
+
+      const id = randomUUID()
+      await env.db.create(surfaces, {
+        id,
+        name: 'To Be Deleted',
+        slug: generateContentSlug('To Be Deleted'),
+        image_url: '/images/banner.png',
+        owner_id: ownerId,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      })
+
+      const sessionCookie = await loginAs(env, 'sf-admin', 'sf-adminpass')
+      const { token, cookie } = await fetchCsrf(env, routes.admin.surfaces.href(), sessionCookie)
+      const body = new FormData()
+      body.set('_csrf', token)
+      const res = await postForm(env, routes.admin.deleteSurface.href({ id }), {
+        cookie,
+        body,
+      })
+      assert.equal(res.status, 303)
+
+      const remaining = await env.db.findOne(surfaces, { where: { id } })
+      assert.equal(remaining, null)
+    } finally {
+      env.cleanup()
+    }
+  })
 })
