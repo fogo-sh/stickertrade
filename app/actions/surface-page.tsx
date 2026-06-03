@@ -14,15 +14,21 @@ export interface SurfacePageProps {
     slug: string
     name: string
     description: string | null
-    image_url: string
     owner: { username: string; avatar_url: string | null }
   }
+  images: Array<{
+    id: string
+    image_url: string
+    is_primary: boolean
+  }>
   canEdit: boolean
 }
 
 export function SurfacePage() {
-  return ({ user, surface, canEdit }: SurfacePageProps) => {
+  return ({ user, surface, images, canEdit }: SurfacePageProps) => {
     const description = surface.description ?? `A sticker surface by ${surface.owner.username}.`
+    const primaryImage = images[0]
+    const galleryImages = images.slice(1)
     return (
       <Document
         title={`stickertrade - ${surface.name}`}
@@ -30,15 +36,17 @@ export function SurfacePage() {
         og={{
           title: surface.name,
           description,
-          image: surface.image_url,
+          image: primaryImage?.image_url ?? '/images/banner.png',
           url: routes.surface.href({ slug: surface.slug }),
           type: 'article',
         }}
       >
         <main mix={css({ maxWidth: '40rem', margin: '0 auto' })}>
-          <div mix={imageWrapStyle}>
-            <img src={surface.image_url} alt={surface.name} mix={imageStyle} />
-          </div>
+          {primaryImage ? (
+            <div mix={imageWrapStyle}>
+              <img src={primaryImage.image_url} alt={surface.name} mix={imageStyle} />
+            </div>
+          ) : null}
           <h1 mix={titleStyle}>{surface.name}</h1>
           <div mix={ownerWrapStyle}>
             <h2 mix={css({ fontSize: '1rem' })}>owned by</h2>
@@ -49,6 +57,15 @@ export function SurfacePage() {
           </div>
           {surface.description ? (
             <p mix={descriptionStyle}>{surface.description}</p>
+          ) : null}
+          {galleryImages.length > 0 ? (
+            <section mix={gallerySectionStyle}>
+              {galleryImages.map((img) => (
+                <div key={img.id} mix={imageWrapStyle}>
+                  <img src={img.image_url} alt="" mix={imageStyle} />
+                </div>
+              ))}
+            </section>
           ) : null}
           {canEdit ? (
             <div mix={actionsRowStyle}>
@@ -111,6 +128,13 @@ const descriptionStyle = css({
   marginTop: '1.5rem',
   whiteSpace: 'pre-wrap',
   lineHeight: 1.5,
+})
+
+const gallerySectionStyle = css({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '1rem',
+  marginTop: '1.5rem',
 })
 
 const actionsRowStyle = css({

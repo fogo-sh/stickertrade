@@ -11,7 +11,7 @@ import { getCurrentUser } from '../data/current-user.ts'
 import { buildDevLogsFeed } from '../data/dev-logs-feed.ts'
 import { getDevLog, getDevLogs } from '../data/dev-logs.ts'
 import { roadmapTasks } from '../data/roadmap.ts'
-import { apiTokens, stickers, surfaces, users } from '../data/schema.ts'
+import { apiTokens, stickers, surfaceImages, surfaces, users } from '../data/schema.ts'
 import { looksLikeUuid } from '../data/slug.ts'
 import { getSurfaceOfTheDay } from '../data/surface-of-the-day.ts'
 import { uploadStorage } from '../data/uploads.ts'
@@ -211,6 +211,26 @@ export default createController(routes, {
       if (!surface) return notFound()
       const owner = await db.findOne(users, { where: { id: surface.owner_id } })
       if (!owner) return notFound() // shouldn't happen due to CASCADE FK
+
+      const imageRows = await db.findMany(surfaceImages, {
+        where: { surface_id: surface.id },
+      })
+      // orderBy in this codebase supports only single-column sort; do the
+      // primary-first ordering in JS (matches the edit-surface controller pattern).
+      const images = imageRows
+        .slice()
+        .sort((a, b) => {
+          const aPrimary = Boolean(a.is_primary)
+          const bPrimary = Boolean(b.is_primary)
+          if (aPrimary !== bPrimary) return aPrimary ? -1 : 1
+          return a.created_at - b.created_at
+        })
+        .map((img) => ({
+          id: img.id,
+          image_url: img.image_url,
+          is_primary: Boolean(img.is_primary),
+        }))
+
       const currentUser = getCurrentUser(context)
       const canEdit =
         currentUser != null &&
@@ -223,9 +243,9 @@ export default createController(routes, {
             slug: surface.slug,
             name: surface.name,
             description: surface.description,
-            image_url: surface.image_url,
             owner: { username: owner.username, avatar_url: owner.avatar_url ?? null },
           }}
+          images={images}
           canEdit={canEdit}
         />,
       )
