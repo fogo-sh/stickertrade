@@ -54,29 +54,26 @@ export function SurfaceCard(handle: Handle<SurfaceCardProps>) {
 }
 
 const cardStyle = css({
-  display: 'flex',
-  flexDirection: 'column',
-  width: '18rem',
+  display: 'block',
+  width: '100%',
+  marginBottom: '2rem',
   padding: '0.5rem',
   border: `2px solid ${colors.light[500]}40`,
   background: '#0e0709',
+  textDecoration: 'none',
+  color: 'inherit',
   '&:hover': { borderColor: colors.primary[500] },
 })
 
 const imageWrapStyle = css({
   width: '100%',
-  aspectRatio: '4 / 3',
   background: '#000',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  overflow: 'hidden',
 })
 
 const imageStyle = css({
   width: '100%',
-  height: '100%',
-  objectFit: 'cover',
+  height: 'auto',
+  display: 'block',
 })
 
 const nameStyle = css({

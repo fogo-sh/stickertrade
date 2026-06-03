@@ -7,12 +7,12 @@ import { SurfaceCard, type SurfaceCardSurface } from '../ui/surface-card.tsx'
 export function SurfacesPage() {
   return ({ user, surfaces }: { user: HeaderUser | null; surfaces: SurfaceCardSurface[] }) => (
     <Document title="stickertrade - surfaces" user={user}>
-      <main>
+      <main mix={mainStyle}>
         <p mix={heading}>surfaces</p>
         {surfaces.length === 0 ? (
           <p mix={emptyStyle}>no surfaces yet.</p>
         ) : (
-          <div mix={grid}>
+          <div mix={stack}>
             {surfaces.map((surface) => (
               <SurfaceCard key={surface.id} surface={surface} />
             ))}
@@ -23,12 +23,14 @@ export function SurfacesPage() {
   )
 }
 
+const mainStyle = css({ maxWidth: '40rem', margin: '0 auto' })
+
 const heading = css({
   fontSize: '1.5rem',
   fontWeight: 600,
   margin: '0.5rem 0 2rem',
 })
 
-const grid = css({ display: 'flex', flexWrap: 'wrap', gap: '1.5rem' })
+const stack = css({ display: 'block' })
 
 const emptyStyle = css({ opacity: 0.7 })
