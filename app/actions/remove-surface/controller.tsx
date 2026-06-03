@@ -3,12 +3,22 @@ import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
 
 import { getCurrentUser } from '../../data/current-user.ts'
-import { surfaces } from '../../data/schema.ts'
+import { surfaces, surfaceImages } from '../../data/schema.ts'
 import { uploadStorage } from '../../data/uploads.ts'
 import { routes } from '../../routes.ts'
 
 function notFound() {
   return new Response('Not Found', { status: 404 })
+}
+
+async function safeRemoveStoredUpload(url: string | null | undefined) {
+  if (!url || !url.startsWith('/uploads/')) return
+  const key = url.slice('/uploads/'.length)
+  try {
+    await uploadStorage.remove(key)
+  } catch {
+    // ignore
+  }
 }
 
 export default createController(routes.removeSurface, {
@@ -29,14 +39,12 @@ export default createController(routes.removeSurface, {
         return new Response('Forbidden', { status: 403 })
       }
 
+      const images = await db.findMany(surfaceImages, {
+        where: { surface_id: surface.id },
+      })
       await db.delete(surfaces, surface.id)
-      if (surface.image_url.startsWith('/uploads/')) {
-        const key = surface.image_url.slice('/uploads/'.length)
-        try {
-          await uploadStorage.remove(key)
-        } catch {
-          // ignore
-        }
+      for (const img of images) {
+        await safeRemoveStoredUpload(img.image_url)
       }
       return redirect(routes.profile.href({ username: context.params.username }), 303)
     },
