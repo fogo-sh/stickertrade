@@ -67,7 +67,6 @@ export const surfaces = table({
     name: c.text().notNull(),
     slug: c.text().notNull().unique(),
     description: c.text(),
-    image_url: c.text().notNull(),
     owner_id: c.text().notNull(),
     created_at: c.integer().notNull(),
     updated_at: c.integer().notNull(),
@@ -84,6 +83,17 @@ export const surfaceFeatures = table({
   },
 })
 
+export const surfaceImages = table({
+  name: 'surface_images',
+  columns: {
+    id: c.text().primaryKey(),
+    surface_id: c.text().notNull(),
+    image_url: c.text().notNull(),
+    is_primary: c.boolean().notNull(),
+    created_at: c.integer().notNull(),
+  },
+})
+
 export type User = TableRow<typeof users>
 export type Sticker = TableRow<typeof stickers>
 export type Invitation = TableRow<typeof invitations>
@@ -91,6 +101,7 @@ export type Config = TableRow<typeof config>
 export type ApiToken = TableRow<typeof apiTokens>
 export type Surface = TableRow<typeof surfaces>
 export type SurfaceFeature = TableRow<typeof surfaceFeatures>
+export type SurfaceImage = TableRow<typeof surfaceImages>
 
 export const UserRoles = {
   User: 'USER',
