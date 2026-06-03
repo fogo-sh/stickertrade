@@ -1295,7 +1295,7 @@ describe('surfaces', () => {
       assert.equal(res.status, 200)
       const html = await res.text()
       assert.ok(html.includes('On Profile'))
-      assert.ok(html.includes('surfaces (1)'))
+      assert.ok(/<p[^>]*>\s*surfaces\s*<\/p>/.test(html), 'expected "surfaces" section heading')
     } finally {
       env.cleanup()
     }

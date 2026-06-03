@@ -52,9 +52,7 @@ export function ProfilePage() {
           </div>
           {isOwner || profile.surfaces.length > 0 ? (
             <section mix={surfacesSectionStyle}>
-              <p mix={sectionHeading}>
-                surfaces{profile.surfaces.length > 0 ? ` (${profile.surfaces.length})` : ''}
-              </p>
+              <p mix={sectionHeading}>surfaces</p>
               {profile.surfaces.map((s) => (
                 <SurfaceCard key={s.id} surface={s} showOwner={false} />
               ))}
