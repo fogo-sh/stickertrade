@@ -60,11 +60,37 @@ export const apiTokens = table({
   },
 })
 
+export const surfaces = table({
+  name: 'surfaces',
+  columns: {
+    id: c.text().primaryKey(),
+    name: c.text().notNull(),
+    slug: c.text().notNull().unique(),
+    description: c.text(),
+    image_url: c.text().notNull(),
+    owner_id: c.text().notNull(),
+    created_at: c.integer().notNull(),
+    updated_at: c.integer().notNull(),
+  },
+})
+
+export const surface_features = table({
+  name: 'surface_features',
+  columns: {
+    id: c.integer().primaryKey().autoIncrement(),
+    surface_id: c.text().notNull(),
+    featured_date: c.text().notNull().unique(),
+    created_at: c.integer().notNull(),
+  },
+})
+
 export type User = TableRow<typeof users>
 export type Sticker = TableRow<typeof stickers>
 export type Invitation = TableRow<typeof invitations>
 export type Config = TableRow<typeof config>
 export type ApiToken = TableRow<typeof apiTokens>
+export type Surface = TableRow<typeof surfaces>
+export type SurfaceFeature = TableRow<typeof surface_features>
 
 export const UserRoles = {
   User: 'USER',
