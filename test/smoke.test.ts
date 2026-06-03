@@ -1272,4 +1272,69 @@ describe('surfaces', () => {
       env.cleanup()
     }
   })
+
+  it('renders surfaces on the profile page', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'sf-profile', 'sf-profilepass')
+      const slug = generateContentSlug('On Profile')
+      await env.db.create(surfaces, {
+        id: randomUUID(),
+        name: 'On Profile',
+        slug,
+        description: 'visible on profile',
+        image_url: '/images/banner.png',
+        owner_id: ownerId,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      })
+
+      const res = await env.fetch(
+        new Request(buildUrl(routes.profile.href({ username: 'sf-profile' }))),
+      )
+      assert.equal(res.status, 200)
+      const html = await res.text()
+      assert.ok(html.includes('On Profile'))
+      assert.ok(html.includes('Surfaces (1)'))
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('renders the surface of the day on the home page when one exists', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'sf-sotd', 'sf-sotdpass')
+      const slug = generateContentSlug('Daily Pick')
+      await env.db.create(surfaces, {
+        id: randomUUID(),
+        name: 'Daily Pick',
+        slug,
+        image_url: '/images/banner.png',
+        owner_id: ownerId,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      })
+
+      const res = await env.fetch(new Request(buildUrl('/')))
+      assert.equal(res.status, 200)
+      const html = await res.text()
+      assert.ok(html.includes('Surface of the Day'))
+      assert.ok(html.includes('Daily Pick'))
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('omits the surface of the day block when there are no surfaces', async () => {
+    const env = await createTestEnv()
+    try {
+      const res = await env.fetch(new Request(buildUrl('/')))
+      assert.equal(res.status, 200)
+      const html = await res.text()
+      assert.ok(!html.includes('Surface of the Day'))
+    } finally {
+      env.cleanup()
+    }
+  })
 })

@@ -13,6 +13,7 @@ import { getDevLog, getDevLogs } from '../data/dev-logs.ts'
 import { roadmapTasks } from '../data/roadmap.ts'
 import { apiTokens, stickers, surfaces, users } from '../data/schema.ts'
 import { looksLikeUuid } from '../data/slug.ts'
+import { getSurfaceOfTheDay } from '../data/surface-of-the-day.ts'
 import { uploadStorage } from '../data/uploads.ts'
 import { tokenNameSchema } from '../data/validators.ts'
 import { routes } from '../routes.ts'
@@ -71,6 +72,29 @@ export default createController(routes, {
         limit: 8,
       })
 
+      const sotd = await getSurfaceOfTheDay(db)
+      let sotdProp: {
+        id: string
+        slug: string
+        name: string
+        description: string | null
+        image_url: string
+        owner: { username: string; avatar_url: string | null }
+      } | null = null
+      if (sotd) {
+        const owner = await db.findOne(users, { where: { id: sotd.owner_id } })
+        if (owner) {
+          sotdProp = {
+            id: sotd.id,
+            slug: sotd.slug,
+            name: sotd.name,
+            description: sotd.description,
+            image_url: sotd.image_url,
+            owner: { username: owner.username, avatar_url: owner.avatar_url ?? null },
+          }
+        }
+      }
+
       return context.render(
         <HomePage
           user={user}
@@ -91,6 +115,7 @@ export default createController(routes, {
             username: u.username,
             avatar_url: u.avatar_url ?? null,
           }))}
+          surfaceOfTheDay={sotdProp}
         />,
       )
     },
@@ -257,10 +282,16 @@ export default createController(routes, {
         where: { username: context.params.username },
       })
       if (!profileUser) return notFound()
-      const profileStickers = await db.findMany(stickers, {
-        where: { owner_id: profileUser.id },
-        orderBy: ['created_at', 'desc'],
-      })
+      const [profileStickers, profileSurfaces] = await Promise.all([
+        db.findMany(stickers, {
+          where: { owner_id: profileUser.id },
+          orderBy: ['created_at', 'desc'],
+        }),
+        db.findMany(surfaces, {
+          where: { owner_id: profileUser.id },
+          orderBy: ['created_at', 'desc'],
+        }),
+      ])
       return context.render(
         <ProfilePage
           user={getCurrentUser(context)}
@@ -272,6 +303,17 @@ export default createController(routes, {
               slug: s.slug,
               name: s.name,
               image_url: s.image_url,
+            })),
+            surfaces: profileSurfaces.map((s) => ({
+              id: s.id,
+              slug: s.slug,
+              name: s.name,
+              description: s.description,
+              image_url: s.image_url,
+              owner: {
+                username: profileUser.username,
+                avatar_url: profileUser.avatar_url ?? null,
+              },
             })),
           }}
         />,

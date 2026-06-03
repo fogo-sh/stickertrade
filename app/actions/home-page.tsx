@@ -4,6 +4,7 @@ import { routes } from '../routes.ts'
 import { Document } from '../ui/document.tsx'
 import type { HeaderUser } from '../ui/header.tsx'
 import { StickerCard, UploadStickerCard, type StickerCardSticker } from '../ui/sticker-card.tsx'
+import { SurfaceCard } from '../ui/surface-card.tsx'
 import { colors } from '../ui/theme.ts'
 import { UserCard, type UserCardUser } from '../ui/user-card.tsx'
 
@@ -11,10 +12,18 @@ export interface HomePageProps {
   user: HeaderUser | null
   stickers: StickerCardSticker[]
   users: UserCardUser[]
+  surfaceOfTheDay: {
+    id: string
+    slug: string
+    name: string
+    description: string | null
+    image_url: string
+    owner: { username: string; avatar_url: string | null }
+  } | null
 }
 
 export function HomePage() {
-  return ({ user, stickers, users }: HomePageProps) => (
+  return ({ user, stickers, users, surfaceOfTheDay }: HomePageProps) => (
     <Document
       user={user}
       og={{
@@ -24,6 +33,12 @@ export function HomePage() {
       }}
     >
       <main>
+        {surfaceOfTheDay ? (
+          <section mix={sotdSectionStyle}>
+            <h2 mix={sotdHeadingStyle}>Surface of the Day</h2>
+            <SurfaceCard surface={surfaceOfTheDay} />
+          </section>
+        ) : null}
         <a href={routes.stickers.href()} mix={sectionHeading}>
           recently posted stickers
         </a>
@@ -80,3 +95,10 @@ const seeAllLinkStyle = css({
   opacity: 0.75,
   '&:hover': { opacity: 1, textDecoration: 'underline', color: colors.primary[500] },
 })
+
+const sotdSectionStyle = css({
+  maxWidth: '800px',
+  margin: '0 auto 2.5rem',
+})
+
+const sotdHeadingStyle = css({ margin: '0 0 1rem' })

@@ -17,13 +17,14 @@ export interface SurfaceCardSurface {
 
 export interface SurfaceCardProps {
   surface: SurfaceCardSurface
+  showOwner?: boolean
 }
 
 const PREVIEW_LIMIT = 120
 
 export function SurfaceCard(handle: Handle<SurfaceCardProps>) {
   return () => {
-    const { surface } = handle.props
+    const { surface, showOwner = true } = handle.props
     const preview =
       surface.description && surface.description.length > PREVIEW_LIMIT
         ? surface.description.slice(0, PREVIEW_LIMIT) + '…'
@@ -34,19 +35,21 @@ export function SurfaceCard(handle: Handle<SurfaceCardProps>) {
           <img src={surface.image_url} alt={surface.name} mix={imageStyle} />
         </div>
         <p mix={nameStyle}>{surface.name}</p>
-        <p mix={ownerStyle}>
-          <img
-            src={surface.owner.avatar_url ?? '/images/default-avatar.webp'}
-            alt={surface.owner.username}
-            mix={css({
-              width: '1em',
-              height: '1em',
-              borderRadius: '999px',
-              objectFit: 'cover',
-            })}
-          />
-          <span>{surface.owner.username}</span>
-        </p>
+        {showOwner ? (
+          <p mix={ownerStyle}>
+            <img
+              src={surface.owner.avatar_url ?? '/images/default-avatar.webp'}
+              alt={surface.owner.username}
+              mix={css({
+                width: '1em',
+                height: '1em',
+                borderRadius: '999px',
+                objectFit: 'cover',
+              })}
+            />
+            <span>{surface.owner.username}</span>
+          </p>
+        ) : null}
         {preview ? <p mix={descriptionStyle}>{preview}</p> : null}
       </a>
     )
