@@ -24,7 +24,7 @@ export default createController(routes.addSurfaceImage, {
     index(context) {
       // GET: not a real page; bounce back to the edit form.
       return redirect(
-        `/surface/${encodeURIComponent(context.params.slug)}/edit`,
+        routes.editSurface.index.href({ slug: context.params.slug }),
         303,
       )
     },
@@ -92,7 +92,7 @@ export default createController(routes.addSurfaceImage, {
       })
 
       return redirect(
-        `/surface/${encodeURIComponent(surface.slug)}/edit`,
+        routes.editSurface.index.href({ slug: surface.slug }),
         303,
       )
     },
