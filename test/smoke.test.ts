@@ -1338,6 +1338,97 @@ describe('surfaces', () => {
     }
   })
 
+  it('GET /api/surfaces lists surfaces', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'sf-api-list', 'sf-api-listpass')
+      await env.db.create(surfaces, {
+        id: randomUUID(),
+        name: 'api listed',
+        slug: generateContentSlug('api listed'),
+        image_url: '/images/banner.png',
+        owner_id: ownerId,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      })
+
+      const res = await env.fetch(new Request(buildUrl(routes.api.surfacesIndex.href())))
+      assert.equal(res.status, 200)
+      const payload = (await res.json()) as {
+        surfaces: Array<{ name: string; owner: { username: string } }>
+      }
+      assert.ok(Array.isArray(payload.surfaces))
+      assert.equal(payload.surfaces[0]?.name, 'api listed')
+      assert.equal(payload.surfaces[0]?.owner.username, 'sf-api-list')
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('GET /api/users/:username/surfaces returns the user surfaces', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'sf-api-user', 'sf-api-userpass')
+      await env.db.create(surfaces, {
+        id: randomUUID(),
+        name: 'belongs to user',
+        slug: generateContentSlug('belongs to user'),
+        image_url: '/images/banner.png',
+        owner_id: ownerId,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      })
+
+      const res = await env.fetch(
+        new Request(buildUrl(routes.api.userSurfaces.href({ username: 'sf-api-user' }))),
+      )
+      assert.equal(res.status, 200)
+      const payload = (await res.json()) as {
+        user: { username: string }
+        surfaces: Array<{ name: string }>
+      }
+      assert.equal(payload.user.username, 'sf-api-user')
+      assert.equal(payload.surfaces[0]?.name, 'belongs to user')
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('PATCH /api/surfaces/:id forbids non-owner with bearer token', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'sf-api-owner', 'sf-api-ownerpass')
+      const intruderId = await seedUser(env, 'sf-api-intruder', 'sf-api-intruderpass')
+      const { createTokenForUser } = await import('../app/data/api-tokens.ts')
+      const { plaintext } = await createTokenForUser(env.db, { id: intruderId }, 'tok')
+
+      const id = randomUUID()
+      await env.db.create(surfaces, {
+        id,
+        name: 'hands off',
+        slug: generateContentSlug('hands off'),
+        image_url: '/images/banner.png',
+        owner_id: ownerId,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      })
+
+      const res = await env.fetch(
+        new Request(buildUrl(routes.api.surfaceUpdate.href({ id })), {
+          method: 'PATCH',
+          headers: {
+            authorization: `Bearer ${plaintext}`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({ name: 'stolen' }),
+        }),
+      )
+      assert.equal(res.status, 403)
+    } finally {
+      env.cleanup()
+    }
+  })
+
   it('lets an admin delete a surface', async () => {
     const env = await createTestEnv()
     try {

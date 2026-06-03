@@ -78,6 +78,12 @@ export const routes = route({
     stickerDestroy: del('/stickers/:id'),
     userShow: get('/users/:username'),
     userStickers: get('/users/:username/stickers'),
+    surfacesIndex: get('/surfaces'),
+    surfaceShow: get('/surfaces/:id'),
+    surfaceCreate: post('/surfaces'),
+    surfaceUpdate: patch('/surfaces/:id'),
+    surfaceDestroy: del('/surfaces/:id'),
+    userSurfaces: get('/users/:username/surfaces'),
     // Catch-all for any other /api/* URL so unknown endpoints return a
     // JSON 404 instead of the router's plain-text default.
     notFound: '/*path',

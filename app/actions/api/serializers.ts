@@ -1,4 +1,4 @@
-import type { Sticker, User } from '../../data/schema.ts'
+import type { Sticker, Surface, User } from '../../data/schema.ts'
 
 export interface JsonSticker {
   id: string
@@ -47,5 +47,32 @@ export function serializeSticker(
     owner: owner ? serializeUserStub(owner) : null,
     created_at: sticker.created_at,
     updated_at: sticker.updated_at,
+  }
+}
+
+export interface JsonSurface {
+  id: string
+  name: string
+  slug: string
+  description: string | null
+  image_url: string
+  owner: JsonUserStub
+  created_at: number
+  updated_at: number
+}
+
+export function serializeSurface(
+  surface: Surface,
+  owner: Pick<User, 'username' | 'avatar_url'>,
+): JsonSurface {
+  return {
+    id: surface.id,
+    name: surface.name,
+    slug: surface.slug,
+    description: surface.description,
+    image_url: surface.image_url,
+    owner: serializeUserStub(owner),
+    created_at: surface.created_at,
+    updated_at: surface.updated_at,
   }
 }
