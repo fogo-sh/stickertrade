@@ -66,6 +66,12 @@ export type UploadResult =
   | { success: true; value: FormData }
   | { success: false; error: UploadError }
 
+export interface UploadOverrides {
+  maxFiles?: number
+  maxTotalSize?: number
+  maxFileSize?: number
+}
+
 function describeBytes(bytes: number): string {
   const mb = bytes / (1024 * 1024)
   if (mb >= 1) return `${Math.round(mb * 10) / 10} MiB`
@@ -133,9 +139,13 @@ function toUploadError(error: unknown): UploadError | null {
  * Prefer `readVerifiedUploadFormData` in controllers — it folds in the
  * CSRF check so callers can't forget either step.
  */
-export async function readUploadFormData(request: Request): Promise<UploadResult> {
+export async function readUploadFormData(
+  request: Request,
+  overrides: UploadOverrides = {},
+): Promise<UploadResult> {
+  const limits = { ...UPLOAD_LIMITS, ...overrides }
   try {
-    const value = await parseFormData(request, UPLOAD_LIMITS)
+    const value = await parseFormData(request, limits)
     return { success: true, value }
   } catch (error) {
     const uploadError = toUploadError(error)
@@ -158,8 +168,9 @@ export type VerifiedUploadResult =
  */
 export async function readVerifiedUploadFormData(
   context: RequestContext<any, any>,
+  overrides: UploadOverrides = {},
 ): Promise<VerifiedUploadResult> {
-  const parsed = await readUploadFormData(context.request)
+  const parsed = await readUploadFormData(context.request, overrides)
   if (!parsed.success) {
     return { success: false, kind: 'upload', error: parsed.error }
   }
