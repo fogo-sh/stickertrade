@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto'
 
+import * as s from 'remix/data-schema'
+import * as f from 'remix/data-schema/form-data'
 import { Database } from 'remix/data-table'
 import { Session } from 'remix/session'
 import { redirect } from 'remix/response/redirect'
@@ -8,9 +10,20 @@ import { createController } from 'remix/router'
 import { hashPassword } from '../../data/auth.ts'
 import { getCurrentUser } from '../../data/current-user.ts'
 import { invitations, users, UserRoles } from '../../data/schema.ts'
+import {
+  issuesToFieldErrors,
+  newPasswordSchema,
+  usernameSchema,
+} from '../../data/validators.ts'
 import { routes } from '../../routes.ts'
 import { formatRelative } from '../../utils/time.ts'
 import { InvitationPage } from '../invitation-page.tsx'
+
+const acceptInvitationSchema = f.object({
+  username: f.field(usernameSchema),
+  password: f.field(newPasswordSchema),
+  confirmPassword: f.field(s.string()),
+})
 
 function notFound() {
   return new Response('Not Found', { status: 404 })
@@ -45,16 +58,23 @@ export default createController(routes.invitation, {
 
     async action(context) {
       const formData = context.get(FormData)
-      const username = String(formData.get('username') ?? '').trim()
-      const password = String(formData.get('password') ?? '')
-      const confirmPassword = String(formData.get('confirmPassword') ?? '')
+      const parsed = s.parseSafe(acceptInvitationSchema, formData)
+      const errors: Record<string, string> = parsed.success
+        ? {}
+        : issuesToFieldErrors(parsed.issues)
+      const username = parsed.success
+        ? parsed.value.username
+        : String(formData.get('username') ?? '').trim()
+      const password = parsed.success
+        ? parsed.value.password
+        : String(formData.get('password') ?? '')
+      const confirmPassword = parsed.success
+        ? parsed.value.confirmPassword
+        : String(formData.get('confirmPassword') ?? '')
 
-      const errors: Record<string, string> = {}
-      if (username.length < 3 || username.length > 16)
-        errors.username = 'Username must be 3-16 characters'
-      if (password.length < 6 || password.length > 64)
-        errors.password = 'Password must be 6-64 characters'
-      if (password !== confirmPassword) errors.confirmPassword = "Passwords don't match"
+      if (!errors.confirmPassword && password !== confirmPassword) {
+        errors.confirmPassword = "Passwords don't match"
+      }
 
       const db = context.get(Database)
       const invitation = await db.findOne(invitations, { where: { id: context.params.id } })

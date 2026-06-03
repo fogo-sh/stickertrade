@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto'
 
+import * as s from 'remix/data-schema'
+import * as f from 'remix/data-schema/form-data'
 import { Database } from 'remix/data-table'
 import { inList } from 'remix/data-table/operators'
 import { createController } from 'remix/router'
@@ -8,10 +10,18 @@ import { getCurrentUser } from '../../data/current-user.ts'
 import { stickers, users } from '../../data/schema.ts'
 import { ProcessImageError, processStickerUpload } from '../../data/upload-image.ts'
 import { uploadStorage } from '../../data/uploads.ts'
+import { stickerNameSchema } from '../../data/validators.ts'
 import { routes } from '../../routes.ts'
 import { readUploadFormData } from '../../utils/upload.ts'
 import { jsonError, jsonOk } from './json.ts'
 import { serializeSticker, serializeUser, serializeUserStub } from './serializers.ts'
+
+const apiStickerCreateSchema = f.object({
+  name: f.field(stickerNameSchema),
+  image: f.file(
+    s.instanceof_(File).refine((file) => file.size > 0, 'Please attach an image'),
+  ),
+})
 
 const PAGE_SIZE = 50
 
@@ -86,30 +96,23 @@ export default createController(routes.api, {
       const user = getCurrentUser(context)
       if (!user) return jsonError(401, 'Unauthorized')
 
-      const parsed = await readUploadFormData(context.request)
-      if (!parsed.success) {
-        return jsonError(parsed.error.status, parsed.error.code, {
-          message: parsed.error.message,
-          ...parsed.error.extras,
+      const uploadParsed = await readUploadFormData(context.request)
+      if (!uploadParsed.success) {
+        return jsonError(uploadParsed.error.status, uploadParsed.error.code, {
+          message: uploadParsed.error.message,
+          ...uploadParsed.error.extras,
         })
       }
-      const formData = parsed.value
 
-      const name = String(formData.get('name') ?? '').trim()
-      const file = formData.get('image')
-
-      const issues: Array<{ path: string[]; message: string }> = []
-      if (name.length === 0 || name.length > 60) {
-        issues.push({ path: ['name'], message: 'Name must be 1-60 characters' })
+      const parsed = s.parseSafe(apiStickerCreateSchema, uploadParsed.value)
+      if (!parsed.success) {
+        return jsonError(400, 'Validation failed', { issues: parsed.issues })
       }
-      if (!(file instanceof File) || file.size === 0) {
-        issues.push({ path: ['image'], message: 'Please attach an image' })
-      }
-      if (issues.length > 0) return jsonError(400, 'Validation failed', { issues })
+      const { name, image } = parsed.value
 
       let storedImageUrl: string
       try {
-        storedImageUrl = await processStickerUpload(file as File)
+        storedImageUrl = await processStickerUpload(image)
       } catch (error) {
         if (error instanceof ProcessImageError) {
           const status = error.code === 'file_too_large' ? 413 : 400
@@ -148,25 +151,24 @@ export default createController(routes.api, {
       }
 
       // Accept either JSON ({"name": "..."}) or form-encoded body.
-      let payload: { name?: unknown }
+      let rawName: unknown
       const contentType = context.request.headers.get('content-type') ?? ''
       if (contentType.includes('application/json')) {
         try {
-          payload = (await context.request.json()) as { name?: unknown }
+          const payload = (await context.request.json()) as { name?: unknown }
+          rawName = payload.name
         } catch {
           return jsonError(400, 'Invalid JSON body')
         }
       } else {
-        const formData = context.get(FormData)
-        payload = { name: formData.get('name') }
+        rawName = context.get(FormData).get('name')
       }
 
-      const name = typeof payload.name === 'string' ? payload.name.trim() : ''
-      if (name.length === 0 || name.length > 60) {
-        return jsonError(400, 'Validation failed', {
-          issues: [{ path: ['name'], message: 'Name must be 1-60 characters' }],
-        })
+      const nameResult = s.parseSafe(stickerNameSchema, rawName)
+      if (!nameResult.success) {
+        return jsonError(400, 'Validation failed', { issues: nameResult.issues })
       }
+      const name = nameResult.value
 
       await db.update(stickers, sticker.id, { name, updated_at: Date.now() })
       const updated = await db.findOne(stickers, { where: { id: sticker.id } })
@@ -220,6 +222,11 @@ export default createController(routes.api, {
         user: serializeUserStub(u),
         stickers: rows.map((s) => serializeSticker(s, u)),
       })
+    },
+
+    // -------- Catch-all: any other /api/* URL --------
+    notFound() {
+      return jsonError(404, 'Not Found')
     },
   },
 })

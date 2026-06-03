@@ -8,11 +8,18 @@
  * `Response` for expected outcomes" pattern from the Remix skill.
  *
  * To do that, upload-handling controllers skip the global middleware and
- * call `readUploadFormData(request)` here. The shape mirrors
- * `parseSafe` from `remix/data-schema`: success returns `{ success: true,
- * value }`, failure returns `{ success: false, error }` where `error`
- * carries the HTTP status, a stable code, and a friendly message.
+ * call `readVerifiedUploadFormData(context)` here. That helper combines
+ * three steps into one: parse the multipart body, translate any limit
+ * error into a structured `UploadError`, and re-verify the `_csrf` field
+ * (since the global CSRF middleware also skips multipart bodies).
+ *
+ * The success shape mirrors `parseSafe` from `remix/data-schema`. Failure
+ * is a tagged union: `kind: 'upload'` carries the structured error info
+ * for controllers to turn into either an inline-error page (HTML) or a
+ * tagged JSON error (API), while `kind: 'csrf'` is already a `Response`
+ * the controller can return as-is.
  */
+import type { RequestContext } from 'remix/router'
 import {
   MaxFilesExceededError,
   MaxFileSizeExceededError,
@@ -22,7 +29,9 @@ import {
   MultipartParseError,
   parseFormData,
   type ParseFormDataOptions,
-} from '@remix-run/form-data-parser'
+} from 'remix/form-data-parser'
+
+import { assertCsrfToken } from './csrf.ts'
 
 /** Single source of truth for upload limits, kept simple on purpose. */
 export const UPLOAD_LIMITS = {
@@ -120,6 +129,9 @@ function toUploadError(error: unknown): UploadError | null {
  * errors into a returned `UploadError` instead of a thrown exception. Any
  * non-multipart error is rethrown so it surfaces as a real 500 — that's a
  * bug to fix, not a user-facing condition.
+ *
+ * Prefer `readVerifiedUploadFormData` in controllers — it folds in the
+ * CSRF check so callers can't forget either step.
  */
 export async function readUploadFormData(request: Request): Promise<UploadResult> {
   try {
@@ -130,4 +142,30 @@ export async function readUploadFormData(request: Request): Promise<UploadResult
     if (uploadError) return { success: false, error: uploadError }
     throw error
   }
+}
+
+export type VerifiedUploadResult =
+  | { success: true; value: FormData }
+  | { success: false; kind: 'upload'; error: UploadError }
+  | { success: false; kind: 'csrf'; response: Response }
+
+/**
+ * Parse the multipart body AND verify CSRF in one call. Controllers that
+ * accept browser uploads should reach for this — it eliminates the
+ * footgun of remembering to call both `readUploadFormData` and
+ * `assertCsrfToken`. API-only routes (which skip CSRF entirely) can
+ * still use `readUploadFormData` directly.
+ */
+export async function readVerifiedUploadFormData(
+  context: RequestContext<any, any>,
+): Promise<VerifiedUploadResult> {
+  const parsed = await readUploadFormData(context.request)
+  if (!parsed.success) {
+    return { success: false, kind: 'upload', error: parsed.error }
+  }
+  const denied = assertCsrfToken(context, parsed.value.get('_csrf'))
+  if (denied) {
+    return { success: false, kind: 'csrf', response: denied }
+  }
+  return { success: true, value: parsed.value }
 }

@@ -1,3 +1,5 @@
+import * as s from 'remix/data-schema'
+import * as f from 'remix/data-schema/form-data'
 import { Database } from 'remix/data-table'
 import { Session } from 'remix/session'
 import { redirect } from 'remix/response/redirect'
@@ -7,10 +9,25 @@ import { getCurrentUser } from '../../data/current-user.ts'
 import { stickers } from '../../data/schema.ts'
 import { processStickerUpload } from '../../data/upload-image.ts'
 import { uploadStorage } from '../../data/uploads.ts'
+import {
+  issuesToFieldErrors,
+  stickerNameSchema,
+} from '../../data/validators.ts'
 import { routes } from '../../routes.ts'
-import { assertCsrfToken } from '../../utils/csrf.ts'
-import { readUploadFormData } from '../../utils/upload.ts'
+import { readVerifiedUploadFormData } from '../../utils/upload.ts'
 import { EditStickerPage } from '../edit-sticker-page.tsx'
+
+// On the edit page the image field is optional — submitting without a file
+// keeps the existing image. We map any zero-byte File or absent field to
+// `undefined` so the action can branch on its presence cleanly.
+const optionalImage = s
+  .optional(s.instanceof_(File))
+  .transform((value) => (value && value.size > 0 ? value : undefined))
+
+const editStickerSchema = f.object({
+  name: f.field(stickerNameSchema),
+  image: f.file(optionalImage),
+})
 
 function notFound() {
   return new Response('Not Found', { status: 404 })
@@ -72,40 +89,32 @@ export default createController(routes.editSticker, {
 
       let formData: FormData
       if (isMultipart) {
-        const parsed = await readUploadFormData(context.request)
-        if (!parsed.success) {
+        const verified = await readVerifiedUploadFormData(context)
+        if (!verified.success) {
+          if (verified.kind === 'csrf') return verified.response
           return context.render(
             <EditStickerPage
               user={user}
               sticker={{ id: sticker.id, name: sticker.name, image_url: sticker.image_url }}
-              errors={{ image: parsed.error.message }}
+              errors={{ image: verified.error.message }}
             />,
-            { status: parsed.error.status },
+            { status: verified.error.status },
           )
         }
-        formData = parsed.value
-        const denied = assertCsrfToken(context, formData.get('_csrf'))
-        if (denied) return denied
+        formData = verified.value
       } else {
         formData = context.get(FormData)
       }
 
-      const name = String(formData.get('name') ?? '').trim()
-      const file = formData.get('image')
-      const hasNewImage = file instanceof File && file.size > 0
-
-      const errors: Record<string, string> = {}
-      if (name.length === 0 || name.length > 60) {
-        errors.name = 'Name must be 1-60 characters'
-      }
-
-      if (Object.keys(errors).length > 0) {
+      const parsed = s.parseSafe(editStickerSchema, formData)
+      if (!parsed.success) {
+        const errors = issuesToFieldErrors(parsed.issues)
         return context.render(
           <EditStickerPage
             user={user}
             sticker={{
               id: sticker.id,
-              name,
+              name: String(formData.get('name') ?? ''),
               image_url: sticker.image_url,
             }}
             errors={errors}
@@ -114,15 +123,16 @@ export default createController(routes.editSticker, {
         )
       }
 
+      const { name, image } = parsed.value
       const changes: Partial<{ name: string; image_url: string; updated_at: number }> = {
         name,
         updated_at: Date.now(),
       }
 
-      if (hasNewImage) {
+      if (image) {
         let storedUrl: string
         try {
-          storedUrl = await processStickerUpload(file as File)
+          storedUrl = await processStickerUpload(image)
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Upload failed'
           return context.render(
@@ -140,7 +150,7 @@ export default createController(routes.editSticker, {
       await db.update(stickers, sticker.id, changes)
 
       // After the row is updated, clean up the previous file if it was replaced.
-      if (hasNewImage) {
+      if (image) {
         await safeRemoveStoredUpload(sticker.image_url)
       }
 

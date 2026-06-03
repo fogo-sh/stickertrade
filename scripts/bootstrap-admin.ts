@@ -2,9 +2,11 @@ import { randomUUID } from 'node:crypto'
 import { parseArgs } from 'node:util'
 
 import bcrypt from 'bcryptjs'
+import * as s from 'remix/data-schema'
 
 import { db } from '../app/data/db.ts'
 import { config, users, UserRoles } from '../app/data/schema.ts'
+import { newPasswordSchema, usernameSchema } from '../app/data/validators.ts'
 
 const USAGE = `Usage:
   bootstrap-admin --username <name> --password <password>
@@ -27,19 +29,6 @@ function fail(message: string): never {
   process.exit(1)
 }
 
-function validateUsername(value: string): string | null {
-  if (value.length < 3 || value.length > 16) return 'Username must be 3-16 characters'
-  if (!/^[a-zA-Z0-9_-]+$/.test(value))
-    return 'Username may only contain letters, numbers, underscores, and dashes'
-  return null
-}
-
-function validatePassword(value: string): string | null {
-  if (value.length < 8) return 'Password must be at least 8 characters'
-  if (value.length > 64) return 'Password must be 64 characters or fewer'
-  return null
-}
-
 async function ensureConfigRow(): Promise<void> {
   const existing = await db.findOne(config, { where: { id: 1 } })
   if (existing) return
@@ -60,17 +49,21 @@ if (values.help) {
   process.exit(0)
 }
 
-const username = values.username
-const password = values.password
+if (!values.username) fail('Missing required --username')
+if (!values.password) fail('Missing required --password')
 
-if (!username) fail('Missing required --username')
-if (!password) fail('Missing required --password')
+const usernameResult = s.parseSafe(usernameSchema, values.username)
+if (!usernameResult.success) {
+  fail(`Invalid --username: ${usernameResult.issues[0]?.message ?? 'invalid'}`)
+}
 
-const usernameError = validateUsername(username)
-if (usernameError) fail(`Invalid --username: ${usernameError}`)
+const passwordResult = s.parseSafe(newPasswordSchema, values.password)
+if (!passwordResult.success) {
+  fail(`Invalid --password: ${passwordResult.issues[0]?.message ?? 'invalid'}`)
+}
 
-const passwordError = validatePassword(password)
-if (passwordError) fail(`Invalid --password: ${passwordError}`)
+const username = usernameResult.value
+const password = passwordResult.value
 
 const existing = await db.findOne(users, { where: { username } })
 if (existing) fail(`User "${username}" already exists.`)

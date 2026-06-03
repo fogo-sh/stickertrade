@@ -1,3 +1,5 @@
+import * as s from 'remix/data-schema'
+import * as f from 'remix/data-schema/form-data'
 import { Database } from 'remix/data-table'
 import { Session } from 'remix/session'
 import { redirect } from 'remix/response/redirect'
@@ -9,9 +11,14 @@ import { users } from '../../data/schema.ts'
 import { processAvatarUpload } from '../../data/upload-image.ts'
 import { uploadStorage } from '../../data/uploads.ts'
 import { routes } from '../../routes.ts'
-import { assertCsrfToken } from '../../utils/csrf.ts'
-import { readUploadFormData } from '../../utils/upload.ts'
+import { readVerifiedUploadFormData } from '../../utils/upload.ts'
 import { EditProfilePage } from '../edit-profile-page.tsx'
+
+const avatarUploadSchema = f.object({
+  avatar: f.file(
+    s.instanceof_(File).refine((file) => file.size > 0, 'Please choose an image'),
+  ),
+})
 
 async function safeRemoveStoredUpload(url: string | null) {
   if (!url || !url.startsWith('/uploads/')) return
@@ -86,16 +93,15 @@ export default createController(routes.editProfile, {
 
       let formData: FormData
       if (isMultipart) {
-        const parsed = await readUploadFormData(context.request)
+        const parsed = await readVerifiedUploadFormData(context)
         if (!parsed.success) {
+          if (parsed.kind === 'csrf') return parsed.response
           return context.render(
             <EditProfilePage user={user} avatarErrors={{ avatar: parsed.error.message }} />,
             { status: parsed.error.status },
           )
         }
         formData = parsed.value
-        const denied = assertCsrfToken(context, formData.get('_csrf'))
-        if (denied) return denied
       } else {
         formData = context.get(FormData)
       }
@@ -121,17 +127,20 @@ export default createController(routes.editProfile, {
       }
 
       // Upload avatar branch
-      const file = formData.get('avatar')
-      if (!(file instanceof File) || file.size === 0) {
+      const parsed = s.parseSafe(avatarUploadSchema, formData)
+      if (!parsed.success) {
         return context.render(
-          <EditProfilePage user={user} avatarErrors={{ avatar: 'Please choose an image' }} />,
+          <EditProfilePage
+            user={user}
+            avatarErrors={{ avatar: parsed.issues[0]?.message ?? 'Please choose an image' }}
+          />,
           { status: 400 },
         )
       }
 
       let storedUrl: string
       try {
-        storedUrl = await processAvatarUpload(file)
+        storedUrl = await processAvatarUpload(parsed.value.avatar)
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Upload failed'
         return context.render(

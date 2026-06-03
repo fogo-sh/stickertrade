@@ -1,3 +1,4 @@
+import * as s from 'remix/data-schema'
 import { Database } from 'remix/data-table'
 import { inList } from 'remix/data-table/operators'
 import { Session } from 'remix/session'
@@ -12,6 +13,7 @@ import { getDevLog, getDevLogs } from '../data/dev-logs.ts'
 import { roadmapTasks } from '../data/roadmap.ts'
 import { apiTokens, stickers, users } from '../data/schema.ts'
 import { uploadStorage } from '../data/uploads.ts'
+import { tokenNameSchema } from '../data/validators.ts'
 import { routes } from '../routes.ts'
 import { BrandPage } from './brand-page.tsx'
 import { DevLogPage } from './dev-log-page.tsx'
@@ -205,14 +207,17 @@ export default createController(routes, {
       const user = getCurrentUser(context)
       if (!user) return redirect(routes.login.index.href(), 303)
       const formData = context.get(FormData)
-      const name = String(formData.get('name') ?? '').trim()
       const session = context.get(Session)
-      if (name.length === 0 || name.length > 60) {
-        session.flash('token_error_name', 'Token name must be 1-60 characters')
+      const parsed = s.parseSafe(tokenNameSchema, formData.get('name'))
+      if (!parsed.success) {
+        session.flash(
+          'token_error_name',
+          parsed.issues[0]?.message ?? 'Invalid token name',
+        )
         return redirect(routes.editProfile.index.href(), 303)
       }
       const db = context.get(Database)
-      const created = await createTokenForUser(db, user, name)
+      const created = await createTokenForUser(db, user, parsed.value)
       session.flash(
         'token_new',
         JSON.stringify({ name: created.name, plaintext: created.plaintext }),

@@ -58,9 +58,11 @@ request, components are not React.
 - Controllers return explicit `Response` objects (use `redirect(...)` or `context.render(...)`).
   Reserve thrown errors for genuinely unexpected failures.
 - Styling is `remix/ui` `css(...)` mixins; design tokens live in `app/ui/theme.ts`.
-- Auth checks are inline in controllers via `getCurrentUser(context)` / `requireAdmin(context)`
-  from `app/data/current-user.ts` (the admin controller centralises its check in an
-  `ensureAdmin` helper).
+- Auth checks are inline in controllers via `getCurrentUser(context)` from
+  `app/data/current-user.ts`. The unauth path returns a `Response` (redirect to login
+  or 401/403), never throws. The admin controller centralises its admin-or-401 check
+  in an `ensureAdmin` helper that returns `{ user, response }` — reuse that shape
+  if you add more admin-gated controllers.
 - File uploads go through `app/data/upload-sticker.ts`, which validates type/size and uses
   `sharp` to optimize images before persisting to `tmp/uploads/` via `remix/file-storage/fs`.
   The `uploads` route in the root controller serves them as a resource route.

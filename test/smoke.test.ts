@@ -592,6 +592,19 @@ describe('api: stickers', () => {
     }
   })
 
+  it('GET /api/nonsense returns a JSON 404, not plaintext', async () => {
+    const env = await createTestEnv()
+    try {
+      const res = await env.fetch(new Request(buildUrl('/api/nonsense/path')))
+      assert.equal(res.status, 404)
+      assert.match(res.headers.get('content-type') ?? '', /application\/json/)
+      const payload = (await res.json()) as { error: string }
+      assert.equal(payload.error, 'Not Found')
+    } finally {
+      env.cleanup()
+    }
+  })
+
   it('POST /api/stickers requires bearer auth', async () => {
     const env = await createTestEnv()
     try {
