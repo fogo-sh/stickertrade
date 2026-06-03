@@ -45,7 +45,7 @@ const apiSurfaceCreateSchema = f.object({
 })
 
 const MAX_GALLERY_FILES = 8
-const MAX_TOTAL_BYTES = 88 * 1024 * 1024
+const MAX_TOTAL_BYTES = 88 * 1024 * 1024 // 8 files × ~11 MB each
 
 const PAGE_SIZE = 50
 
@@ -535,13 +535,13 @@ export default createController(routes.api, {
     // -------- POST /api/surfaces/:id/images --------
     async surfaceImageCreate(context) {
       const user = getCurrentUser(context)
-      if (!user) return jsonError(401, 'unauthorized')
+      if (!user) return jsonError(401, 'Unauthorized')
 
       const db = context.get(Database)
       const surface = await db.findOne(surfaces, { where: { id: context.params.id } })
-      if (!surface) return jsonError(404, 'not_found')
+      if (!surface) return jsonError(404, 'Not Found')
       if (surface.owner_id !== user.id && user.role !== 'ADMIN') {
-        return jsonError(403, 'forbidden')
+        return jsonError(403, 'Forbidden')
       }
 
       const currentCount = await db.count(surfaceImages, {
@@ -599,20 +599,20 @@ export default createController(routes.api, {
     // -------- DELETE /api/surfaces/:id/images/:imageId --------
     async surfaceImageDestroy(context) {
       const user = getCurrentUser(context)
-      if (!user) return jsonError(401, 'unauthorized')
+      if (!user) return jsonError(401, 'Unauthorized')
 
       const db = context.get(Database)
       const surface = await db.findOne(surfaces, { where: { id: context.params.id } })
-      if (!surface) return jsonError(404, 'not_found')
+      if (!surface) return jsonError(404, 'Not Found')
       if (surface.owner_id !== user.id && user.role !== 'ADMIN') {
-        return jsonError(403, 'forbidden')
+        return jsonError(403, 'Forbidden')
       }
 
       const image = await db.findOne(surfaceImages, {
         where: { id: context.params.imageId },
       })
-      if (!image) return jsonError(404, 'not_found')
-      if (image.surface_id !== surface.id) return jsonError(400, 'bad_request')
+      if (!image) return jsonError(404, 'Not Found')
+      if (image.surface_id !== surface.id) return jsonError(400, 'Bad Request')
 
       const count = await db.count(surfaceImages, {
         where: { surface_id: surface.id },
@@ -640,20 +640,20 @@ export default createController(routes.api, {
     // -------- POST /api/surfaces/:id/images/:imageId/primary --------
     async surfaceImageSetPrimary(context) {
       const user = getCurrentUser(context)
-      if (!user) return jsonError(401, 'unauthorized')
+      if (!user) return jsonError(401, 'Unauthorized')
 
       const db = context.get(Database)
       const surface = await db.findOne(surfaces, { where: { id: context.params.id } })
-      if (!surface) return jsonError(404, 'not_found')
+      if (!surface) return jsonError(404, 'Not Found')
       if (surface.owner_id !== user.id && user.role !== 'ADMIN') {
-        return jsonError(403, 'forbidden')
+        return jsonError(403, 'Forbidden')
       }
 
       const image = await db.findOne(surfaceImages, {
         where: { id: context.params.imageId },
       })
-      if (!image) return jsonError(404, 'not_found')
-      if (image.surface_id !== surface.id) return jsonError(400, 'bad_request')
+      if (!image) return jsonError(404, 'Not Found')
+      if (image.surface_id !== surface.id) return jsonError(400, 'Bad Request')
 
       await db.transaction(async (tx) => {
         const primaries = await tx.findMany(surfaceImages, {
@@ -668,7 +668,7 @@ export default createController(routes.api, {
       })
 
       const owner = await db.findOne(users, { where: { id: surface.owner_id } })
-      if (!owner) return jsonError(404, 'not_found')
+      if (!owner) return jsonError(404, 'Not Found')
       const allImages = await db.findMany(surfaceImages, {
         where: { surface_id: surface.id },
       })
