@@ -55,7 +55,7 @@ export default createController(routes.editSticker, {
       if (looksLikeUuid(param)) {
         const byId = await db.findOne(stickers, { where: { id: param } })
         if (!byId) return notFound()
-        return redirect(routes.editSticker.index.href({ slug: byId.slug }), 301)
+        return redirect(`/sticker/${encodeURIComponent(byId.slug)}/edit`, 301)
       }
       const sticker = await db.findOne(stickers, { where: { slug: param } })
       if (!sticker) return notFound()
@@ -181,7 +181,7 @@ export default createController(routes.editSticker, {
 
       const session = context.get(Session)
       session.flash('sticker_flash', 'Sticker updated.')
-      return redirect(routes.sticker.href({ slug: sticker.slug }), 303)
+      return redirect(`/sticker/${encodeURIComponent(sticker.slug)}`, 303)
     },
   },
 })

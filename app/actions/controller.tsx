@@ -156,7 +156,7 @@ export default createController(routes, {
       if (looksLikeUuid(param)) {
         const byId = await db.findOne(stickers, { where: { id: param } })
         if (!byId) return notFound()
-        return redirect(routes.sticker.href({ slug: byId.slug }), 301)
+        return redirect(`/sticker/${encodeURIComponent(byId.slug)}`, 301)
       }
 
       const sticker = await db.findOne(stickers, { where: { slug: param } })

@@ -88,7 +88,7 @@ export default createController(routes.uploadSticker, {
         updated_at: now,
       })
 
-      return redirect(routes.sticker.href({ slug }), 303)
+      return redirect(`/sticker/${encodeURIComponent(slug)}`, 303)
     },
   },
 })

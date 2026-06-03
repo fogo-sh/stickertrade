@@ -508,6 +508,36 @@ describe('sticker URL backwards compatibility', () => {
       env.cleanup()
     }
   })
+
+  it('301-redirects /sticker/<uuid>/edit to the slug edit URL', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'edit-redirector', 'edit-redirectorpass')
+      const stickerId = randomUUID()
+      const stickerName = 'Antique'
+      const stickerSlug = generateStickerSlug(stickerName)
+      await env.db.create(stickers, {
+        id: stickerId,
+        name: stickerName,
+        slug: stickerSlug,
+        image_url: '/images/banner.png',
+        owner_id: ownerId,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      })
+
+      const sessionCookie = await loginAs(env, 'edit-redirector', 'edit-redirectorpass')
+      const res = await env.fetch(
+        new Request(buildUrl(`/sticker/${stickerId}/edit`), {
+          headers: { cookie: sessionCookie },
+        }),
+      )
+      assert.equal(res.status, 301)
+      assert.equal(res.headers.get('location'), `/sticker/${stickerSlug}/edit`)
+    } finally {
+      env.cleanup()
+    }
+  })
 })
 
 describe('api tokens', () => {
