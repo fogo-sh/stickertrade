@@ -24,10 +24,13 @@ export function slugifyName(name: string): string {
 }
 
 /**
- * Build a full sticker slug: `<slug-part>-<6 lowercase alphanumerics>`.
+ * Build a full content slug: `<slug-part>-<6 lowercase alphanumerics>`.
  * If `slugifyName(name)` is empty, returns just the 6-char suffix.
+ *
+ * Used by both stickers and surfaces (and any future named content type)
+ * since the alphabet, suffix length, and 40-char cap are universal.
  */
-export function generateStickerSlug(name: string): string {
+export function generateContentSlug(name: string): string {
   const slugPart = slugifyName(name)
   const suffix = randomSuffix()
   return slugPart === '' ? suffix : `${slugPart}-${suffix}`

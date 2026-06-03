@@ -5,7 +5,7 @@ import { describe, it } from 'node:test'
 import bcrypt from 'bcryptjs'
 
 import { invitations, stickers, users, UserRoles } from '../app/data/schema.ts'
-import { generateStickerSlug } from '../app/data/slug.ts'
+import { generateContentSlug } from '../app/data/slug.ts'
 import { routes } from '../app/routes.ts'
 import {
   buildUrl,
@@ -260,7 +260,7 @@ describe('admin', () => {
       await env.db.create(stickers, {
         id: stickerId,
         name: 'soon-gone',
-        slug: generateStickerSlug('soon-gone'),
+        slug: generateContentSlug('soon-gone'),
         image_url: '/images/banner.png',
         owner_id: aliceId,
         created_at: Date.now(),
@@ -404,7 +404,7 @@ describe('edit sticker', () => {
       const ownerId = await seedUser(env, 'grace', 'gracepass')
       const stickerId = randomUUID()
       const stickerName = 'old name'
-      const stickerSlug = generateStickerSlug(stickerName)
+      const stickerSlug = generateContentSlug(stickerName)
       await env.db.create(stickers, {
         id: stickerId,
         name: stickerName,
@@ -447,7 +447,7 @@ describe('edit sticker', () => {
       await seedUser(env, 'intruder', 'intruderpass')
       const stickerId = randomUUID()
       const stickerName = 'mine'
-      const stickerSlug = generateStickerSlug(stickerName)
+      const stickerSlug = generateContentSlug(stickerName)
       await env.db.create(stickers, {
         id: stickerId,
         name: stickerName,
@@ -479,7 +479,7 @@ describe('sticker URL backwards compatibility', () => {
       const ownerId = await seedUser(env, 'redirector', 'redirectorpass')
       const stickerId = randomUUID()
       const stickerName = 'Vintage'
-      const stickerSlug = generateStickerSlug(stickerName)
+      const stickerSlug = generateContentSlug(stickerName)
       await env.db.create(stickers, {
         id: stickerId,
         name: stickerName,
@@ -515,7 +515,7 @@ describe('sticker URL backwards compatibility', () => {
       const ownerId = await seedUser(env, 'edit-redirector', 'edit-redirectorpass')
       const stickerId = randomUUID()
       const stickerName = 'Antique'
-      const stickerSlug = generateStickerSlug(stickerName)
+      const stickerSlug = generateContentSlug(stickerName)
       await env.db.create(stickers, {
         id: stickerId,
         name: stickerName,
@@ -639,7 +639,7 @@ describe('api: stickers', () => {
       await env.db.create(stickers, {
         id: stickerId,
         name: 'public sticker',
-        slug: generateStickerSlug('public sticker'),
+        slug: generateContentSlug('public sticker'),
         image_url: '/images/banner.png',
         owner_id: ownerId,
         created_at: Date.now(),
@@ -814,7 +814,7 @@ describe('api: stickers', () => {
       await env.db.create(stickers, {
         id: stickerId,
         name: 'old',
-        slug: generateStickerSlug('old'),
+        slug: generateContentSlug('old'),
         image_url: '/images/banner.png',
         owner_id: userId,
         created_at: Date.now(),
@@ -850,7 +850,7 @@ describe('api: stickers', () => {
       await env.db.create(stickers, {
         id: stickerId,
         name: 'natefoo',
-        slug: generateStickerSlug('natefoo'),
+        slug: generateContentSlug('natefoo'),
         image_url: '/images/banner.png',
         owner_id: ownerId,
         created_at: Date.now(),
@@ -883,7 +883,7 @@ describe('api: stickers', () => {
       await env.db.create(stickers, {
         id: stickerId,
         name: 'going away',
-        slug: generateStickerSlug('going away'),
+        slug: generateContentSlug('going away'),
         image_url: '/images/banner.png',
         owner_id: userId,
         created_at: Date.now(),
@@ -911,7 +911,7 @@ describe('api: stickers', () => {
       await env.db.create(stickers, {
         id: randomUUID(),
         name: 'q1',
-        slug: generateStickerSlug('q1'),
+        slug: generateContentSlug('q1'),
         image_url: '/images/banner.png',
         owner_id: userId,
         created_at: Date.now(),
@@ -990,7 +990,7 @@ describe('og tags', () => {
       const ownerId = await seedUser(env, 'roxie', 'roxiepass')
       const stickerId = randomUUID()
       const stickerName = 'cool og sticker'
-      const stickerSlug = generateStickerSlug(stickerName)
+      const stickerSlug = generateContentSlug(stickerName)
       await env.db.create(stickers, {
         id: stickerId,
         name: stickerName,

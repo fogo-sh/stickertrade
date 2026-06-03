@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs'
 
 import { db } from '../app/data/db.ts'
 import { config, invitations, stickers, users, UserRoles } from '../app/data/schema.ts'
-import { generateStickerSlug } from '../app/data/slug.ts'
+import { generateContentSlug } from '../app/data/slug.ts'
 
 async function upsertConfig() {
   const existing = await db.findOne(config, { where: { id: 1 } })
@@ -56,7 +56,7 @@ async function maybeSeedSample(adminId: string) {
   await db.create(stickers, {
     id: randomUUID(),
     name: 'sample sticker',
-    slug: generateStickerSlug('sample sticker'),
+    slug: generateContentSlug('sample sticker'),
     image_url: '/images/banner.png',
     owner_id: aliceId,
     created_at: now,
