@@ -5,6 +5,7 @@ import { colors } from './theme.ts'
 
 export interface StickerCardSticker {
   id: string
+  slug: string
   name: string
   image_url: string
   owner?: {
@@ -22,7 +23,7 @@ export function StickerCard(handle: Handle<StickerCardProps>) {
   return () => {
     const { sticker, showOwner = true } = handle.props
     return (
-      <a href={routes.sticker.href({ id: sticker.id })} mix={cardStyle}>
+      <a href={routes.sticker.href({ slug: sticker.slug })} mix={cardStyle}>
         <div mix={imageWrapStyle}>
           <img src={sticker.image_url} alt={sticker.name} mix={imageStyle} />
         </div>

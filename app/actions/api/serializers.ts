@@ -3,6 +3,7 @@ import type { Sticker, User } from '../../data/schema.ts'
 export interface JsonSticker {
   id: string
   name: string
+  slug: string
   image_url: string
   owner: JsonUserStub | null
   created_at: number
@@ -41,6 +42,7 @@ export function serializeSticker(
   return {
     id: sticker.id,
     name: sticker.name,
+    slug: sticker.slug,
     image_url: sticker.image_url,
     owner: owner ? serializeUserStub(owner) : null,
     created_at: sticker.created_at,

@@ -10,6 +10,7 @@ export interface StickerPageProps {
   user: HeaderUser | null
   sticker: {
     id: string
+    slug: string
     name: string
     image_url: string
     owner: { username: string; avatar_url: string | null } | null
@@ -29,7 +30,7 @@ export function StickerPage() {
           title: sticker.name,
           description: `sticker ${ownerLabel}`,
           image: sticker.image_url,
-          url: routes.sticker.href({ id: sticker.id }),
+          url: routes.sticker.href({ slug: sticker.slug }),
           type: 'article',
         }}
       >
@@ -49,7 +50,7 @@ export function StickerPage() {
           ) : null}
           {canEdit ? (
             <div mix={css({ textAlign: 'center', marginTop: '1.25rem' })}>
-              <a href={routes.editSticker.index.href({ id: sticker.id })} mix={editLink}>
+              <a href={routes.editSticker.index.href({ slug: sticker.slug })} mix={editLink}>
                 edit this sticker
               </a>
             </div>

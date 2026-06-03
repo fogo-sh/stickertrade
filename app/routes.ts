@@ -13,9 +13,9 @@ export const routes = route({
   stickers: '/stickers',
   users: '/users',
 
-  // Sticker show page
-  sticker: '/sticker/:id',
-  editSticker: form('/sticker/:id/edit'),
+  // Sticker show page (slug, not UUID)
+  sticker: '/sticker/:slug',
+  editSticker: form('/sticker/:slug/edit'),
 
   // Profile page
   profile: '/profile/:username',
