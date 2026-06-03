@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto'
 
+import * as s from 'remix/data-schema'
+import * as f from 'remix/data-schema/form-data'
 import { Database } from 'remix/data-table'
 import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
@@ -7,9 +9,22 @@ import { createController } from 'remix/router'
 import { getCurrentUser } from '../../data/current-user.ts'
 import { stickers } from '../../data/schema.ts'
 import { processStickerUpload } from '../../data/upload-image.ts'
+import {
+  issuesToFieldErrors,
+  stickerNameSchema,
+} from '../../data/validators.ts'
 import { routes } from '../../routes.ts'
 import { readVerifiedUploadFormData } from '../../utils/upload.ts'
 import { UploadStickerPage } from '../upload-sticker-page.tsx'
+
+const fileRequired = s
+  .instanceof_(File)
+  .refine((file) => file.size > 0, 'Please choose an image')
+
+const uploadStickerSchema = f.object({
+  name: f.field(stickerNameSchema),
+  image: f.file(fileRequired),
+})
 
 export default createController(routes.uploadSticker, {
   actions: {
@@ -23,37 +38,33 @@ export default createController(routes.uploadSticker, {
       const user = getCurrentUser(context)
       if (!user) return redirect(routes.login.index.href(), 303)
 
-      const parsed = await readVerifiedUploadFormData(context)
-      if (!parsed.success) {
-        if (parsed.kind === 'csrf') return parsed.response
+      const verified = await readVerifiedUploadFormData(context)
+      if (!verified.success) {
+        if (verified.kind === 'csrf') return verified.response
         return context.render(
-          <UploadStickerPage user={user} errors={{ image: parsed.error.message }} />,
-          { status: parsed.error.status },
+          <UploadStickerPage user={user} errors={{ image: verified.error.message }} />,
+          { status: verified.error.status },
         )
       }
-      const formData = parsed.value
+      const formData = verified.value
 
-      const name = String(formData.get('name') ?? '').trim()
-      const file = formData.get('image')
-
-      const errors: Record<string, string> = {}
-      if (name.length === 0 || name.length > 60) {
-        errors.name = 'Name must be 1-60 characters'
-      }
-      if (!(file instanceof File) || file.size === 0) {
-        errors.image = 'Please choose an image'
-      }
-
-      if (Object.keys(errors).length > 0) {
+      const parsed = s.parseSafe(uploadStickerSchema, formData)
+      if (!parsed.success) {
         return context.render(
-          <UploadStickerPage user={user} errors={errors} values={{ name }} />,
+          <UploadStickerPage
+            user={user}
+            errors={issuesToFieldErrors(parsed.issues)}
+            values={{ name: String(formData.get('name') ?? '') }}
+          />,
           { status: 400 },
         )
       }
 
+      const { name, image } = parsed.value
+
       let storedImageUrl: string
       try {
-        storedImageUrl = await processStickerUpload(file as File)
+        storedImageUrl = await processStickerUpload(image)
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Upload failed'
         return context.render(
