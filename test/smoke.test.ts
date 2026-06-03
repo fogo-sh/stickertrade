@@ -4,7 +4,14 @@ import { describe, it } from 'node:test'
 
 import bcrypt from 'bcryptjs'
 
-import { invitations, stickers, surfaces, users, UserRoles } from '../app/data/schema.ts'
+import {
+  invitations,
+  stickers,
+  surfaceImages,
+  surfaces,
+  users,
+  UserRoles,
+} from '../app/data/schema.ts'
 import { generateContentSlug } from '../app/data/slug.ts'
 import { routes } from '../app/routes.ts'
 import {
@@ -1535,6 +1542,315 @@ describe('surfaces', () => {
 
       const remaining = await env.db.findOne(surfaces, { where: { id } })
       assert.equal(remaining, null)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('upload-surface accepts up to 8 images; first is primary', async () => {
+    const env = await createTestEnv()
+    try {
+      await seedUser(env, 'gallery-uploader', 'pass')
+      const sessionCookie = await loginAs(env, 'gallery-uploader', 'pass')
+      const { token, cookie } = await fetchCsrf(env, routes.uploadSurface.index.href(), sessionCookie)
+
+      // Generate 3 tiny PNGs via sharp.
+      const sharp = (await import('sharp')).default
+      async function makePng(colorR: number): Promise<File> {
+        const buf = await sharp({
+          create: { width: 50, height: 50, channels: 3, background: { r: colorR, g: 0, b: 0 } },
+        }).png().toBuffer()
+        const view = new Uint8Array(new ArrayBuffer(buf.byteLength))
+        view.set(buf)
+        return new File([view], 'g.png', { type: 'image/png' })
+      }
+
+      const body = new FormData()
+      body.set('_csrf', token)
+      body.set('name', 'Triple Surface')
+      body.append('image', await makePng(100))
+      body.append('image', await makePng(150))
+      body.append('image', await makePng(200))
+
+      const res = await postMultipart(env, routes.uploadSurface.action.href(), { cookie, body })
+      assert.equal(res.status, 303)
+
+      // The created surface has 3 images, first is primary.
+      const owner = await env.db.findOne(users, { where: { username: 'gallery-uploader' } })
+      assert.ok(owner)
+      const created = await env.db.findOne(surfaces, { where: { owner_id: owner.id } })
+      assert.ok(created)
+      const images = await env.db.findMany(surfaceImages, {
+        where: { surface_id: created.id },
+        orderBy: ['created_at', 'asc'],
+      })
+      assert.equal(images.length, 3)
+      assert.equal(Boolean(images[0]!.is_primary), true, 'first image should be primary')
+      assert.equal(Boolean(images[1]!.is_primary), false)
+      assert.equal(Boolean(images[2]!.is_primary), false)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('upload-surface rejects 9+ images', async () => {
+    const env = await createTestEnv()
+    try {
+      await seedUser(env, 'too-many', 'pass')
+      const sessionCookie = await loginAs(env, 'too-many', 'pass')
+      const { token, cookie } = await fetchCsrf(env, routes.uploadSurface.index.href(), sessionCookie)
+
+      const sharp = (await import('sharp')).default
+      const buf = await sharp({
+        create: { width: 30, height: 30, channels: 3, background: { r: 0, g: 0, b: 0 } },
+      }).png().toBuffer()
+      const view = new Uint8Array(new ArrayBuffer(buf.byteLength))
+      view.set(buf)
+
+      const body = new FormData()
+      body.set('_csrf', token)
+      body.set('name', 'Too Many')
+      for (let i = 0; i < 9; i++) {
+        body.append('image', new File([view], 'g.png', { type: 'image/png' }))
+      }
+
+      const res = await postMultipart(env, routes.uploadSurface.action.href(), { cookie, body })
+      assert.equal(res.status, 400)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('add-surface-image appends a non-primary image', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'adder', 'pass')
+      const { id, slug } = await seedSurface(env, { ownerId, name: 'Growable' })
+      const sessionCookie = await loginAs(env, 'adder', 'pass')
+      const { token, cookie } = await fetchCsrf(env, routes.editSurface.index.href({ slug }), sessionCookie)
+
+      const sharp = (await import('sharp')).default
+      const buf = await sharp({
+        create: { width: 30, height: 30, channels: 3, background: { r: 50, g: 50, b: 50 } },
+      }).png().toBuffer()
+      const view = new Uint8Array(new ArrayBuffer(buf.byteLength))
+      view.set(buf)
+      const file = new File([view], 'g.png', { type: 'image/png' })
+
+      const body = new FormData()
+      body.set('_csrf', token)
+      body.set('image', file)
+      const res = await postMultipart(env, routes.addSurfaceImage.action.href({ slug }), { cookie, body })
+      assert.equal(res.status, 303)
+
+      const images = await env.db.findMany(surfaceImages, {
+        where: { surface_id: id },
+        orderBy: ['created_at', 'asc'],
+      })
+      assert.equal(images.length, 2)
+      assert.equal(Boolean(images[0]!.is_primary), true)
+      assert.equal(Boolean(images[1]!.is_primary), false)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('set-primary-surface-image swaps which image is primary', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'swapper', 'pass')
+      const { id, slug, primaryImageId } = await seedSurface(env, { ownerId, name: 'Swap Me' })
+
+      // Add a second image directly.
+      const secondId = randomUUID()
+      await env.db.create(surfaceImages, {
+        id: secondId,
+        surface_id: id,
+        image_url: '/images/banner.png',
+        is_primary: false,
+        created_at: Date.now() + 1,
+      })
+
+      const sessionCookie = await loginAs(env, 'swapper', 'pass')
+      const { token, cookie } = await fetchCsrf(env, routes.editSurface.index.href({ slug }), sessionCookie)
+
+      const body = new FormData()
+      body.set('_csrf', token)
+      const res = await postForm(env, routes.setPrimarySurfaceImage.action.href({ slug, imageId: secondId }), { cookie, body })
+      assert.equal(res.status, 303)
+
+      const updatedFirst = await env.db.findOne(surfaceImages, { where: { id: primaryImageId } })
+      const updatedSecond = await env.db.findOne(surfaceImages, { where: { id: secondId } })
+      assert.equal(Boolean(updatedFirst?.is_primary), false)
+      assert.equal(Boolean(updatedSecond?.is_primary), true)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('remove-surface-image promotes next-oldest when removing primary', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'remover', 'pass')
+      const { id, slug, primaryImageId } = await seedSurface(env, { ownerId, name: 'Two-Image' })
+
+      // Add a second image.
+      const secondId = randomUUID()
+      await env.db.create(surfaceImages, {
+        id: secondId,
+        surface_id: id,
+        image_url: '/images/banner.png',
+        is_primary: false,
+        created_at: Date.now() + 1,
+      })
+
+      const sessionCookie = await loginAs(env, 'remover', 'pass')
+      const { token, cookie } = await fetchCsrf(env, routes.editSurface.index.href({ slug }), sessionCookie)
+
+      const body = new FormData()
+      body.set('_csrf', token)
+      const res = await postForm(env, routes.removeSurfaceImage.action.href({ slug, imageId: primaryImageId }), { cookie, body })
+      assert.equal(res.status, 303)
+
+      const promoted = await env.db.findOne(surfaceImages, { where: { id: secondId } })
+      assert.equal(Boolean(promoted?.is_primary), true, 'second image should be promoted to primary')
+      const removed = await env.db.findOne(surfaceImages, { where: { id: primaryImageId } })
+      assert.equal(removed, null)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('remove-surface-image rejects removing the last image', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'last-image', 'pass')
+      const { slug, primaryImageId } = await seedSurface(env, { ownerId, name: 'Only One' })
+
+      const sessionCookie = await loginAs(env, 'last-image', 'pass')
+      const { token, cookie } = await fetchCsrf(env, routes.editSurface.index.href({ slug }), sessionCookie)
+
+      const body = new FormData()
+      body.set('_csrf', token)
+      const res = await postForm(env, routes.removeSurfaceImage.action.href({ slug, imageId: primaryImageId }), { cookie, body })
+      assert.equal(res.status, 400)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('GET /api/surfaces/:id includes images array', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'api-images', 'pass')
+      const { id } = await seedSurface(env, { ownerId, name: 'Has Images' })
+
+      const res = await env.fetch(new Request(buildUrl(routes.api.surfaceShow.href({ id }))))
+      assert.equal(res.status, 200)
+      const body = await res.json()
+      assert.ok(Array.isArray(body.surface.images))
+      assert.equal(body.surface.images.length, 1)
+      assert.equal(body.surface.images[0].is_primary, true)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('POST /api/surfaces/:id/images appends a non-primary image with bearer auth', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'api-adder', 'pass')
+      const { id } = await seedSurface(env, { ownerId, name: 'Growable' })
+
+      const ownerRow = await env.db.findOne(users, { where: { id: ownerId } })
+      assert.ok(ownerRow)
+      const { createTokenForUser } = await import('../app/data/api-tokens.ts')
+      const token = (await createTokenForUser(env.db, ownerRow, 'add-test')).plaintext
+
+      const sharp = (await import('sharp')).default
+      const buf = await sharp({
+        create: { width: 30, height: 30, channels: 3, background: { r: 100, g: 100, b: 100 } },
+      }).png().toBuffer()
+      const view = new Uint8Array(new ArrayBuffer(buf.byteLength))
+      view.set(buf)
+
+      const body = new FormData()
+      body.set('image', new File([view], 'g.png', { type: 'image/png' }))
+
+      const res = await env.fetch(
+        new Request(buildUrl(routes.api.surfaceImageCreate.href({ id })), {
+          method: 'POST',
+          headers: { authorization: `Bearer ${token}` },
+          body,
+        }),
+      )
+      assert.equal(res.status, 201)
+      const created = await res.json()
+      assert.equal(created.is_primary, false)
+      assert.ok(created.image_url)
+
+      const all = await env.db.findMany(surfaceImages, { where: { surface_id: id } })
+      assert.equal(all.length, 2)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('POST /api/surfaces/:id/images/:imageId/primary swaps the primary', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'api-swapper', 'pass')
+      const { id, primaryImageId } = await seedSurface(env, { ownerId, name: 'API Swap' })
+
+      const secondId = randomUUID()
+      await env.db.create(surfaceImages, {
+        id: secondId,
+        surface_id: id,
+        image_url: '/images/banner.png',
+        is_primary: false,
+        created_at: Date.now() + 1,
+      })
+
+      const ownerRow = await env.db.findOne(users, { where: { id: ownerId } })
+      assert.ok(ownerRow)
+      const { createTokenForUser } = await import('../app/data/api-tokens.ts')
+      const token = (await createTokenForUser(env.db, ownerRow, 'primary-test')).plaintext
+
+      const res = await env.fetch(
+        new Request(buildUrl(routes.api.surfaceImageSetPrimary.href({ id, imageId: secondId })), {
+          method: 'POST',
+          headers: { authorization: `Bearer ${token}` },
+        }),
+      )
+      assert.equal(res.status, 200)
+
+      const updatedFirst = await env.db.findOne(surfaceImages, { where: { id: primaryImageId } })
+      const updatedSecond = await env.db.findOne(surfaceImages, { where: { id: secondId } })
+      assert.equal(Boolean(updatedFirst?.is_primary), false)
+      assert.equal(Boolean(updatedSecond?.is_primary), true)
+    } finally {
+      env.cleanup()
+    }
+  })
+
+  it('DELETE /api/surfaces/:id/images/:imageId rejects removing the last image', async () => {
+    const env = await createTestEnv()
+    try {
+      const ownerId = await seedUser(env, 'api-lastimg', 'pass')
+      const { id, primaryImageId } = await seedSurface(env, { ownerId, name: 'Only One' })
+
+      const ownerRow = await env.db.findOne(users, { where: { id: ownerId } })
+      assert.ok(ownerRow)
+      const { createTokenForUser } = await import('../app/data/api-tokens.ts')
+      const token = (await createTokenForUser(env.db, ownerRow, 'last-test')).plaintext
+
+      const res = await env.fetch(
+        new Request(buildUrl(routes.api.surfaceImageDestroy.href({ id, imageId: primaryImageId })), {
+          method: 'DELETE',
+          headers: { authorization: `Bearer ${token}` },
+        }),
+      )
+      assert.equal(res.status, 400)
     } finally {
       env.cleanup()
     }

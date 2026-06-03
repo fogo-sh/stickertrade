@@ -96,6 +96,7 @@ const sourceTasks: Array<Omit<RoadmapTask, 'id'>> = [
 - [x] Randomized "Surface of the Day" on the home page (lazy-on-demand, UTC daily)
 - [x] Pick history persisted in \`surface_features\` (archive page comes later)
 - [x] JSON API endpoints + admin moderation
+- [x] Multi-image galleries per surface (up to 8 images; one designated primary)
 `),
   },
 
