@@ -9,7 +9,6 @@ import { createMigrationRunner } from 'remix/data-table/migrations'
 import { loadMigrations } from 'remix/data-table/migrations/node'
 import { asyncContext } from 'remix/middleware/async-context'
 import { compression } from 'remix/middleware/compression'
-import { formData } from 'remix/middleware/form-data'
 import { staticFiles } from 'remix/middleware/static'
 import {
   auth,
@@ -19,6 +18,7 @@ import {
 import { session } from 'remix/middleware/session'
 
 import { csrfOrBearer } from '../app/middleware/csrf-or-bearer.ts'
+import { formDataExceptUploads } from '../app/middleware/form-data.ts'
 import { verifyToken } from '../app/data/api-tokens.ts'
 import { createCookie } from 'remix/cookie'
 import { createMemorySessionStorage } from 'remix/session-storage/memory'
@@ -115,7 +115,7 @@ export async function createTestEnv(options: CreateTestEnvOptions = {}): Promise
   const stack = [
     compression(),
     staticFiles('./public', { index: false }),
-    formData(),
+    formDataExceptUploads(),
     session(sessionCookie, sessionStorage),
     csrfOrBearer({ origin: options.publicOrigin }),
     asyncContext(),
@@ -177,15 +177,49 @@ export async function fetchCsrf(
 }
 
 /**
- * Send a POST with a same-origin Origin header. CSRF middleware checks origin
- * for cross-site protection; tests need to mimic a real browser submit.
+ * Send a POST as `application/x-www-form-urlencoded`, matching what a real
+ * browser sends for `<form method="post">` without `enctype="multipart/form-data"`.
+ * Use this for every non-file-upload form (login, change password, etc.).
  */
 export async function postForm(
   env: TestEnv,
   pathname: string,
-  options: { cookie?: string; body: FormData },
+  options: { cookie?: string; body: FormData | URLSearchParams | Record<string, string> },
 ): Promise<Response> {
-  const headers = new Headers({ origin: BASE })
+  const headers = new Headers({
+    origin: BASE,
+    'content-type': 'application/x-www-form-urlencoded',
+  })
+  if (options.cookie) headers.set('cookie', options.cookie)
+
+  let bodyString: string
+  if (options.body instanceof URLSearchParams) {
+    bodyString = options.body.toString()
+  } else if (options.body instanceof FormData) {
+    const params = new URLSearchParams()
+    for (const [key, value] of options.body.entries()) {
+      if (typeof value === 'string') params.append(key, value)
+    }
+    bodyString = params.toString()
+  } else {
+    bodyString = new URLSearchParams(options.body).toString()
+  }
+
+  return env.fetch(
+    new Request(buildUrl(pathname), { method: 'POST', headers, body: bodyString }),
+  )
+}
+
+/**
+ * Send a POST as `multipart/form-data`, matching what a real browser sends for
+ * `<form enctype="multipart/form-data">`. Use this for file-upload routes.
+ */
+export async function postMultipart(
+  env: TestEnv,
+  pathname: string,
+  options: { cookie?: string; headers?: Record<string, string>; body: FormData },
+): Promise<Response> {
+  const headers = new Headers({ origin: BASE, ...(options.headers ?? {}) })
   if (options.cookie) headers.set('cookie', options.cookie)
   return env.fetch(
     new Request(buildUrl(pathname), {
@@ -203,17 +237,10 @@ export async function loginAs(
 ): Promise<string> {
   // First, fetch /login to get a CSRF token + session cookie.
   const { token, cookie: preCookie } = await fetchCsrf(env, routes.login.index.href())
-  const body = new FormData()
-  body.set('_csrf', token)
-  body.set('username', username)
-  body.set('password', password)
-  const res = await env.fetch(
-    new Request(buildUrl(routes.login.action.href()), {
-      method: 'POST',
-      headers: { cookie: preCookie, origin: BASE },
-      body,
-    }),
-  )
+  const res = await postForm(env, routes.login.action.href(), {
+    cookie: preCookie,
+    body: { _csrf: token, username, password },
+  })
   if (res.status !== 303) {
     throw new Error(`Login failed: ${res.status} ${await res.text()}`)
   }

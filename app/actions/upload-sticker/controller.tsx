@@ -8,6 +8,8 @@ import { getCurrentUser } from '../../data/current-user.ts'
 import { stickers } from '../../data/schema.ts'
 import { processStickerUpload } from '../../data/upload-image.ts'
 import { routes } from '../../routes.ts'
+import { assertCsrfToken } from '../../utils/csrf.ts'
+import { readUploadFormData } from '../../utils/upload.ts'
 import { UploadStickerPage } from '../upload-sticker-page.tsx'
 
 export default createController(routes.uploadSticker, {
@@ -22,7 +24,18 @@ export default createController(routes.uploadSticker, {
       const user = getCurrentUser(context)
       if (!user) return redirect(routes.login.index.href(), 303)
 
-      const formData = context.get(FormData)
+      const parsed = await readUploadFormData(context.request)
+      if (!parsed.success) {
+        return context.render(
+          <UploadStickerPage user={user} errors={{ image: parsed.error.message }} />,
+          { status: parsed.error.status },
+        )
+      }
+      const formData = parsed.value
+
+      const denied = assertCsrfToken(context, formData.get('_csrf'))
+      if (denied) return denied
+
       const name = String(formData.get('name') ?? '').trim()
       const file = formData.get('image')
 
@@ -45,12 +58,9 @@ export default createController(routes.uploadSticker, {
       try {
         storedImageUrl = await processStickerUpload(file as File)
       } catch (error) {
+        const message = error instanceof Error ? error.message : 'Upload failed'
         return context.render(
-          <UploadStickerPage
-            user={user}
-            errors={{ image: error instanceof Error ? error.message : 'Upload failed' }}
-            values={{ name }}
-          />,
+          <UploadStickerPage user={user} errors={{ image: message }} values={{ name }} />,
           { status: 400 },
         )
       }

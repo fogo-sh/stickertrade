@@ -9,6 +9,8 @@ import { users } from '../../data/schema.ts'
 import { processAvatarUpload } from '../../data/upload-image.ts'
 import { uploadStorage } from '../../data/uploads.ts'
 import { routes } from '../../routes.ts'
+import { assertCsrfToken } from '../../utils/csrf.ts'
+import { readUploadFormData } from '../../utils/upload.ts'
 import { EditProfilePage } from '../edit-profile-page.tsx'
 
 async function safeRemoveStoredUpload(url: string | null) {
@@ -74,7 +76,30 @@ export default createController(routes.editProfile, {
       if (!user) return redirect(routes.login.index.href(), 303)
 
       const db = context.get(Database)
-      const formData = context.get(FormData)
+
+      // Two flows hit this action: the multipart avatar upload form and the
+      // url-encoded "remove avatar" button. The global form-data middleware
+      // parses the url-encoded body for us; the multipart body we parse
+      // ourselves so we can render proper upload-too-large errors inline.
+      const contentType = context.request.headers.get('content-type') ?? ''
+      const isMultipart = contentType.startsWith('multipart/form-data')
+
+      let formData: FormData
+      if (isMultipart) {
+        const parsed = await readUploadFormData(context.request)
+        if (!parsed.success) {
+          return context.render(
+            <EditProfilePage user={user} avatarErrors={{ avatar: parsed.error.message }} />,
+            { status: parsed.error.status },
+          )
+        }
+        formData = parsed.value
+        const denied = assertCsrfToken(context, formData.get('_csrf'))
+        if (denied) return denied
+      } else {
+        formData = context.get(FormData)
+      }
+
       const intent = String(formData.get('action') ?? '')
 
       // Read the row fresh so we delete the correct previous file (the
@@ -108,11 +133,9 @@ export default createController(routes.editProfile, {
       try {
         storedUrl = await processAvatarUpload(file)
       } catch (error) {
+        const message = error instanceof Error ? error.message : 'Upload failed'
         return context.render(
-          <EditProfilePage
-            user={user}
-            avatarErrors={{ avatar: error instanceof Error ? error.message : 'Upload failed' }}
-          />,
+          <EditProfilePage user={user} avatarErrors={{ avatar: message }} />,
           { status: 400 },
         )
       }

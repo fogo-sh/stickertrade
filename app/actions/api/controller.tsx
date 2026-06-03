@@ -6,9 +6,10 @@ import { createController } from 'remix/router'
 
 import { getCurrentUser } from '../../data/current-user.ts'
 import { stickers, users } from '../../data/schema.ts'
-import { processStickerUpload } from '../../data/upload-image.ts'
+import { ProcessImageError, processStickerUpload } from '../../data/upload-image.ts'
 import { uploadStorage } from '../../data/uploads.ts'
 import { routes } from '../../routes.ts'
+import { readUploadFormData } from '../../utils/upload.ts'
 import { jsonError, jsonOk } from './json.ts'
 import { serializeSticker, serializeUser, serializeUserStub } from './serializers.ts'
 
@@ -85,7 +86,15 @@ export default createController(routes.api, {
       const user = getCurrentUser(context)
       if (!user) return jsonError(401, 'Unauthorized')
 
-      const formData = context.get(FormData)
+      const parsed = await readUploadFormData(context.request)
+      if (!parsed.success) {
+        return jsonError(parsed.error.status, parsed.error.code, {
+          message: parsed.error.message,
+          ...parsed.error.extras,
+        })
+      }
+      const formData = parsed.value
+
       const name = String(formData.get('name') ?? '').trim()
       const file = formData.get('image')
 
@@ -96,13 +105,19 @@ export default createController(routes.api, {
       if (!(file instanceof File) || file.size === 0) {
         issues.push({ path: ['image'], message: 'Please attach an image' })
       }
-      if (issues.length > 0) return jsonError(400, 'Validation failed', issues)
+      if (issues.length > 0) return jsonError(400, 'Validation failed', { issues })
 
       let storedImageUrl: string
       try {
         storedImageUrl = await processStickerUpload(file as File)
       } catch (error) {
-        return jsonError(400, error instanceof Error ? error.message : 'Upload failed')
+        if (error instanceof ProcessImageError) {
+          const status = error.code === 'file_too_large' ? 413 : 400
+          return jsonError(status, error.code, { message: error.message })
+        }
+        return jsonError(400, 'upload_failed', {
+          message: error instanceof Error ? error.message : 'Upload failed',
+        })
       }
 
       const db = context.get(Database)
@@ -148,9 +163,9 @@ export default createController(routes.api, {
 
       const name = typeof payload.name === 'string' ? payload.name.trim() : ''
       if (name.length === 0 || name.length > 60) {
-        return jsonError(400, 'Validation failed', [
-          { path: ['name'], message: 'Name must be 1-60 characters' },
-        ])
+        return jsonError(400, 'Validation failed', {
+          issues: [{ path: ['name'], message: 'Name must be 1-60 characters' }],
+        })
       }
 
       await db.update(stickers, sticker.id, { name, updated_at: Date.now() })
