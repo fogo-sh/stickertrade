@@ -101,3 +101,7 @@ export async function processStickerUpload(file: File): Promise<string> {
 export async function processAvatarUpload(file: File): Promise<string> {
   return processImageUpload(file, { folder: 'avatars', squareCrop: true, maxEdge: 512 })
 }
+
+export async function processSurfaceUpload(file: File): Promise<string> {
+  return processImageUpload(file, { folder: 'surfaces', maxEdge: 2000 })
+}

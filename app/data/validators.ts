@@ -48,6 +48,20 @@ export const loginPasswordSchema = s.string().refine((v) => v.length > 0, 'Passw
 /** Sticker names are 1-60 chars after trimming. */
 export const stickerNameSchema = boundedString(1, 60, 'Name must be 1-60 characters')
 
+/** Surface names are 1-80 chars after trimming. */
+export const surfaceNameSchema = boundedString(1, 80, 'Name must be 1-80 characters')
+
+/**
+ * Surface descriptions are optional, up to 500 chars after trimming.
+ * An empty or whitespace-only submission becomes `null` so the column
+ * stays clean.
+ */
+export const surfaceDescriptionSchema = s
+  .string()
+  .transform((value) => value.trim())
+  .refine((value) => value.length <= 500, 'Description must be 500 characters or less')
+  .transform((value) => (value.length === 0 ? null : value))
+
 /** Token labels mirror sticker names: 1-60 chars after trimming. */
 export const tokenNameSchema = boundedString(1, 60, 'Token name must be 1-60 characters')
 
