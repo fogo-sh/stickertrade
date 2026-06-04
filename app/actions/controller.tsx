@@ -147,13 +147,7 @@ export default createController(routes, {
       return context.render(<RoadmapPage user={getCurrentUser(context)} tasks={roadmapTasks} />)
     },
 
-    // -------- Batch sticker upload (auth-gated GET-only page) --------
-    // The page mounts a clientEntry that handles file picking, detection,
-    // background removal, and uploads via repeated POSTs to
-    // `routes.uploadSticker.action.href()`. The CSRF token is rendered into
-    // a `<meta name="csrf-token">` tag inside the page component itself
-    // (self-resolved via `getCsrfToken(getContext())`), matching the
-    // `CsrfField` pattern, so no token plumbing is needed here.
+    // -------- Batch sticker upload (auth-gated GET; clientEntry-driven) --------
     batchUploadStickers(context) {
       const user = getCurrentUser(context)
       if (!user) return redirect(routes.login.index.href(), 303)

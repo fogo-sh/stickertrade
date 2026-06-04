@@ -18,12 +18,12 @@ export function BatchUploadStickersPage() {
     const csrfToken = getCsrfToken(getContext())
     return (
       <Document
-        title="batch upload stickers - stickertrade"
+        title="stickertrade - batch upload stickers"
         user={user}
         head={<meta name="csrf-token" content={csrfToken} />}
       >
         <main mix={mainStyle}>
-          <h1>batch upload stickers</h1>
+          <h1 mix={headingStyle}>batch upload stickers</h1>
           <p mix={blurbStyle}>
             upload one photo of multiple stickers laid out on a flat surface.
             we'll detect each sticker, remove backgrounds, and let you review
@@ -37,9 +37,14 @@ export function BatchUploadStickersPage() {
 }
 
 const mainStyle = css({
-  maxWidth: '1200px',
+  maxWidth: '75rem',
   margin: '0 auto',
   padding: '1rem',
+})
+
+const headingStyle = css({
+  fontSize: '1.5rem',
+  marginBottom: '1rem',
 })
 
 const blurbStyle = css({
