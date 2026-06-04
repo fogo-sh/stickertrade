@@ -10,17 +10,39 @@ export interface BatchUploadStickersPageProps {
   user: HeaderUser
 }
 
+// Pinned version for `@huggingface/transformers`. Must match the version in
+// package.json so types and runtime behaviour stay in sync. The asset server
+// is told to leave the bare specifier `@huggingface/transformers` untouched
+// (see `app/assets.ts`), and the importmap below redirects it to the CDN
+// build at runtime — sidestepping the asset server's CJS-detector tripping
+// on onnxruntime-web's prebuilt ESM bundles.
+const TRANSFORMERS_VERSION = '4.2.0'
+const TRANSFORMERS_CDN = `https://cdn.jsdelivr.net/npm/@huggingface/transformers@${TRANSFORMERS_VERSION}/+esm`
+
 export function BatchUploadStickersPage() {
   return ({ user }: BatchUploadStickersPageProps) => {
     // Self-resolve the CSRF token here (same pattern as `CsrfField`); the
     // client bundle reads it back from the `<meta>` tag to POST to
     // `/upload-sticker` from JS without a server-rendered form.
     const csrfToken = getCsrfToken(getContext())
+    const importmap = JSON.stringify({
+      imports: {
+        '@huggingface/transformers': TRANSFORMERS_CDN,
+      },
+    })
     return (
       <Document
         title="stickertrade - batch upload stickers"
         user={user}
-        head={<meta name="csrf-token" content={csrfToken} />}
+        head={
+          <>
+            <meta name="csrf-token" content={csrfToken} />
+            {/* The importmap MUST appear in <head> before any module script,
+                otherwise the browser ignores it and the bare specifier
+                `@huggingface/transformers` fails to resolve. */}
+            <script type="importmap" innerHTML={importmap} />
+          </>
+        }
       >
         <main mix={mainStyle}>
           <h1 mix={headingStyle}>batch upload stickers</h1>

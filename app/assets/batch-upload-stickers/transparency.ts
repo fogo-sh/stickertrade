@@ -271,7 +271,17 @@ export async function loadTransparencyEngine(
     tjs.env.allowRemoteModels = true
     tjs.env.useBrowserCache = true
 
-    const modelId = 'Xenova/u2netp'
+    // Model selection: the plan named `Xenova/u2netp`, but that namespace
+    // currently returns 401 on the HF CDN. The `BritishWerewolf/U-2-Netp`
+    // re-host loads but ships a `U2NetImageProcessor` that transformers.js
+    // doesn't recognise. `briaai/RMBG-1.4` is what the upstream
+    // transformers.js remove-background demo uses
+    // (https://github.com/huggingface/transformers.js-examples/tree/main/remove-background-webgpu);
+    // it's a standard `ImageFeatureExtractor` + ONNX segmentation model
+    // with the same `[1,1,H,W]` output shape we already handle, just at
+    // 1024×1024 instead of u2netp's 320×320. The bilinear upsampler in
+    // `tensorToAlphaMask` doesn't care about the source resolution.
+    const modelId = 'briaai/RMBG-1.4'
     engine = await tjs.AutoModel.from_pretrained(modelId, {
       device: pickDevice(),
       progress_callback: (p: { status?: string; loaded?: number; total?: number }) => {

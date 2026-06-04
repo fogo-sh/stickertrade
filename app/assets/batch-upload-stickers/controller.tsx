@@ -1,7 +1,12 @@
 import { clientEntry, css, on, type Handle } from 'remix/ui'
 
 import type { StageReview as StageReviewType } from './stage-review.tsx'
+import type {
+  RegionDecision,
+  StageTransparency as StageTransparencyType,
+} from './stage-transparency.tsx'
 import type { StageUpload as StageUploadType } from './stage-upload.tsx'
+import type { TransparencyResult } from './transparency.ts'
 import type { Region, SourceImage, Stage } from './types.ts'
 
 // Theme colors inlined: app/ui/theme.ts is outside the asset server's allow
@@ -20,6 +25,7 @@ const SHOW_TEST_IMAGE_BUTTON = true
 // Type aliases for the dynamically-imported stage components.
 type StageReviewFn = typeof StageReviewType
 type StageUploadFn = typeof StageUploadType
+type StageTransparencyFn = typeof StageTransparencyType
 
 /**
  * Client-side root for the batch sticker upload flow. Owns the stage state
@@ -48,6 +54,12 @@ export const BatchUploadStickersApp = clientEntry(
     // Cache loaded stage modules so re-entering a stage doesn't re-import.
     let StageReviewComponent: StageReviewFn | null = null
     let StageUploadComponent: StageUploadFn | null = null
+    let StageTransparencyComponent: StageTransparencyFn | null = null
+
+    // Results forwarded to the finalize stage (Task 7). Set when the user
+    // leaves the transparency stage; cleared if they head back to upload.
+    let transparencyDecisions: Map<string, RegionDecision> | null = null
+    let transparencyResults: Map<string, TransparencyResult> | null = null
 
     function setStage(next: Stage): void {
       stage = next
@@ -67,8 +79,13 @@ export const BatchUploadStickersApp = clientEntry(
             const mod = await import('./stage-review.tsx')
             StageReviewComponent = mod.StageReview
           }
+        } else if (next === 'transparency') {
+          if (!StageTransparencyComponent) {
+            const mod = await import('./stage-transparency.tsx')
+            StageTransparencyComponent = mod.StageTransparency
+          }
         }
-        // Tasks 6-7 will add transparency and finalize stages here.
+        // Task 7 will add the finalize stage here.
         stage = next
       } catch (error) {
         loadError = `Failed to load stage: ${String(error)}`
@@ -113,14 +130,53 @@ export const BatchUploadStickersApp = clientEntry(
     }
 
     function goNext(): void {
-      // Task 6 will wire transparency. For now stop here.
-      // TODO: void loadStage('transparency')
+      // Drop any stale transparency results from a previous pass: the user
+      // is re-entering transparency with a fresh region set.
+      transparencyDecisions = null
+      transparencyResults = null
+      void loadStage('transparency')
     }
 
     function goBack(): void {
       // Soft reset back to the upload stage; the source image and regions
       // are preserved so the user can re-enter review without re-uploading.
       setStage('upload')
+    }
+
+    /**
+     * Called from the transparency stage when the user clicks "Adjust crop
+     * ↩" on a card. Returns to the review stage with that region
+     * pre-selected so the canvas immediately focuses it. The review-stage
+     * module is already cached, so we skip `loadStage()` and flip the
+     * stage synchronously.
+     */
+    function onAdjustCrop(regionId: string): void {
+      selectedId = regionId
+      setStage('review')
+    }
+
+    /**
+     * Receive the keep/skip decisions and per-region transparency results
+     * from the transparency stage and hand off to finalize. Until Task 7
+     * lands the finalize stage, we stash the data on the controller and
+     * surface a placeholder.
+     */
+    function onTransparencyNext(
+      decisions: Map<string, RegionDecision>,
+      results: Map<string, TransparencyResult>,
+    ): void {
+      transparencyDecisions = decisions
+      transparencyResults = results
+      // TODO(task-7): void loadStage('finalize')
+      setStage('finalize')
+    }
+
+    function onTransparencyBack(): void {
+      // Drop the in-progress decisions; the transparency stage will re-run
+      // inference if the user comes back.
+      transparencyDecisions = null
+      transparencyResults = null
+      setStage('review')
     }
 
     /**
@@ -313,12 +369,34 @@ export const BatchUploadStickersApp = clientEntry(
         )
       }
 
-      if (stage === 'transparency' || stage === 'finalize') {
+      if (stage === 'transparency' && source && StageTransparencyComponent) {
+        const StageTransparency = StageTransparencyComponent
+        return (
+          <StageTransparency
+            source={source}
+            regions={regions}
+            onAdjustCrop={onAdjustCrop}
+            onNext={onTransparencyNext}
+            onBack={onTransparencyBack}
+          />
+        )
+      }
+
+      if (stage === 'finalize') {
+        // Task 7 will replace this with the real finalize stage. For now we
+        // surface a summary of what would be uploaded so end-to-end
+        // verification still works.
+        const decisionEntries = transparencyDecisions ? [...transparencyDecisions.entries()] : []
+        const keeps = decisionEntries.filter(([, d]) => d === 'keep').length
+        const skips = decisionEntries.filter(([, d]) => d === 'skip').length
         return (
           <div mix={placeholderStyle}>
-            <p>stage "{stage}" lands in a later task.</p>
-            <button type="button" mix={[btnStyle, on('click', () => setStage('upload'))]}>
-              back to upload
+            <p>
+              finalize stage lands in task 7. ready to upload: <strong>{keeps}</strong>{' '}
+              · skipped: <strong>{skips}</strong>
+            </p>
+            <button type="button" mix={[btnStyle, on('click', () => setStage('transparency'))]}>
+              ← back to transparency
             </button>
           </div>
         )
