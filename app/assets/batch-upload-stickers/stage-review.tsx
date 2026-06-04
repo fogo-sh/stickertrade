@@ -38,6 +38,18 @@ function genId(): string {
 }
 
 /**
+ * True if a keydown target (or any ancestor) is a form field or
+ * contenteditable region. Used to gate the Delete/Backspace hotkey so we
+ * never eat a keystroke meant for an input.
+ */
+function isEditable(el: HTMLElement): boolean {
+  if (el.closest('input, select, textarea, [contenteditable=""], [contenteditable="true"]')) {
+    return true
+  }
+  return el.isContentEditable
+}
+
+/**
  * Review-stage component. Owns the `<canvas>` DOM node, fits the image on
  * mount, wires the pointer/wheel handlers from `canvas.ts`, and runs detection
  * via the dynamically-imported `detect.ts` module.
@@ -141,17 +153,17 @@ export function StageReview(handle: Handle<StageReviewProps>): () => RemixNode {
     signal.addEventListener('abort', () => ro.disconnect())
 
     // Document-level keydown for Delete/Backspace. Bound here, scoped to the
-    // mount lifetime so it doesn't survive stage transitions.
+    // mount lifetime so it doesn't survive stage transitions. The review
+    // stage doesn't currently render any form inputs (those live on
+    // finalize), but we still harden the guard against <input>, <select>,
+    // <textarea>, and any contenteditable ancestor in case the review stage
+    // grows a sticker-name field later.
     document.addEventListener(
       'keydown',
       (e: KeyboardEvent) => {
         if (e.key !== 'Delete' && e.key !== 'Backspace') return
-        // Ignore when focused in a form field.
         const t = e.target
-        if (t instanceof HTMLElement) {
-          const tag = t.tagName
-          if (tag === 'INPUT' || tag === 'TEXTAREA' || t.isContentEditable) return
-        }
+        if (t instanceof HTMLElement && isEditable(t)) return
         if (!handle.props.selectedId) return
         e.preventDefault()
         deleteSelected()
