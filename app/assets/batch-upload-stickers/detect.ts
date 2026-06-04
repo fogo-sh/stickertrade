@@ -12,9 +12,9 @@ export type { Region } from './types.ts'
  *   2. RGB → LAB + S (saturation only); other HSV channels unused
  *   3. sample the outer border to estimate background median + p96 distance
  *   4. build a color mask (LAB distance > threshold) | saturation mask
- *      → median-blur → open 3×3 → close 9×9
+ *      → median-blur 5×5 → open 3×3 → close 9×9
  *   5. build a contrast mask: gray → 3× box-blur (σ≈25) → |diff| → normalize
- *      → threshold 35 → open 3×3 → close 13×13
+ *      (NORM_MINMAX) → threshold 35 → open 3×3 → close 13×13 (×2)
  *   6. connected components (4-conn, two-pass union-find) on each mask
  *   7. filter regions (area, min dim, max bbox area, aspect, fill ratio)
  *   8. pad bboxes 4%, scale back to source coordinates
@@ -92,7 +92,7 @@ export function detectRegions(imageData: ImageData): Region[] {
     if (d > distThreshold || S[i]! > satThreshold) colorMask[i] = 255
   }
 
-  medianBlur3x3(colorMask, w, h)
+  medianBlur5x5(colorMask, w, h)
   morphOpen3x3(colorMask, w, h)
   morphClose(colorMask, w, h, 9)
 
@@ -103,23 +103,29 @@ export function detectRegions(imageData: ImageData): Region[] {
 
   const diff = new Uint8Array(npx)
   let maxDiff = 0
+  let minDiff = 255
   for (let i = 0; i < npx; i++) {
     const d = Math.abs(gray[i]! - blurred[i]!)
     diff[i] = d
     if (d > maxDiff) maxDiff = d
+    if (d < minDiff) minDiff = d
   }
-  // Normalize to 0-255 then threshold > 35.
+  // OpenCV NORM_MINMAX: rescale [min, max] → [0, 255], then threshold > 35.
   const contrastMask = new Uint8Array(npx)
-  if (maxDiff > 0) {
-    const scaleN = 255 / maxDiff
+  if (maxDiff > minDiff) {
+    const range = maxDiff - minDiff
+    const scaleN = 255 / range
     for (let i = 0; i < npx; i++) {
-      const n = diff[i]! * scaleN
+      const n = (diff[i]! - minDiff) * scaleN
       if (n > 35) contrastMask[i] = 255
     }
   }
   morphOpen3x3(contrastMask, w, h)
-  // The Python tool runs close 13×13 with iterations=2; a single 25-radius
-  // close is structurally equivalent for foreground-merging purposes.
+  // Two passes of close 13×13 match `cv2.morphologyEx(MORPH_CLOSE, 13×13,
+  // iterations=2)`. Iterated closes are NOT equivalent to a single larger
+  // close — each pass dilates+erodes incrementally, filling progressively
+  // larger holes without expanding the outer envelope as aggressively as a
+  // single 25-radius close would. Keep both passes.
   morphClose(contrastMask, w, h, 13)
   morphClose(contrastMask, w, h, 13)
 
@@ -275,15 +281,17 @@ function percentile(buf: Float64Array, p: number): number {
 // Morphology (binary masks 0/255)
 // ---------------------------------------------------------------------------
 
-function medianBlur3x3(mask: Uint8Array, w: number, h: number): void {
+function medianBlur5x5(mask: Uint8Array, w: number, h: number): void {
+  // Matches `cv2.medianBlur(color, 5)` in vision.py. For a binary mask, the
+  // median is just the majority bit in the window — `count * 2 > total`.
   const out = new Uint8Array(mask.length)
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       let count = 0
-      const x0 = Math.max(0, x - 1)
-      const x1 = Math.min(w - 1, x + 1)
-      const y0 = Math.max(0, y - 1)
-      const y1 = Math.min(h - 1, y + 1)
+      const x0 = Math.max(0, x - 2)
+      const x1 = Math.min(w - 1, x + 2)
+      const y0 = Math.max(0, y - 2)
+      const y1 = Math.min(h - 1, y + 2)
       let total = 0
       for (let yy = y0; yy <= y1; yy++) {
         const row = yy * w
@@ -292,7 +300,6 @@ function medianBlur3x3(mask: Uint8Array, w: number, h: number): void {
           total++
         }
       }
-      // 3×3 median of binary values: > half (out of `total`) → 255
       out[y * w + x] = count * 2 > total ? 255 : 0
     }
   }
