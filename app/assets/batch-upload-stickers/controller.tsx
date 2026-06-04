@@ -1,7 +1,8 @@
 import { clientEntry, css, on, type Handle } from 'remix/ui'
 
 import type { StageReview as StageReviewType } from './stage-review.tsx'
-import type { Region, Stage } from './types.ts'
+import type { StageUpload as StageUploadType } from './stage-upload.tsx'
+import type { Region, SourceImage, Stage } from './types.ts'
 
 // Theme colors inlined: app/ui/theme.ts is outside the asset server's allow
 // list. The hex values match the `light.500`, `primary.500`, and `dark.500`
@@ -10,17 +11,15 @@ const LIGHT_500 = '#f1eee4'
 const PRIMARY_500 = '#f7a1c4'
 const DARK_500 = '#1c0f13'
 
-interface SourceImage {
-  image: HTMLImageElement
-  imageData: ImageData
-  width: number
-  height: number
-}
+// Toggle for the synthetic-test-image dev affordance. Leaving it `true`
+// through Task 4-7 keeps the canvas/transparency/finalize stages testable
+// without a real photo on hand. Flip to `false` (or rip out the branch) in
+// Task 8 once end-to-end verification is done.
+const SHOW_TEST_IMAGE_BUTTON = true
 
-// Type of the StageReview component function (the actual export). We can use
-// it as a JSX tag once the module is loaded — Remix 3's `createElement`
-// accepts any component function.
+// Type aliases for the dynamically-imported stage components.
 type StageReviewFn = typeof StageReviewType
+type StageUploadFn = typeof StageUploadType
 
 /**
  * Client-side root for the batch sticker upload flow. Owns the stage state
@@ -28,10 +27,12 @@ type StageReviewFn = typeof StageReviewType
  * lazy-imported so the first paint of this page only ships the controller and
  * a small placeholder.
  *
- * Task 3 wires the review stage only. The upload stage is still a placeholder
- * with a "Use test image" button so we can exercise the canvas without the
- * real file picker (which lands in Task 4). Transparency / finalize stages
- * are stubbed pending Tasks 6-7.
+ * Task 4 wires the upload stage (real file picker + image decode). The
+ * synthetic-test-image button is kept behind `SHOW_TEST_IMAGE_BUTTON` as a
+ * dev affordance for exercising the canvas without a real photo —
+ * scheduled for removal in Task 8 polish.
+ *
+ * Transparency / finalize stages are still stubbed pending Tasks 6-7.
  */
 export const BatchUploadStickersApp = clientEntry(
   import.meta.url,
@@ -46,6 +47,7 @@ export const BatchUploadStickersApp = clientEntry(
 
     // Cache loaded stage modules so re-entering a stage doesn't re-import.
     let StageReviewComponent: StageReviewFn | null = null
+    let StageUploadComponent: StageUploadFn | null = null
 
     function setStage(next: Stage): void {
       stage = next
@@ -76,6 +78,30 @@ export const BatchUploadStickersApp = clientEntry(
       }
     }
 
+    /**
+     * Eagerly load the upload-stage module on the client so the first paint
+     * after hydration shows the real file picker rather than a loading
+     * spinner. The controller body also runs server-side; we gate the
+     * dynamic import on `typeof window` because `handle.update()` is not
+     * implemented during SSR.
+     */
+    async function ensureUploadModule(): Promise<void> {
+      if (StageUploadComponent) return
+      try {
+        const mod = await import('./stage-upload.tsx')
+        StageUploadComponent = mod.StageUpload
+        handle.update()
+      } catch (error) {
+        loadError = `Failed to load upload stage: ${String(error)}`
+        handle.update()
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      // Kick off the upload module import as soon as the controller mounts.
+      void ensureUploadModule()
+    }
+
     function setRegions(next: Region[]): void {
       regions = next
       handle.update()
@@ -95,6 +121,19 @@ export const BatchUploadStickersApp = clientEntry(
       // Soft reset back to the upload stage; the source image and regions
       // are preserved so the user can re-enter review without re-uploading.
       setStage('upload')
+    }
+
+    /**
+     * Called by `StageUpload` after a successful file decode. Promotes the
+     * source onto the state machine and transitions to review. Region
+     * selection is reset because they belong to whatever photo was loaded
+     * previously.
+     */
+    function onSourceLoaded(next: SourceImage): void {
+      source = next
+      regions = []
+      selectedId = null
+      void loadStage('review')
     }
 
     /**
@@ -237,23 +276,24 @@ export const BatchUploadStickersApp = clientEntry(
       }
 
       if (stage === 'upload') {
+        if (!StageUploadComponent) {
+          // First paint before the dynamic import resolves. Fall through to
+          // a minimal placeholder; `ensureUploadModule()` will flip
+          // `handle.update()` once the bundle lands.
+          return (
+            <div mix={placeholderStyle}>
+              <p>loading upload UI…</p>
+            </div>
+          )
+        }
+        const StageUpload = StageUploadComponent
         return (
-          <div mix={placeholderStyle}>
-            <p>
-              real file picker lands in Task 4. In the meantime, use the test
-              image to exercise the review canvas.
-            </p>
-            <button type="button" mix={[primaryBtnStyle, on('click', onUseTestImage)]}>
-              use test image
-            </button>
-            {testImageError ? <p mix={errorStyle}>{testImageError}</p> : null}
-            <noscript>
-              <p mix={noscriptStyle}>
-                this page needs JavaScript. use the regular{' '}
-                <a href="/upload-sticker">single sticker upload</a> instead.
-              </p>
-            </noscript>
-          </div>
+          <StageUpload
+            onLoaded={onSourceLoaded}
+            showTestImageButton={SHOW_TEST_IMAGE_BUTTON}
+            onUseTestImage={onUseTestImage}
+            testImageError={testImageError}
+          />
         )
       }
 
@@ -306,8 +346,6 @@ const placeholderStyle = css({
   gap: '0.75rem',
 })
 
-const noscriptStyle = css({ opacity: 0.8 })
-
 const errorStyle = css({ color: PRIMARY_500, fontSize: '0.875rem' })
 
 const btnStyle = css({
@@ -320,17 +358,4 @@ const btnStyle = css({
   fontSize: '0.875rem',
   padding: '0.375rem 0.75rem',
   '&:hover': { borderColor: PRIMARY_500 },
-})
-
-const primaryBtnStyle = css({
-  background: LIGHT_500,
-  color: DARK_500,
-  border: `1px solid ${LIGHT_500}`,
-  borderRadius: '0.25rem',
-  cursor: 'pointer',
-  font: 'inherit',
-  fontSize: '0.875rem',
-  fontWeight: 600,
-  padding: '0.5rem 1rem',
-  '&:hover': { background: PRIMARY_500, borderColor: PRIMARY_500 },
 })
