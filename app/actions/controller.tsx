@@ -19,6 +19,7 @@ import { uploadStorage } from '../data/uploads.ts'
 import { tokenNameSchema } from '../data/validators.ts'
 import { routes } from '../routes.ts'
 import type { SurfaceCardSurface } from '../ui/surface-card.tsx'
+import { BatchUploadStickersPage } from './batch-upload-stickers-page.tsx'
 import { BrandPage } from './brand-page.tsx'
 import { DevLogPage } from './dev-log-page.tsx'
 import { DevLogsIndexPage } from './dev-logs-index-page.tsx'
@@ -144,6 +145,19 @@ export default createController(routes, {
     // -------- Roadmap --------
     roadmap(context) {
       return context.render(<RoadmapPage user={getCurrentUser(context)} tasks={roadmapTasks} />)
+    },
+
+    // -------- Batch sticker upload (auth-gated GET-only page) --------
+    // The page mounts a clientEntry that handles file picking, detection,
+    // background removal, and uploads via repeated POSTs to
+    // `routes.uploadSticker.action.href()`. The CSRF token is rendered into
+    // a `<meta name="csrf-token">` tag inside the page component itself
+    // (self-resolved via `getCsrfToken(getContext())`), matching the
+    // `CsrfField` pattern, so no token plumbing is needed here.
+    batchUploadStickers(context) {
+      const user = getCurrentUser(context)
+      if (!user) return redirect(routes.login.index.href(), 303)
+      return context.render(<BatchUploadStickersPage user={user} />)
     },
 
     // -------- Stickers index --------

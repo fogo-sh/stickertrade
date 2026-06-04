@@ -27,7 +27,17 @@ export function UploadStickerPage() {
           {errors._form ? <p mix={errorStyle}>{errors._form}</p> : null}
           <SubmitButton label="create sticker" />
         </form>
+        <p mix={linkRowStyle}>
+          have a bunch?{' '}
+          <a href={routes.batchUploadStickers.href()}>try batch upload →</a>
+        </p>
       </main>
     </Document>
   )
 }
+
+const linkRowStyle = css({
+  marginTop: '1.5rem',
+  fontSize: '0.875rem',
+  opacity: 0.85,
+})
