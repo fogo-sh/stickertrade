@@ -313,9 +313,20 @@ function morphClose(mask: Uint8Array, w: number, h: number, kernel: number): voi
 
 /**
  * Separable rectangular erosion: 0 if ANY pixel in the (2r+1) window is 0.
- * Implemented with min-running-window via Van Herk/Gil-Werman would be O(n);
- * we use a simpler sliding-min via a deque per pass, which is also O(n).
+ * Sliding-min via a monotonic deque per pass, O(n).
+ *
+ * Exported for the brute-force regression test in `test/detect.test.ts`;
+ * do not call from production code outside `detect.ts`.
  */
+export function _erode_TESTING(mask: Uint8Array, w: number, h: number, r: number): void {
+  slidingExtreme(mask, w, h, r, true)
+}
+
+/** See `_erode_TESTING`. */
+export function _dilate_TESTING(mask: Uint8Array, w: number, h: number, r: number): void {
+  slidingExtreme(mask, w, h, r, false)
+}
+
 function erode(mask: Uint8Array, w: number, h: number, r: number): void {
   slidingExtreme(mask, w, h, r, true)
 }
@@ -348,7 +359,10 @@ function slidingExtreme(
         while (head < tail && better(v, mask[row + deque[tail - 1]!]!)) tail--
         deque[tail++] = x
       }
-      while (head < tail && deque[head]! < x - r) head++
+      // Centered window of radius r over inputs [ox-r, ox+r] where ox = x-r,
+      // i.e. the deque must hold positions in [x-2r, x]. Eviction threshold is
+      // x - 2*r, NOT x - r (the latter is a right-biased window of size r+1).
+      while (head < tail && deque[head]! < x - 2 * r) head++
       const ox = x - r
       if (ox >= 0) tmp[row + ox] = mask[row + deque[head]!]!
     }
@@ -364,7 +378,7 @@ function slidingExtreme(
         while (head < tail && better(v, tmp[deque[tail - 1]! * w + x]!)) tail--
         deque[tail++] = y
       }
-      while (head < tail && deque[head]! < y - r) head++
+      while (head < tail && deque[head]! < y - 2 * r) head++
       const oy = y - r
       if (oy >= 0) mask[oy * w + x] = tmp[deque[head]! * w + x]!
     }
