@@ -16,5 +16,14 @@ export const assetServer = createAssetServer({
     define: {
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV ?? 'development'),
     },
+    // @huggingface/transformers is loaded from a CDN via the page's
+    // importmap (see batch-upload-stickers-page.tsx). Marking it external
+    // here keeps the asset server from trying to bundle the ~30 MB ONNX
+    // Runtime web bundle — onnxruntime-web ships prebuilt ESM files that
+    // the asset server's CommonJS detector mis-flags
+    // (`COMMONJS_NOT_SUPPORTED` for `ort.webgpu.bundle.min.mjs`). Letting
+    // the browser fetch the maintained CDN build sidesteps the problem
+    // and matches the upstream demos' deployment pattern.
+    external: ['@huggingface/transformers'],
   },
 })
