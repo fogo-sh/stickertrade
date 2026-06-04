@@ -49,6 +49,9 @@ export const BatchUploadStickersApp = clientEntry(
 
     function setStage(next: Stage): void {
       stage = next
+      // Any stage change clears any prior load error — otherwise the error UI
+      // (which gates the entire render) would swallow the navigation.
+      loadError = null
       handle.update()
     }
 
