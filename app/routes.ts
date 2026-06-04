@@ -29,6 +29,7 @@ export const routes = route({
 
   // Sticker upload (GET form, POST action)
   uploadSticker: form('/upload-sticker'),
+  batchUploadStickers: '/upload-stickers/batch',
 
   // Surface upload (GET form, POST action)
   uploadSurface: form('/upload-surface'),
