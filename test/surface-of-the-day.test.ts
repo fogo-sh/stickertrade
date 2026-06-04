@@ -181,6 +181,89 @@ describe('getSurfaceOfTheDay', () => {
     }
   })
 
+  it('does not repeat a surface until every other surface has been featured', async () => {
+    const env = await makeEnv()
+    try {
+      const ownerId = await makeUser(env, 'rotator')
+      const ids = new Set<string>()
+      ids.add(await makeSurface(env, ownerId, 'A'))
+      ids.add(await makeSurface(env, ownerId, 'B'))
+      ids.add(await makeSurface(env, ownerId, 'C'))
+
+      // Simulate three consecutive days. Inject the date so we don't have to
+      // mock the clock.
+      const day1 = await getSurfaceOfTheDay(env.db, '2030-01-01')
+      const day2 = await getSurfaceOfTheDay(env.db, '2030-01-02')
+      const day3 = await getSurfaceOfTheDay(env.db, '2030-01-03')
+
+      assert.ok(day1 && day2 && day3)
+      const picked = new Set([day1.id, day2.id, day3.id])
+      assert.equal(picked.size, 3, 'each of three days should yield a distinct surface')
+      assert.deepEqual([...picked].sort(), [...ids].sort())
+    } finally {
+      cleanup(env)
+    }
+  })
+
+  it('falls back to the least-recently-featured surface after a full rotation', async () => {
+    const env = await makeEnv()
+    try {
+      const ownerId = await makeUser(env, 'wrapper')
+      const aId = await makeSurface(env, ownerId, 'A')
+      const bId = await makeSurface(env, ownerId, 'B')
+
+      // Seed history: A featured first, B featured most recently.
+      await env.db.create(surfaceFeatures, {
+        surface_id: aId,
+        featured_date: '2030-02-01',
+        created_at: Date.now() - 86_400_000,
+      })
+      await env.db.create(surfaceFeatures, {
+        surface_id: bId,
+        featured_date: '2030-02-02',
+        created_at: Date.now(),
+      })
+
+      // Every surface has been featured. The next pick should reuse the
+      // least-recently-featured surface, which is A.
+      const result = await getSurfaceOfTheDay(env.db, '2030-02-03')
+      assert.ok(result)
+      assert.equal(result.id, aId)
+    } finally {
+      cleanup(env)
+    }
+  })
+
+  it('prioritises an unfeatured surface added mid-cycle', async () => {
+    const env = await makeEnv()
+    try {
+      const ownerId = await makeUser(env, 'newcomer')
+      const aId = await makeSurface(env, ownerId, 'A')
+      const bId = await makeSurface(env, ownerId, 'B')
+
+      await env.db.create(surfaceFeatures, {
+        surface_id: aId,
+        featured_date: '2030-03-01',
+        created_at: Date.now() - 172_800_000,
+      })
+      await env.db.create(surfaceFeatures, {
+        surface_id: bId,
+        featured_date: '2030-03-02',
+        created_at: Date.now() - 86_400_000,
+      })
+
+      // C is added after A and B have both been featured. It should be the
+      // next pick despite "least-recently-featured" being A.
+      const cId = await makeSurface(env, ownerId, 'C')
+
+      const result = await getSurfaceOfTheDay(env.db, '2030-03-03')
+      assert.ok(result)
+      assert.equal(result.id, cId)
+    } finally {
+      cleanup(env)
+    }
+  })
+
   it('drops a stale feature row whose surface was deleted (FK-bypass case)', async () => {
     const env = await makeEnv()
     try {
