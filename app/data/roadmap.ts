@@ -99,6 +99,15 @@ const sourceTasks: Array<Omit<RoadmapTask, 'id'>> = [
 - [x] Multi-image galleries per surface (up to 8 images; one designated primary)
 `),
   },
+  {
+    title: 'Batch sticker upload 📸',
+    description: md(`
+- [x] Drop one photo of multiple stickers; we detect each one, remove backgrounds, and upload them in sequence
+- [x] Pure-JS bbox detector ported from a Python OpenCV reference
+- [x] Background removal via @huggingface/transformers + briaai/RMBG-1.4 (WebGPU with WASM fallback)
+- [x] All processing client-side; no new server endpoints
+`),
+  },
 
   // ---- Currently in focus ----
   {
