@@ -32,10 +32,12 @@ export type BatchUploadStickersAppProps = {
 const LIGHT_500 = '#f1eee4'
 const PRIMARY_500 = '#f7a1c4'
 
-// Toggle for the synthetic-test-image dev affordance. Leaving it `true`
-// through Task 4-7 keeps the canvas/transparency/finalize stages testable
-// without a real photo on hand. Flip to `false` (or rip out the branch) in
-// Task 8 once end-to-end verification is done.
+// Toggle for the "use test image" affordance. We ship this as `true` so a
+// first-time visitor can try the full flow without committing a photo of
+// their own. The button points at the real fixture committed at
+// `public/images/test-stickers.jpg` (a 1200×1600 photo of three stickers
+// on a flat surface) with a silent fallback to a synthetic three-rectangle
+// ImageData if the fixture ever 404s.
 const SHOW_TEST_IMAGE_BUTTON = true
 
 // Type aliases for the dynamically-imported stage components.
@@ -50,12 +52,9 @@ type StageFinalizeFn = typeof StageFinalizeType
  * lazy-imported so the first paint of this page only ships the controller and
  * a small placeholder.
  *
- * Task 4 wires the upload stage (real file picker + image decode). The
- * synthetic-test-image button is kept behind `SHOW_TEST_IMAGE_BUTTON` as a
- * dev affordance for exercising the canvas without a real photo —
- * scheduled for removal in Task 8 polish.
- *
- * Transparency / finalize stages are still stubbed pending Tasks 6-7.
+ * The "use test image" button (gated behind `SHOW_TEST_IMAGE_BUTTON`) ships
+ * enabled so first-time visitors can try the whole flow against a real
+ * fixture (`/images/test-stickers.jpg`) without uploading their own photo.
  */
 export const BatchUploadStickersApp = clientEntry<BatchUploadStickersAppProps>(
   import.meta.url,
@@ -234,10 +233,9 @@ export const BatchUploadStickersApp = clientEntry<BatchUploadStickersAppProps>(
 
     /**
      * Build a synthetic 900×600 ImageData with three colored rectangles on a
-     * warm-gray background. Mirrors the fixture in `test/detect.test.ts` so
-     * we can exercise the review stage end-to-end without a real photo file.
-     * Used by the "Use synthetic test image" affordance when the optional
-     * `/images/test-stickers.jpg` fixture is missing.
+     * warm-gray background. Mirrors the fixture in `test/detect.test.ts`.
+     * Used as a fallback by the "use test image" button when the real
+     * `/images/test-stickers.jpg` fixture is missing or fails to decode.
      */
     function makeSyntheticImageData(): ImageData {
       const w = 900
@@ -324,9 +322,11 @@ export const BatchUploadStickersApp = clientEntry<BatchUploadStickersAppProps>(
       loadingStage = true
       handle.update()
       try {
-        // Try the optional /images/test-stickers.jpg fixture first. If it
-        // 404s (which is the default state of this branch — no fixture has
-        // been committed), fall back to synthetic geometry.
+        // Try the real fixture first; silently fall back to a synthetic
+        // three-rectangle ImageData if the fixture is missing or fails to
+        // decode. The fallback exists because the affordance is also useful
+        // in environments where the static asset isn't served (local dev
+        // with a custom prefix, etc.).
         let src: SourceImage
         try {
           const head = await fetch('/images/test-stickers.jpg', { method: 'HEAD' })
