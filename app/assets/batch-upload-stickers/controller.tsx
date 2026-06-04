@@ -1,5 +1,6 @@
 import { clientEntry, css, on, type Handle } from 'remix/ui'
 
+import type { StageFinalize as StageFinalizeType } from './stage-finalize.tsx'
 import type { StageReview as StageReviewType } from './stage-review.tsx'
 import type {
   RegionDecision,
@@ -8,6 +9,22 @@ import type {
 import type { StageUpload as StageUploadType } from './stage-upload.tsx'
 import type { TransparencyResult } from './transparency.ts'
 import type { Region, SourceImage, Stage } from './types.ts'
+
+// Type-level note: `clientEntry`'s props generic is constrained to
+// `SerializableProps`, which is `{ [k in string]: SerializableValue }`. An
+// interface with named-only members doesn't satisfy that constraint in
+// TypeScript even when every member is serializable, so we use a `type`
+// alias here (intersected with an index signature) to make it pass.
+export type BatchUploadStickersAppProps = {
+  /** The current user's username; passed to finalize for the success link. */
+  username: string
+  /** Resolved `routes.uploadSticker.action.href()` — the existing form action. */
+  uploadStickerUrl: string
+  /** Resolved `routes.profile.href({ username })` — destination after upload. */
+  profileUrl: string
+  /** Resolved `routes.stickers.href()` — fallback link if profile is missing. */
+  stickersUrl: string
+}
 
 // Theme colors inlined: app/ui/theme.ts is outside the asset server's allow
 // list. The hex values match the `light.500`, `primary.500`, and `dark.500`
@@ -26,6 +43,7 @@ const SHOW_TEST_IMAGE_BUTTON = true
 type StageReviewFn = typeof StageReviewType
 type StageUploadFn = typeof StageUploadType
 type StageTransparencyFn = typeof StageTransparencyType
+type StageFinalizeFn = typeof StageFinalizeType
 
 /**
  * Client-side root for the batch sticker upload flow. Owns the stage state
@@ -40,9 +58,9 @@ type StageTransparencyFn = typeof StageTransparencyType
  *
  * Transparency / finalize stages are still stubbed pending Tasks 6-7.
  */
-export const BatchUploadStickersApp = clientEntry(
+export const BatchUploadStickersApp = clientEntry<BatchUploadStickersAppProps>(
   import.meta.url,
-  function BatchUploadStickersApp(handle: Handle<{}>) {
+  function BatchUploadStickersApp(handle: Handle<BatchUploadStickersAppProps>) {
     let stage: Stage = 'upload'
     let source: SourceImage | null = null
     let regions: Region[] = []
@@ -55,6 +73,7 @@ export const BatchUploadStickersApp = clientEntry(
     let StageReviewComponent: StageReviewFn | null = null
     let StageUploadComponent: StageUploadFn | null = null
     let StageTransparencyComponent: StageTransparencyFn | null = null
+    let StageFinalizeComponent: StageFinalizeFn | null = null
 
     // Results forwarded to the finalize stage (Task 7). Set when the user
     // leaves the transparency stage; cleared if they head back to upload.
@@ -84,8 +103,12 @@ export const BatchUploadStickersApp = clientEntry(
             const mod = await import('./stage-transparency.tsx')
             StageTransparencyComponent = mod.StageTransparency
           }
+        } else if (next === 'finalize') {
+          if (!StageFinalizeComponent) {
+            const mod = await import('./stage-finalize.tsx')
+            StageFinalizeComponent = mod.StageFinalize
+          }
         }
-        // Task 7 will add the finalize stage here.
         stage = next
       } catch (error) {
         loadError = `Failed to load stage: ${String(error)}`
@@ -157,9 +180,9 @@ export const BatchUploadStickersApp = clientEntry(
 
     /**
      * Receive the keep/skip decisions and per-region transparency results
-     * from the transparency stage and hand off to finalize. Until Task 7
-     * lands the finalize stage, we stash the data on the controller and
-     * surface a placeholder.
+     * from the transparency stage and hand off to finalize. The finalize
+     * stage is lazy-imported via `loadStage('finalize')`; while the bundle
+     * resolves the controller shows the generic loading placeholder.
      */
     function onTransparencyNext(
       decisions: Map<string, RegionDecision>,
@@ -167,8 +190,23 @@ export const BatchUploadStickersApp = clientEntry(
     ): void {
       transparencyDecisions = decisions
       transparencyResults = results
-      // TODO(task-7): void loadStage('finalize')
-      setStage('finalize')
+      void loadStage('finalize')
+    }
+
+    /**
+     * Back from finalize: return to transparency without rebuilding the
+     * results map (the transparency stage caches its own state and would
+     * re-run inference on a fresh mount, but the saved results are still
+     * referenced from finalize). We surface this transition as a soft
+     * back-button; finalize itself hides the button once any upload has
+     * succeeded server-side.
+     */
+    function onFinalizeBack(): void {
+      // Don't null out `transparencyResults` — we want to be able to come
+      // back to finalize if the user changes their mind. The transparency
+      // stage instance gets unmounted and re-mounted on next entry, which
+      // will rebuild its own state from props.
+      setStage('transparency')
     }
 
     function onTransparencyBack(): void {
@@ -382,23 +420,29 @@ export const BatchUploadStickersApp = clientEntry(
         )
       }
 
-      if (stage === 'finalize') {
-        // Task 7 will replace this with the real finalize stage. For now we
-        // surface a summary of what would be uploaded so end-to-end
-        // verification still works.
-        const decisionEntries = transparencyDecisions ? [...transparencyDecisions.entries()] : []
-        const keeps = decisionEntries.filter(([, d]) => d === 'keep').length
-        const skips = decisionEntries.filter(([, d]) => d === 'skip').length
+      if (stage === 'finalize' && StageFinalizeComponent) {
+        // Build the filtered list of items the user kept. Skipped regions
+        // never reach finalize; the component never sees them.
+        const items: Array<{ regionId: string; result: TransparencyResult }> = []
+        if (transparencyDecisions && transparencyResults) {
+          for (const region of regions) {
+            const decision = transparencyDecisions.get(region.id)
+            const result = transparencyResults.get(region.id)
+            if (decision === 'keep' && result) {
+              items.push({ regionId: region.id, result })
+            }
+          }
+        }
+        const StageFinalize = StageFinalizeComponent
         return (
-          <div mix={placeholderStyle}>
-            <p>
-              finalize stage lands in task 7. ready to upload: <strong>{keeps}</strong>{' '}
-              · skipped: <strong>{skips}</strong>
-            </p>
-            <button type="button" mix={[btnStyle, on('click', () => setStage('transparency'))]}>
-              ← back to transparency
-            </button>
-          </div>
+          <StageFinalize
+            items={items}
+            username={handle.props.username}
+            uploadStickerUrl={handle.props.uploadStickerUrl}
+            profileUrl={handle.props.profileUrl}
+            stickersUrl={handle.props.stickersUrl}
+            onBack={onFinalizeBack}
+          />
         )
       }
 
