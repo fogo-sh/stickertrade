@@ -3,6 +3,7 @@ import { getCsrfToken } from 'remix/middleware/csrf'
 import { css } from 'remix/ui'
 
 import { BatchUploadStickersApp } from '../assets/batch-upload-stickers/controller.tsx'
+import { routes } from '../routes.ts'
 import { Document } from '../ui/document.tsx'
 import type { HeaderUser } from '../ui/header.tsx'
 
@@ -51,7 +52,12 @@ export function BatchUploadStickersPage() {
             we'll detect each sticker, remove backgrounds, and let you review
             before uploading them all.
           </p>
-          <BatchUploadStickersApp />
+          <BatchUploadStickersApp
+            username={user.username}
+            uploadStickerUrl={routes.uploadSticker.action.href()}
+            profileUrl={routes.profile.href({ username: user.username })}
+            stickersUrl={routes.stickers.href()}
+          />
         </main>
       </Document>
     )
