@@ -345,15 +345,18 @@ export function StageUpload(handle: Handle<StageUploadProps>): () => RemixNode {
         ) : null}
         {pickerError ? <p mix={errorStyle}>{pickerError}</p> : null}
         {showTestButton ? (
-          // Dev affordance: synthetic-image button. Invaluable for verifying
-          // the rest of the flow without a real photo. Will be removed in
-          // Task 8 (polish) once the page is fully wired end-to-end.
+          // Try-it-with-our-fixture affordance: loads
+          // `/images/test-stickers.jpg` (a real photo of three stickers)
+          // so first-time visitors can see the flow without committing
+          // their own image. Silently falls back to synthetic geometry
+          // if the fixture is missing — see `onUseTestImage` in
+          // controller.tsx.
           <div mix={devRowStyle}>
             <button
               type="button"
               mix={[ghostBtnStyle, on('click', () => handle.props.onUseTestImage?.())]}
             >
-              use synthetic test image (dev)
+              use test image
             </button>
             {testErr ? <p mix={errorStyle}>{testErr}</p> : null}
           </div>
