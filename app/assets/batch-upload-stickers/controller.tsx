@@ -27,11 +27,10 @@ export type BatchUploadStickersAppProps = {
 }
 
 // Theme colors inlined: app/ui/theme.ts is outside the asset server's allow
-// list. The hex values match the `light.500`, `primary.500`, and `dark.500`
-// tokens in `app/ui/theme.ts`.
+// list. The hex values match the `light.500` and `primary.500` tokens in
+// `app/ui/theme.ts`.
 const LIGHT_500 = '#f1eee4'
 const PRIMARY_500 = '#f7a1c4'
-const DARK_500 = '#1c0f13'
 
 // Toggle for the synthetic-test-image dev affordance. Leaving it `true`
 // through Task 4-7 keeps the canvas/transparency/finalize stages testable
@@ -161,8 +160,11 @@ export const BatchUploadStickersApp = clientEntry<BatchUploadStickersAppProps>(
     }
 
     function goBack(): void {
-      // Soft reset back to the upload stage; the source image and regions
-      // are preserved so the user can re-enter review without re-uploading.
+      // Soft transition back to the upload stage. `setStage` only clears
+      // `loadError`; `source`, `regions`, `selectedId`, and any cached
+      // transparency results are preserved so the user can step back into
+      // review without re-uploading or losing edits. The upload stage
+      // itself will overwrite `source` only when the user picks a new file.
       setStage('upload')
     }
 

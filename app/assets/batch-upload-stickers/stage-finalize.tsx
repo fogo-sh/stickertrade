@@ -378,6 +378,14 @@ function renderCard(
   retry: (regionId: string) => void,
   onNameInputMount: (node: Element, signal: AbortSignal, regionId: string) => void,
 ): RemixNode {
+  // The name input is intentionally uncontrolled: the map of names is the
+  // source of truth for the upload loop, and the input's DOM value is the
+  // source of truth for what the user sees. We seed it once via
+  // `defaultValue` and never touch the DOM `value` again. Re-rendering
+  // the input on every status change (with `value=`) would clobber the
+  // user's in-progress text if the rerender lands between a keystroke
+  // and the input event. The map is kept in sync via the `input` listener
+  // wired in `onNameInputMount`.
   return (
     <div mix={cardStyle} key={item.regionId}>
       <div mix={tileStyle}>
@@ -389,7 +397,7 @@ function renderCard(
           nameInputStyle,
           ref((node, signal) => onNameInputMount(node, signal, item.regionId)),
         ]}
-        value={name}
+        defaultValue={name}
         placeholder={`sticker ${index + 1} of ?`}
         disabled={state.status === 'uploading' || state.status === 'success'}
       />

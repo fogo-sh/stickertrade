@@ -32,6 +32,14 @@ export interface CanvasState {
   view: { scale: number; x: number; y: number }
 }
 
+/**
+ * The subset of `CanvasState` that pointer/wheel handlers can patch. The
+ * source image is owned by the controller and never changes mid-stage, so
+ * we explicitly exclude it from the patch surface — accidentally swapping
+ * the image during a pan or resize would corrupt the canvas.
+ */
+export type CanvasPatch = Partial<Pick<CanvasState, 'regions' | 'selectedId' | 'view'>>
+
 export interface CanvasHandlers {
   onPointerDown(e: PointerEvent): void
   onPointerMove(e: PointerEvent): void
@@ -181,7 +189,7 @@ function pointerCoords(canvas: HTMLCanvasElement, e: PointerEvent | WheelEvent):
 export function createCanvas(
   canvas: HTMLCanvasElement,
   getState: () => CanvasState,
-  patch: (changes: Partial<CanvasState>) => void,
+  patch: (changes: CanvasPatch) => void,
 ): CanvasHandlers {
   let drag: Drag | null = null
 
