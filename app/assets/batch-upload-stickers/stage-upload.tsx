@@ -356,7 +356,7 @@ export function StageUpload(handle: Handle<StageUploadProps>): () => RemixNode {
               type="button"
               mix={[ghostBtnStyle, on('click', () => handle.props.onUseTestImage?.())]}
             >
-              use test image
+              try with sample photo
             </button>
             {testErr ? <p mix={errorStyle}>{testErr}</p> : null}
           </div>

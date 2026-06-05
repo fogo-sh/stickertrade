@@ -63,7 +63,7 @@ function isEditable(el: HTMLElement): boolean {
 export function StageReview(handle: Handle<StageReviewProps>): () => RemixNode {
   // Closure-local view state. Doesn't need to round-trip through the parent.
   let view: View = { scale: 1, x: 0, y: 0 }
-  let status = 'Click "Detect" to find stickers, or add regions manually.'
+  let status = 'click "detect" to find stickers, or add regions manually.'
   let canvasEl: HTMLCanvasElement | null = null
   let fitted = false
 
@@ -191,24 +191,24 @@ export function StageReview(handle: Handle<StageReviewProps>): () => RemixNode {
    * status strings actually paint before the synchronous detection runs.
    */
   async function onDetect(): Promise<void> {
-    setStatus('Loading detector…')
+    setStatus('loading detector…')
     await nextFrame()
     const { detectRegions } = await import('./detect.ts')
-    setStatus('Detecting stickers…')
+    setStatus('detecting stickers…')
     await nextFrame()
     let result: Region[] = []
     try {
       result = detectRegions(handle.props.imageData)
     } catch (error) {
-      setStatus(`Detection failed: ${String(error)}`)
+      setStatus(`detection failed: ${String(error)}`)
       return
     }
     handle.props.setRegions(result)
     handle.props.setSelectedId(result[0]?.id ?? null)
     setStatus(
       result.length === 0
-        ? 'No stickers detected. Add regions manually, or try a clearer photo.'
-        : `Found ${result.length} sticker${result.length === 1 ? '' : 's'}. Review, then continue.`,
+        ? 'no stickers detected. add regions manually, or try a clearer photo.'
+        : `found ${result.length} sticker${result.length === 1 ? '' : 's'}. review, then continue.`,
     )
   }
 
@@ -266,31 +266,31 @@ export function StageReview(handle: Handle<StageReviewProps>): () => RemixNode {
       <div mix={rootStyle}>
         <div mix={toolbarStyle}>
           <button type="button" mix={[btnStyle, on('click', onDetect)]}>
-            Detect
+            detect
           </button>
           <button type="button" mix={[btnStyle, on('click', onAdd)]}>
-            Add region
+            add region
           </button>
           <button
             type="button"
             mix={[btnStyle, on('click', deleteSelected)]}
             disabled={!canDelete}
           >
-            Delete selected
+            delete selected
           </button>
           <button type="button" mix={[btnStyle, on('click', onResetZoom)]}>
-            Reset zoom
+            reset zoom
           </button>
           <span mix={spacerStyle} />
           <button type="button" mix={[btnStyle, on('click', () => handle.props.goBack())]}>
-            ← Back
+            ← back
           </button>
           <button
             type="button"
             mix={[primaryBtnStyle, on('click', () => handle.props.goNext())]}
             disabled={!canContinue}
           >
-            Next: review backgrounds →
+            next: review backgrounds →
           </button>
         </div>
         <div mix={canvasWrapStyle}>

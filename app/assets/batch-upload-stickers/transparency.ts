@@ -307,6 +307,15 @@ function pickDevice(): 'webgpu' | 'wasm' {
   return 'wasm'
 }
 
+/**
+ * Public read of `pickDevice()` so UI can show a "this device falls back to
+ * WASM" hint before the engine downloads. Safe to call in any browser
+ * context; returns `'wasm'` during SSR (no `navigator`).
+ */
+export function detectInferenceDevice(): 'webgpu' | 'wasm' {
+  return pickDevice()
+}
+
 export interface TransparencyResult {
   pngBlob: Blob
   width: number

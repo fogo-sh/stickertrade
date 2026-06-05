@@ -113,7 +113,7 @@ async function imageDataToObjectUrl(image: ImageData): Promise<string> {
  *     The finalize stage takes ownership.
  */
 export function StageTransparency(handle: Handle<StageTransparencyProps>): () => RemixNode {
-  let status = 'Preparing background removal…'
+  let status = 'preparing background removal…'
   let started = false
   let abortController: AbortController | null = null
 
@@ -173,15 +173,25 @@ export function StageTransparency(handle: Handle<StageTransparencyProps>): () =>
    * Sequential keeps the per-card "Processing…" cues meaningful.
    */
   async function runInference(signal: AbortSignal): Promise<void> {
-    setStatus('Loading background-removal model (first use: ~5 MB)…')
+    setStatus('loading background-removal model (first use: ~44 mb, cached after)…')
     let transparency: typeof import('./transparency.ts')
     try {
       transparency = await import('./transparency.ts')
     } catch (error) {
-      setStatus(`Failed to load transparency module: ${String(error)}`)
+      setStatus(`failed to load transparency module: ${String(error)}`)
       return
     }
     if (signal.aborted) return
+
+    // Surface a heads-up for the WASM fallback path before the multi-MB
+    // download starts — older mobile devices can take 30+ seconds per
+    // sticker on WASM, vs. a second or two on WebGPU.
+    if (transparency.detectInferenceDevice() === 'wasm') {
+      setStatus(
+        'loading background-removal model (first use: ~44 mb, cached after). ' +
+          'your browser will use wasm (no webgpu) — this can be slow on older devices.',
+      )
+    }
 
     // Build all original-crop previews up-front so the cards have something
     // to show while inference is still warming up. Concurrent is fine here;
@@ -194,13 +204,13 @@ export function StageTransparency(handle: Handle<StageTransparencyProps>): () =>
         const pct = total > 0 ? Math.round((loaded / total) * 100) : null
         setStatus(
           pct === null
-            ? `Downloading model: ${formatBytes(loaded)}…`
-            : `Downloading model: ${formatBytes(loaded)} / ${formatBytes(total)} (${pct}%)`,
+            ? `downloading model: ${formatBytes(loaded)}…`
+            : `downloading model: ${formatBytes(loaded)} / ${formatBytes(total)} (${pct}%)`,
         )
       })
     } catch (error) {
       if (!signal.aborted) {
-        setStatus(`Failed to load model: ${String(error)}`)
+        setStatus(`failed to load model: ${String(error)}`)
       }
       return
     }
@@ -210,7 +220,7 @@ export function StageTransparency(handle: Handle<StageTransparencyProps>): () =>
     for (let i = 0; i < total; i++) {
       if (signal.aborted) return
       const region = handle.props.regions[i]!
-      setStatus(`Processing sticker ${i + 1} of ${total}…`)
+      setStatus(`processing sticker ${i + 1} of ${total}…`)
       setRegionState(region.id, { status: 'processing' })
       try {
         const crop = cropImageDataForRegion(handle.props.source.imageData, region)
@@ -226,7 +236,7 @@ export function StageTransparency(handle: Handle<StageTransparencyProps>): () =>
     }
 
     if (!signal.aborted) {
-      setStatus('Done. Review the cards below, then continue.')
+      setStatus('done. review the cards below, then continue.')
     }
   }
 
@@ -324,7 +334,7 @@ export function StageTransparency(handle: Handle<StageTransparencyProps>): () =>
 
         <div mix={bottomBarStyle}>
           <button type="button" mix={[btnStyle, on('click', () => handle.props.onBack())]}>
-            ← Back to review
+            ← back to review
           </button>
           <span mix={spacerStyle} />
           <button
@@ -332,7 +342,7 @@ export function StageTransparency(handle: Handle<StageTransparencyProps>): () =>
             mix={[primaryBtnStyle, on('click', onNext)]}
             disabled={!canContinue}
           >
-            Next: finalize →
+            next: finalize →
           </button>
         </div>
       </div>
@@ -372,7 +382,7 @@ function renderCard(
           {state?.status === 'done' ? (
             <img src={state.previewUrl} alt="transparent result" mix={tileImageStyle} />
           ) : state?.status === 'processing' ? (
-            <div mix={tilePlaceholderStyle}>Processing…</div>
+            <div mix={tilePlaceholderStyle}>processing…</div>
           ) : state?.status === 'error' ? (
             <div mix={[tilePlaceholderStyle, errorTileStyle]}>{state.message}</div>
           ) : (
@@ -397,7 +407,7 @@ function renderCard(
               on('click', () => toggleDecision(region.id)),
             ]}
           >
-            {(state as Extract<RegionState, { status: 'done' }>).decision === 'keep' ? '✓ Keep' : '○ Skip'}
+            {(state as Extract<RegionState, { status: 'done' }>).decision === 'keep' ? '✓ keep' : '○ skip'}
           </button>
         ) : (
           <span mix={pendingTagStyle}>{status}</span>
@@ -406,7 +416,7 @@ function renderCard(
           type="button"
           mix={[btnStyle, on('click', () => onAdjustCrop(region.id))]}
         >
-          Adjust crop ↩
+          adjust crop ↩
         </button>
       </div>
     </div>

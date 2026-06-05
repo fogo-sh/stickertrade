@@ -156,7 +156,13 @@ export function StageFinalize(handle: Handle<StageFinalizeProps>): () => RemixNo
     return false
   }
 
-  function getCsrfToken(): string | null {
+  /**
+   * Read the CSRF token from the page's `<meta name="csrf-token">` tag.
+   * Re-read on every upload (not cached up front) so a token rotation
+   * mid-batch is picked up automatically. Named to avoid colliding with
+   * the server-side `getCsrfToken` helper from `remix/middleware/csrf`.
+   */
+  function readCsrfMeta(): string | null {
     const meta = document.querySelector('meta[name="csrf-token"]')
     return meta?.getAttribute('content') ?? null
   }
@@ -167,11 +173,15 @@ export function StageFinalize(handle: Handle<StageFinalizeProps>): () => RemixNo
    * for the caller, mainly so retries can `await` a single upload without
    * looping over a whole batch.
    */
-  async function uploadOne(
-    item: ItemView,
-    csrfToken: string,
-    index: number,
-  ): Promise<void> {
+  async function uploadOne(item: ItemView, index: number): Promise<void> {
+    const csrfToken = readCsrfMeta()
+    if (!csrfToken) {
+      setStatus(item.regionId, {
+        status: 'error',
+        message: 'missing csrf token; please refresh the page',
+      })
+      return
+    }
     setStatus(item.regionId, { status: 'uploading' })
     const rawName = names.get(item.regionId) ?? `sticker ${index + 1} of ${total}`
     const name = rawName.trim() || `sticker ${index + 1} of ${total}`
@@ -216,6 +226,16 @@ export function StageFinalize(handle: Handle<StageFinalizeProps>): () => RemixNo
       setStatus(item.regionId, { status: 'success', stickerSlug: '' })
       return
     }
+    // 403 most commonly means a stale CSRF token (long-lived page, session
+    // rotated). Surface a targeted message so the user knows to refresh
+    // rather than retry the same broken token.
+    if (res.status === 403) {
+      setStatus(item.regionId, {
+        status: 'error',
+        message: 'your session may have expired — refresh the page and try again',
+      })
+      return
+    }
     // Non-2xx: surface the response body (probably an error message).
     let message: string
     try {
@@ -236,11 +256,6 @@ export function StageFinalize(handle: Handle<StageFinalizeProps>): () => RemixNo
 
   async function uploadAll(): Promise<void> {
     if (uploading) return
-    const csrfToken = getCsrfToken()
-    if (!csrfToken) {
-      setBatchError('Missing CSRF token; please refresh the page and try again.')
-      return
-    }
     setBatchError(null)
     setUploading(true)
     try {
@@ -249,7 +264,7 @@ export function StageFinalize(handle: Handle<StageFinalizeProps>): () => RemixNo
         // Skip already-uploaded items so "Upload all" after a partial failure
         // only retries the ones that weren't successful last time.
         if (states.get(item.regionId)?.status === 'success') continue
-        await uploadOne(item, csrfToken, i)
+        await uploadOne(item, i)
       }
     } finally {
       setUploading(false)
@@ -257,15 +272,10 @@ export function StageFinalize(handle: Handle<StageFinalizeProps>): () => RemixNo
   }
 
   async function retryOne(regionId: string): Promise<void> {
-    const csrfToken = getCsrfToken()
-    if (!csrfToken) {
-      setBatchError('Missing CSRF token; please refresh the page and try again.')
-      return
-    }
     const index = items.findIndex((it) => it.regionId === regionId)
     if (index < 0) return
     setBatchError(null)
-    await uploadOne(items[index]!, csrfToken, index)
+    await uploadOne(items[index]!, index)
   }
 
   function onMount(_node: Element, signal: AbortSignal): void {
