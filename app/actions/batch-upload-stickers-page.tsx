@@ -46,12 +46,34 @@ export function BatchUploadStickersPage() {
         }
       >
         <main mix={mainStyle}>
-          <h1 mix={headingStyle}>batch upload stickers</h1>
+          <h1 mix={headingStyle}>
+            batch upload stickers <span mix={experimentalTagStyle}>experimental</span>
+          </h1>
           <p mix={blurbStyle}>
             upload one photo of multiple stickers laid out on a flat surface.
             we'll detect each sticker, remove backgrounds, and let you review
             before uploading them all.
           </p>
+          <aside mix={noticeStyle}>
+            <p mix={noticeHeadingStyle}>heads up</p>
+            <ul mix={noticeListStyle}>
+              <li>
+                this is a brand-new feature and may misbehave. if anything
+                breaks, you can always fall back to the{' '}
+                <a href={routes.uploadSticker.action.href()}>regular single-sticker
+                upload</a>.
+              </li>
+              <li>
+                background removal runs in your browser using a ~44 mb ml model.
+                first use downloads it; later uses are cached.
+              </li>
+              <li>
+                no images are sent to the server until the final step, and even
+                then it's the existing sticker-upload endpoint. nothing leaves
+                your device during detection or background removal.
+              </li>
+            </ul>
+          </aside>
           <BatchUploadStickersApp
             username={user.username}
             uploadStickerUrl={routes.uploadSticker.action.href()}
@@ -78,4 +100,44 @@ const headingStyle = css({
 const blurbStyle = css({
   marginBottom: '1.5rem',
   opacity: 0.8,
+})
+
+// Theme colors inlined as hex on this page because we use them here directly;
+// the rest of the feature lives under app/assets/ which can't reach theme.ts.
+const experimentalTagStyle = css({
+  display: 'inline-block',
+  marginLeft: '0.5rem',
+  padding: '0.125rem 0.5rem',
+  fontSize: '0.75rem',
+  fontWeight: 'normal',
+  background: '#f59e0b',
+  color: '#1c0f13',
+  borderRadius: '0.25rem',
+  verticalAlign: 'middle',
+  textTransform: 'uppercase',
+  letterSpacing: '0.05em',
+})
+
+const noticeStyle = css({
+  border: '1px solid #f59e0b66',
+  background: '#f59e0b14',
+  borderRadius: '0.5rem',
+  padding: '0.75rem 1rem',
+  marginBottom: '1.5rem',
+  fontSize: '0.875rem',
+})
+
+const noticeHeadingStyle = css({
+  margin: 0,
+  marginBottom: '0.5rem',
+  fontWeight: 'bold',
+  color: '#f59e0b',
+})
+
+const noticeListStyle = css({
+  margin: 0,
+  paddingLeft: '1.25rem',
+  '& li': { marginBottom: '0.25rem' },
+  '& li:last-child': { marginBottom: 0 },
+  '& a': { textDecoration: 'underline' },
 })
