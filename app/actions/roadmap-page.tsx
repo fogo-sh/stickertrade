@@ -1,4 +1,4 @@
-import { css } from 'remix/ui'
+import { css, type Handle } from 'remix/ui'
 
 import { Document } from '../ui/document.tsx'
 import type { HeaderUser } from '../ui/header.tsx'
@@ -12,8 +12,15 @@ export interface RoadmapTask {
   description?: string // already-rendered HTML
 }
 
-export function RoadmapPage() {
-  return ({ user, tasks }: { user: HeaderUser | null; tasks: RoadmapTask[] }) => (
+interface RoadmapPageProps {
+  user: HeaderUser | null
+  tasks: RoadmapTask[]
+}
+
+export function RoadmapPage(handle: Handle<RoadmapPageProps>) {
+  return () => {
+    const { user, tasks } = handle.props
+    return (
     <Document title="stickertrade - roadmap" user={user}>
       <main mix={css({ maxWidth: '32rem', margin: '0 auto' })}>
         <h1 mix={css({ fontSize: '1.5rem', marginBottom: '1rem' })}>roadmap</h1>
@@ -37,7 +44,8 @@ export function RoadmapPage() {
         </p>
       </main>
     </Document>
-  )
+    )
+  }
 }
 
 const listStyle = css({

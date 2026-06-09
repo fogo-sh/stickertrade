@@ -1,4 +1,4 @@
-import { css } from 'remix/ui'
+import { css, type Handle } from 'remix/ui'
 
 import { routes } from '../routes.ts'
 import { Document } from '../ui/document.tsx'
@@ -17,8 +17,9 @@ export interface StickerPageProps {
   }
 }
 
-export function StickerPage() {
-  return ({ user, sticker }: StickerPageProps) => {
+export function StickerPage(handle: Handle<StickerPageProps>) {
+  return () => {
+    const { user, sticker } = handle.props
     const canEdit =
       user != null && (user.username === sticker.owner?.username || user.role === 'ADMIN')
     const ownerLabel = sticker.owner ? `by ${sticker.owner.username}` : '(no owner)'

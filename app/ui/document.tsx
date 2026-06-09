@@ -1,4 +1,4 @@
-import { css, type RemixNode } from 'remix/ui'
+import { css, type Handle, type RemixNode } from 'remix/ui'
 
 import { routes } from '../routes.ts'
 import { Footer } from './footer.tsx'
@@ -21,35 +21,38 @@ export interface DocumentProps {
 
 const DEFAULT_TITLE = 'stickertrade'
 
-export function Document() {
-  return ({
-    children,
-    head,
-    title = DEFAULT_TITLE,
-    user = null,
-    showChrome = true,
-    og,
-  }: DocumentProps) => (
-    <html lang="en" mix={css({ height: '100%' })}>
-      <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-        <OgTags title={og?.title ?? title} {...og} />
-        <title>{title}</title>
-        {head}
-      </head>
-      <body mix={bodyStyle}>
-        <div mix={shellStyle}>
-          {showChrome ? <Header user={user} /> : null}
-          {showChrome ? <WipBanner /> : null}
-          <div mix={css({ paddingTop: '1.25rem', paddingBottom: '2rem' })}>{children}</div>
-        </div>
-        {showChrome ? <Footer /> : null}
-        <script type="module" src={routes.assets.href({ path: 'app/assets/entry.ts' })}></script>
-      </body>
-    </html>
-  )
+export function Document(handle: Handle<DocumentProps>) {
+  return () => {
+    const {
+      children,
+      head,
+      title = DEFAULT_TITLE,
+      user = null,
+      showChrome = true,
+      og,
+    } = handle.props
+    return (
+      <html lang="en" mix={css({ height: '100%' })}>
+        <head>
+          <meta charSet="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+          <OgTags title={og?.title ?? title} {...og} />
+          <title>{title}</title>
+          {head}
+        </head>
+        <body mix={bodyStyle}>
+          <div mix={shellStyle}>
+            {showChrome ? <Header user={user} /> : null}
+            {showChrome ? <WipBanner /> : null}
+            <div mix={css({ paddingTop: '1.25rem', paddingBottom: '2rem' })}>{children}</div>
+          </div>
+          {showChrome ? <Footer /> : null}
+          <script type="module" src={routes.assets.href({ path: 'app/assets/entry.ts' })}></script>
+        </body>
+      </html>
+    )
+  }
 }
 
 const FONT_STACK =

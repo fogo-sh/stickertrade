@@ -1,4 +1,4 @@
-import { css } from 'remix/ui'
+import { css, type Handle } from 'remix/ui'
 
 import { routes } from '../routes.ts'
 import { Document } from '../ui/document.tsx'
@@ -37,18 +37,20 @@ export interface EditProfilePageProps {
   newToken?: { name: string; plaintext: string }
 }
 
-export function EditProfilePage() {
-  return ({
-    user,
-    avatarErrors = {},
-    avatarFlash,
-    passwordErrors = {},
-    passwordFlash,
-    tokens = [],
-    tokenErrors = {},
-    tokenFlash,
-    newToken,
-  }: EditProfilePageProps) => (
+export function EditProfilePage(handle: Handle<EditProfilePageProps>) {
+  return () => {
+    const {
+      user,
+      avatarErrors = {},
+      avatarFlash,
+      passwordErrors = {},
+      passwordFlash,
+      tokens = [],
+      tokenErrors = {},
+      tokenFlash,
+      newToken,
+    } = handle.props
+    return (
     <Document title="stickertrade - edit profile" user={user}>
       <main mix={css({ maxWidth: '28rem', margin: '0 auto' })}>
         <h1 mix={css({ fontSize: '1.5rem', marginBottom: '1rem' })}>edit profile</h1>
@@ -185,7 +187,8 @@ export function EditProfilePage() {
         </section>
       </main>
     </Document>
-  )
+    )
+  }
 }
 
 const sectionStyle = css({

@@ -1,4 +1,4 @@
-import { css } from 'remix/ui'
+import { css, type Handle } from 'remix/ui'
 
 import { routes } from '../routes.ts'
 import { Document } from '../ui/document.tsx'
@@ -11,8 +11,10 @@ export interface UploadStickerPageProps {
   values?: { name?: string }
 }
 
-export function UploadStickerPage() {
-  return ({ user, errors = {}, values = {} }: UploadStickerPageProps) => (
+export function UploadStickerPage(handle: Handle<UploadStickerPageProps>) {
+  return () => {
+    const { user, errors = {}, values = {} } = handle.props
+    return (
     <Document title="stickertrade - upload sticker" user={user}>
       <main mix={css({ maxWidth: '32rem', margin: '0 auto' })}>
         <h1 mix={css({ fontSize: '1.5rem', marginBottom: '1rem' })}>upload sticker</h1>
@@ -33,7 +35,8 @@ export function UploadStickerPage() {
         </p>
       </main>
     </Document>
-  )
+    )
+  }
 }
 
 const linkRowStyle = css({

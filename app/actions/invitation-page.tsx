@@ -1,4 +1,4 @@
-import { css } from 'remix/ui'
+import { css, type Handle } from 'remix/ui'
 
 import { routes } from '../routes.ts'
 import { Document } from '../ui/document.tsx'
@@ -12,14 +12,16 @@ export interface InvitationPageProps {
   values?: { username?: string }
 }
 
-export function InvitationPage() {
-  return ({
-    invitationId,
-    from,
-    createdRelative,
-    errors = {},
-    values = {},
-  }: InvitationPageProps) => (
+export function InvitationPage(handle: Handle<InvitationPageProps>) {
+  return () => {
+    const {
+      invitationId,
+      from,
+      createdRelative,
+      errors = {},
+      values = {},
+    } = handle.props
+    return (
     <Document title={`stickertrade - invitation from ${from.username}`}>
       <main mix={css({ maxWidth: '32rem', margin: '0 auto' })}>
         <h1 mix={titleStyle}>you have been invited to stickertrade! 🎉</h1>
@@ -55,7 +57,8 @@ export function InvitationPage() {
         </div>
       </main>
     </Document>
-  )
+    )
+  }
 }
 
 const titleStyle = css({

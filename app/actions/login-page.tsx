@@ -1,4 +1,4 @@
-import { css } from 'remix/ui'
+import { css, type Handle } from 'remix/ui'
 
 import { routes } from '../routes.ts'
 import { Document } from '../ui/document.tsx'
@@ -10,8 +10,10 @@ export interface LoginPageProps {
   flash?: string
 }
 
-export function LoginPage() {
-  return ({ errors = {}, values = {}, flash }: LoginPageProps) => (
+export function LoginPage(handle: Handle<LoginPageProps>) {
+  return () => {
+    const { errors = {}, values = {}, flash } = handle.props
+    return (
     <Document title="stickertrade - login">
       <main mix={css({ maxWidth: '24rem', margin: '0 auto' })}>
         <h1 mix={css({ fontSize: '1.5rem', marginBottom: '1rem' })}>login</h1>
@@ -25,5 +27,6 @@ export function LoginPage() {
         </form>
       </main>
     </Document>
-  )
+    )
+  }
 }

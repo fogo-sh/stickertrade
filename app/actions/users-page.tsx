@@ -1,11 +1,18 @@
-import { css } from 'remix/ui'
+import { css, type Handle } from 'remix/ui'
 
 import { Document } from '../ui/document.tsx'
 import type { HeaderUser } from '../ui/header.tsx'
 import { UserCard, type UserCardUser } from '../ui/user-card.tsx'
 
-export function UsersPage() {
-  return ({ user, users }: { user: HeaderUser | null; users: UserCardUser[] }) => (
+interface UsersPageProps {
+  user: HeaderUser | null
+  users: UserCardUser[]
+}
+
+export function UsersPage(handle: Handle<UsersPageProps>) {
+  return () => {
+    const { user, users } = handle.props
+    return (
     <Document title="stickertrade - users" user={user}>
       <main>
         <p mix={heading}>users</p>
@@ -16,7 +23,8 @@ export function UsersPage() {
         </div>
       </main>
     </Document>
-  )
+    )
+  }
 }
 
 const heading = css({

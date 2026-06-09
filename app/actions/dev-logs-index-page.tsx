@@ -1,4 +1,4 @@
-import { css } from 'remix/ui'
+import { css, type Handle } from 'remix/ui'
 
 import { routes } from '../routes.ts'
 import { Document } from '../ui/document.tsx'
@@ -11,8 +11,15 @@ export interface DevLogSummary {
   dateString: string
 }
 
-export function DevLogsIndexPage() {
-  return ({ user, logs }: { user: HeaderUser | null; logs: DevLogSummary[] }) => (
+interface DevLogsIndexPageProps {
+  user: HeaderUser | null
+  logs: DevLogSummary[]
+}
+
+export function DevLogsIndexPage(handle: Handle<DevLogsIndexPageProps>) {
+  return () => {
+    const { user, logs } = handle.props
+    return (
     <Document title="stickertrade - dev logs" user={user}>
       <main mix={css({ maxWidth: '32rem', margin: '0 auto' })}>
         <h1 mix={css({ fontSize: '1.5rem', marginBottom: '1rem' })}>dev logs</h1>
@@ -43,7 +50,8 @@ export function DevLogsIndexPage() {
         </ul>
       </main>
     </Document>
-  )
+    )
+  }
 }
 
 const feedLinkStyle = css({

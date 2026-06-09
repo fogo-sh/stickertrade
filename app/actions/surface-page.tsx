@@ -1,4 +1,4 @@
-import { css } from 'remix/ui'
+import { css, type Handle } from 'remix/ui'
 
 import { routes } from '../routes.ts'
 import { Document } from '../ui/document.tsx'
@@ -24,8 +24,9 @@ export interface SurfacePageProps {
   canEdit: boolean
 }
 
-export function SurfacePage() {
-  return ({ user, surface, images, canEdit }: SurfacePageProps) => {
+export function SurfacePage(handle: Handle<SurfacePageProps>) {
+  return () => {
+    const { user, surface, images, canEdit } = handle.props
     const description = surface.description ?? `A sticker surface by ${surface.owner.username}.`
     const primaryImage = images[0]
     const galleryImages = images.slice(1)

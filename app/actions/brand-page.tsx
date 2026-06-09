@@ -1,11 +1,17 @@
-import { css } from 'remix/ui'
+import { css, type Handle } from 'remix/ui'
 
 import { Document } from '../ui/document.tsx'
 import { colors } from '../ui/theme.ts'
 import type { HeaderUser } from '../ui/header.tsx'
 
-export function BrandPage() {
-  return ({ user }: { user: HeaderUser | null }) => (
+interface BrandPageProps {
+  user: HeaderUser | null
+}
+
+export function BrandPage(handle: Handle<BrandPageProps>) {
+  return () => {
+    const { user } = handle.props
+    return (
     <Document title="stickertrade - brand" user={user}>
       <main mix={css({ maxWidth: '42rem', margin: '0 auto' })}>
         <h1 mix={h1}>brand</h1>
@@ -46,7 +52,8 @@ export function BrandPage() {
         </div>
       </main>
     </Document>
-  )
+    )
+  }
 }
 
 const h1 = css({ fontSize: '1.5rem', marginBottom: '0.5rem' })

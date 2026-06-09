@@ -1,4 +1,4 @@
-import { css } from 'remix/ui'
+import { css, type Handle } from 'remix/ui'
 
 import { routes } from '../routes.ts'
 import { Document } from '../ui/document.tsx'
@@ -33,8 +33,10 @@ export interface EditSurfacePageProps {
   flash?: string
 }
 
-export function EditSurfacePage() {
-  return ({ user, surface, images, errors = {}, flash }: EditSurfacePageProps) => (
+export function EditSurfacePage(handle: Handle<EditSurfacePageProps>) {
+  return () => {
+    const { user, surface, images, errors = {}, flash } = handle.props
+    return (
     <Document title={`stickertrade - edit ${surface.name}`} user={user}>
       <main mix={css({ maxWidth: '32rem', margin: '0 auto' })}>
         <h1 mix={css({ fontSize: '1.5rem', marginBottom: '1rem' })}>edit surface</h1>
@@ -131,7 +133,8 @@ export function EditSurfacePage() {
         </section>
       </main>
     </Document>
-  )
+    )
+  }
 }
 
 const textareaExtraStyle = css({
