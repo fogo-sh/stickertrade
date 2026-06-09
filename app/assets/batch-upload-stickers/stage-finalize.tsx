@@ -8,11 +8,15 @@ import type { TransparencyResult } from './transparency.ts'
 const LIGHT_500 = '#f1eee4'
 const PRIMARY_500 = '#f7a1c4'
 const DARK_500 = '#1c0f13'
-const SUCCESS = '#4ade80'
-const DANGER = '#ef4444'
+// SUCCESS / DANGER mirror the `success.500` / `danger.500` tokens on
+// /brand. Inlined here because the asset server can't import theme.ts.
+const SUCCESS = '#a8c69b'
+const DANGER = '#c75d5d'
 
-const CHECKER_LIGHT = '#222'
-const CHECKER_DARK = '#1a1a1a'
+// Brand-tinted checkerboard (mirrors canvas.ts so the transparent-image
+// backdrop reads the same across the canvas and the css-rendered preview).
+const CHECKER_LIGHT = '#241a1f'
+const CHECKER_DARK = '#1a1115'
 const CHECKER_SIZE = '12px'
 
 export interface StageFinalizeItem {

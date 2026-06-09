@@ -67,14 +67,14 @@ const cardStyle = css({
   width: '12rem',
   padding: '0.5rem',
   border: `2px solid ${colors.light[500]}40`,
-  background: '#0e0709',
+  background: colors.dark[400],
   '&:hover': { borderColor: colors.primary[500] },
 })
 
 const imageWrapStyle = css({
   width: '100%',
   aspectRatio: '1 / 1',
-  background: '#000',
+  background: colors.dark[600],
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',

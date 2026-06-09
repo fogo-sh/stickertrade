@@ -81,7 +81,7 @@ const cardStyle = css({
   marginBottom: '2rem',
   padding: '0.5rem',
   border: `2px solid ${colors.light[500]}40`,
-  background: '#0e0709',
+  background: colors.dark[400],
   textDecoration: 'none',
   color: 'inherit',
   '&:hover': { borderColor: colors.primary[500] },
@@ -110,7 +110,7 @@ const uploadIconStyle = css({
 
 const imageWrapStyle = css({
   width: '100%',
-  background: '#000',
+  background: colors.dark[600],
 })
 
 const imageStyle = css({

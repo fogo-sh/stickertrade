@@ -8,7 +8,9 @@ import type { TransparencyResult } from './transparency.ts'
 const LIGHT_500 = '#f1eee4'
 const PRIMARY_500 = '#f7a1c4'
 const DARK_500 = '#1c0f13'
-const DANGER = '#ef4444'
+// DANGER mirrors the `danger.500` token on /brand. Inlined here because
+// the asset server can't import theme.ts.
+const DANGER = '#c75d5d'
 
 export type RegionDecision = 'keep' | 'skip'
 
@@ -485,8 +487,9 @@ const tileRowStyle = css({
   gap: '0.5rem',
 })
 
-const CHECKER_LIGHT = '#222'
-const CHECKER_DARK = '#1a1a1a'
+// Brand-tinted checkerboard, matches canvas.ts and stage-finalize.tsx.
+const CHECKER_LIGHT = '#241a1f'
+const CHECKER_DARK = '#1a1115'
 const CHECKER_SIZE = '12px'
 
 // Checkerboard backdrop: two diagonal gradients offset by half a tile. The
