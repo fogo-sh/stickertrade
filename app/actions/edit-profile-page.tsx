@@ -250,7 +250,7 @@ const tokenRowStyle = css({
 const newTokenBoxStyle = css({
   marginBottom: '1rem',
   padding: '0.75rem',
-  background: '#0e0709',
+  background: colors.dark[400],
   border: `1px solid ${colors.primary[500]}`,
 })
 

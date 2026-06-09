@@ -86,7 +86,7 @@ function WipBanner() {
     <div mix={css({ display: 'flex', flexDirection: 'column', alignItems: 'center' })}>
       <p
         mix={css({
-          background: '#ef4444',
+          background: colors.danger[500],
           color: colors.dark[500],
           fontSize: '1.25rem',
           margin: '2rem 0.5rem 0',

@@ -45,12 +45,12 @@ const markdownStyle = css({
   '& ul, & ol': { paddingLeft: '1.25rem', margin: '0.5rem 0' },
   '& li': { margin: '0.25rem 0' },
   '& code': {
-    background: '#0e0709',
+    background: colors.dark[400],
     padding: '0.1rem 0.3rem',
     fontSize: '0.9em',
   },
   '& pre': {
-    background: '#0e0709',
+    background: colors.dark[400],
     padding: '0.75rem',
     overflow: 'auto',
   },

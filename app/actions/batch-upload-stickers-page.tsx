@@ -6,6 +6,7 @@ import { BatchUploadStickersApp } from '../assets/batch-upload-stickers/controll
 import { routes } from '../routes.ts'
 import { Document } from '../ui/document.tsx'
 import type { HeaderUser } from '../ui/header.tsx'
+import { colors } from '../ui/theme.ts'
 
 export interface BatchUploadStickersPageProps {
   user: HeaderUser
@@ -103,16 +104,17 @@ const blurbStyle = css({
   opacity: 0.8,
 })
 
-// Theme colors inlined as hex on this page because we use them here directly;
-// the rest of the feature lives under app/assets/ which can't reach theme.ts.
+// The `secondary` (mustard) token plays the "heads up / experimental" role
+// in the palette — see /brand. Same gentle border + tinted-background
+// pattern as before, just on-brand.
 const experimentalTagStyle = css({
   display: 'inline-block',
   marginLeft: '0.5rem',
   padding: '0.125rem 0.5rem',
   fontSize: '0.75rem',
   fontWeight: 'normal',
-  background: '#f59e0b',
-  color: '#1c0f13',
+  background: colors.secondary[500],
+  color: colors.dark[500],
   borderRadius: '0.25rem',
   verticalAlign: 'middle',
   textTransform: 'uppercase',
@@ -120,8 +122,8 @@ const experimentalTagStyle = css({
 })
 
 const noticeStyle = css({
-  border: '1px solid #f59e0b66',
-  background: '#f59e0b14',
+  border: `1px solid ${colors.secondary[500]}66`,
+  background: `${colors.secondary[500]}14`,
   borderRadius: '0.5rem',
   padding: '0.75rem 1rem',
   marginBottom: '1.5rem',
@@ -132,7 +134,7 @@ const noticeHeadingStyle = css({
   margin: 0,
   marginBottom: '0.5rem',
   fontWeight: 'bold',
-  color: '#f59e0b',
+  color: colors.secondary[500],
 })
 
 const noticeListStyle = css({

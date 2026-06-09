@@ -65,7 +65,7 @@ export function StickerPage(handle: Handle<StickerPageProps>) {
 const imageWrapStyle = css({
   width: '100%',
   border: `2px solid ${colors.light[500]}40`,
-  background: '#000',
+  background: colors.dark[600],
 })
 
 const imageStyle = css({

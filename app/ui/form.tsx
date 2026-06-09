@@ -99,7 +99,7 @@ export const fieldStyle = css({ display: 'block', marginBottom: '0.75rem' })
 export const inputStyle = css({
   width: '100%',
   padding: '0.5rem 0.75rem',
-  background: '#0e0709',
+  background: colors.dark[400],
   color: colors.light[500],
   border: `1px solid ${colors.light[500]}55`,
   font: 'inherit',
@@ -133,7 +133,7 @@ export const helperTextStyle = css({
 export const flashStyle = css({
   marginBottom: '0.75rem',
   padding: '0.5rem 0.75rem',
-  background: '#0e0709',
+  background: colors.dark[400],
   border: `1px solid ${colors.primary[500]}`,
   color: colors.primary[500],
 })

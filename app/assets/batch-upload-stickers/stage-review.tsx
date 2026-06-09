@@ -7,6 +7,7 @@ import type { Region } from './types.ts'
 // outside the `app/ui/theme.ts` allow list).
 const LIGHT_500 = '#f1eee4'
 const PRIMARY_500 = '#f7a1c4'
+const DARK_400 = '#0e0709'
 const DARK_500 = '#1c0f13'
 
 export interface StageReviewProps {
@@ -352,7 +353,7 @@ const canvasWrapStyle = css({
   // page container's max-width. Switch to flex-1 once the page lives inside
   // a true viewport-height shell.
   height: 'min(70vh, 700px)',
-  background: '#0e0709',
+  background: DARK_400,
   border: `1px solid ${LIGHT_500}33`,
   borderRadius: '0.25rem',
   overflow: 'hidden',

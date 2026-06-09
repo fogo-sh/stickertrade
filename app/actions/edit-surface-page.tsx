@@ -165,7 +165,7 @@ const galleryImgStyle = css({
   maxHeight: '22rem',
   objectFit: 'contain',
   display: 'block',
-  background: '#000',
+  background: colors.dark[600],
 })
 
 const galleryActionsStyle = css({

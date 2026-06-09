@@ -7,10 +7,19 @@ import type { Region } from './types.ts'
  * component owns event registration.
  *
  * Theme colors inlined (asset server's allow list excludes `app/ui/theme.ts`).
- * Hex values match `light.500` and `primary.500` tokens. Match `app/ui/theme.ts`.
+ * Hex values mirror `light.500`, `primary.500`, and `dark.500` tokens.
+ * Match `app/ui/theme.ts` and keep `stage-{transparency,finalize}.tsx`'s
+ * checker tiles in sync with `CHECKER_DARK` / `CHECKER_LIGHT` below.
  */
 const LIGHT_500 = '#f1eee4'
 const PRIMARY_500 = '#f7a1c4'
+const DARK_500 = '#1c0f13'
+
+// Brand-tinted checkerboard tile pair. `CHECKER_DARK` sits one notch
+// brighter than dark.500 to read as the "behind transparent" backdrop,
+// `CHECKER_LIGHT` is the alternating square.
+const CHECKER_DARK = '#1a1115'
+const CHECKER_LIGHT = '#241a1f'
 
 /** Minimum bbox dimension in image-space pixels (mirrors the Python tool). */
 const MIN_REGION_DIM = 12
@@ -359,9 +368,9 @@ export function draw(ctx: CanvasRenderingContext2D, state: CanvasState): void {
 
 function drawCheckerboard(ctx: CanvasRenderingContext2D, w: number, h: number): void {
   const size = 12
-  ctx.fillStyle = '#1a1115'
+  ctx.fillStyle = CHECKER_DARK
   ctx.fillRect(0, 0, w, h)
-  ctx.fillStyle = '#241a1f'
+  ctx.fillStyle = CHECKER_LIGHT
   for (let y = 0; y < h; y += size) {
     for (let x = ((y / size) % 2) * size; x < w; x += size * 2) {
       ctx.fillRect(x, y, size, size)
@@ -371,8 +380,11 @@ function drawCheckerboard(ctx: CanvasRenderingContext2D, w: number, h: number): 
 
 function drawHandle(ctx: CanvasRenderingContext2D, cx: number, cy: number): void {
   const half = HANDLE_DRAW_PX / 2
+  // `#ffffff` is functional (max-contrast handle fill against any image),
+  // not a brand color. Handle outline matches body bg so it tucks visually
+  // into the surrounding canvas.
   ctx.fillStyle = '#ffffff'
-  ctx.strokeStyle = '#1d2430'
+  ctx.strokeStyle = DARK_500
   ctx.lineWidth = 1
   ctx.fillRect(cx - half, cy - half, HANDLE_DRAW_PX, HANDLE_DRAW_PX)
   ctx.strokeRect(cx - half, cy - half, HANDLE_DRAW_PX, HANDLE_DRAW_PX)
