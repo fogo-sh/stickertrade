@@ -1,18 +1,19 @@
-import { css } from 'remix/ui'
+import { css, type Handle } from 'remix/ui'
 
 import { routes } from '../routes.ts'
 import { Document } from '../ui/document.tsx'
 import type { HeaderUser } from '../ui/header.tsx'
 import { colors } from '../ui/theme.ts'
 
-export function DevLogPage() {
-  return ({
-    user,
-    log,
-  }: {
-    user: HeaderUser | null
-    log: { slug: string; title: string; dateString: string; html: string }
-  }) => (
+interface DevLogPageProps {
+  user: HeaderUser | null
+  log: { slug: string; title: string; dateString: string; html: string }
+}
+
+export function DevLogPage(handle: Handle<DevLogPageProps>) {
+  return () => {
+    const { user, log } = handle.props
+    return (
     <Document
       title={`stickertrade - dev log | ${log.title}`}
       user={user}
@@ -31,7 +32,8 @@ export function DevLogPage() {
         <div mix={markdownStyle} innerHTML={log.html} />
       </main>
     </Document>
-  )
+    )
+  }
 }
 
 const markdownStyle = css({

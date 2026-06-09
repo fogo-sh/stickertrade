@@ -1,4 +1,4 @@
-import { css } from 'remix/ui'
+import { css, type Handle } from 'remix/ui'
 
 import { routes } from '../routes.ts'
 import { Document } from '../ui/document.tsx'
@@ -15,8 +15,10 @@ export interface HomePageProps {
   surfaceOfTheDay: SurfaceCardSurface | null
 }
 
-export function HomePage() {
-  return ({ user, stickers, users, surfaceOfTheDay }: HomePageProps) => (
+export function HomePage(handle: Handle<HomePageProps>) {
+  return () => {
+    const { user, stickers, users, surfaceOfTheDay } = handle.props
+    return (
     <Document
       user={user}
       og={{
@@ -67,7 +69,8 @@ export function HomePage() {
         </div>
       </main>
     </Document>
-  )
+    )
+  }
 }
 
 const sectionHeading = css({

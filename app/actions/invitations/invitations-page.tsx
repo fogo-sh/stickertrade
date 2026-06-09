@@ -1,4 +1,4 @@
-import { css } from 'remix/ui'
+import { css, type Handle } from 'remix/ui'
 
 import { CopyButton } from '../../assets/copy-button.tsx'
 import { routes } from '../../routes.ts'
@@ -20,8 +20,9 @@ export interface InvitationsPageProps {
   invitationsEnabled: boolean
 }
 
-export function InvitationsPage() {
-  return ({ user, invitations, remaining, invitationsEnabled }: InvitationsPageProps) => {
+export function InvitationsPage(handle: Handle<InvitationsPageProps>) {
+  return () => {
+    const { user, invitations, remaining, invitationsEnabled } = handle.props
     const isAdmin = user.role === 'ADMIN'
     const blocked = !invitationsEnabled && !isAdmin
     return (

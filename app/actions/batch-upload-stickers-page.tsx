@@ -1,6 +1,6 @@
 import { getContext } from 'remix/middleware/async-context'
 import { getCsrfToken } from 'remix/middleware/csrf'
-import { css } from 'remix/ui'
+import { css, type Handle } from 'remix/ui'
 
 import { BatchUploadStickersApp } from '../assets/batch-upload-stickers/controller.tsx'
 import { routes } from '../routes.ts'
@@ -20,8 +20,9 @@ export interface BatchUploadStickersPageProps {
 const TRANSFORMERS_VERSION = '4.2.0'
 const TRANSFORMERS_CDN = `https://cdn.jsdelivr.net/npm/@huggingface/transformers@${TRANSFORMERS_VERSION}/+esm`
 
-export function BatchUploadStickersPage() {
-  return ({ user }: BatchUploadStickersPageProps) => {
+export function BatchUploadStickersPage(handle: Handle<BatchUploadStickersPageProps>) {
+  return () => {
+    const { user } = handle.props
     // Self-resolve the CSRF token here (same pattern as `CsrfField`); the
     // client bundle reads it back from the `<meta>` tag to POST to
     // `/upload-sticker` from JS without a server-rendered form.

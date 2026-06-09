@@ -1,11 +1,18 @@
-import { css } from 'remix/ui'
+import { css, type Handle } from 'remix/ui'
 
 import { Document } from '../ui/document.tsx'
 import type { HeaderUser } from '../ui/header.tsx'
 import { SurfaceCard, type SurfaceCardSurface } from '../ui/surface-card.tsx'
 
-export function SurfacesPage() {
-  return ({ user, surfaces }: { user: HeaderUser | null; surfaces: SurfaceCardSurface[] }) => (
+interface SurfacesPageProps {
+  user: HeaderUser | null
+  surfaces: SurfaceCardSurface[]
+}
+
+export function SurfacesPage(handle: Handle<SurfacesPageProps>) {
+  return () => {
+    const { user, surfaces } = handle.props
+    return (
     <Document title="stickertrade - surfaces" user={user}>
       <main mix={mainStyle}>
         <p mix={heading}>surfaces</p>
@@ -20,7 +27,8 @@ export function SurfacesPage() {
         )}
       </main>
     </Document>
-  )
+    )
+  }
 }
 
 const mainStyle = css({ maxWidth: '40rem', margin: '0 auto' })

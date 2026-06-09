@@ -1,4 +1,4 @@
-import { css } from 'remix/ui'
+import { css, type Handle } from 'remix/ui'
 
 import { routes } from '../routes.ts'
 import { Document } from '../ui/document.tsx'
@@ -20,8 +20,10 @@ export interface EditStickerPageProps {
   flash?: string
 }
 
-export function EditStickerPage() {
-  return ({ user, sticker, errors = {}, flash }: EditStickerPageProps) => (
+export function EditStickerPage(handle: Handle<EditStickerPageProps>) {
+  return () => {
+    const { user, sticker, errors = {}, flash } = handle.props
+    return (
     <Document title={`stickertrade - edit ${sticker.name}`} user={user}>
       <main mix={css({ maxWidth: '32rem', margin: '0 auto' })}>
         <h1 mix={css({ fontSize: '1.5rem', marginBottom: '1rem' })}>edit sticker</h1>
@@ -55,7 +57,8 @@ export function EditStickerPage() {
         </form>
       </main>
     </Document>
-  )
+    )
+  }
 }
 
 const previewStyle = css({

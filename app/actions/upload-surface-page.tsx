@@ -1,4 +1,4 @@
-import { css } from 'remix/ui'
+import { css, type Handle } from 'remix/ui'
 
 import { routes } from '../routes.ts'
 import { Document } from '../ui/document.tsx'
@@ -25,8 +25,10 @@ const textareaExtraStyle = css({
   fontFamily: 'inherit',
 })
 
-export function UploadSurfacePage() {
-  return ({ user, errors = {}, values = {} }: UploadSurfacePageProps) => (
+export function UploadSurfacePage(handle: Handle<UploadSurfacePageProps>) {
+  return () => {
+    const { user, errors = {}, values = {} } = handle.props
+    return (
     <Document title="stickertrade - upload surface" user={user}>
       <main mix={css({ maxWidth: '32rem', margin: '0 auto' })}>
         <h1 mix={css({ fontSize: '1.5rem', marginBottom: '1rem' })}>upload surface</h1>
@@ -63,5 +65,6 @@ export function UploadSurfacePage() {
         </form>
       </main>
     </Document>
-  )
+    )
+  }
 }

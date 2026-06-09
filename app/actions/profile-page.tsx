@@ -1,4 +1,4 @@
-import { css } from 'remix/ui'
+import { css, type Handle } from 'remix/ui'
 
 import { routes } from '../routes.ts'
 import { Document } from '../ui/document.tsx'
@@ -22,8 +22,9 @@ export interface ProfilePageProps {
   }
 }
 
-export function ProfilePage() {
-  return ({ user, profile }: ProfilePageProps) => {
+export function ProfilePage(handle: Handle<ProfilePageProps>) {
+  return () => {
+    const { user, profile } = handle.props
     const isOwner = user?.username === profile.username
     const stickerCount = profile.stickers.length
     return (

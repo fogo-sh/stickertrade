@@ -1,4 +1,4 @@
-import { css } from 'remix/ui'
+import { css, type Handle } from 'remix/ui'
 
 import { routes } from '../../routes.ts'
 import { Document } from '../../ui/document.tsx'
@@ -15,18 +15,17 @@ export interface AdminUserRow {
   updatedRelative: string
 }
 
-export function AdminUsersPage() {
-  return ({
-    user,
-    users,
-    page,
-    hasNext,
-  }: {
-    user: HeaderUser
-    users: AdminUserRow[]
-    page: number
-    hasNext: boolean
-  }) => (
+interface AdminUsersPageProps {
+  user: HeaderUser
+  users: AdminUserRow[]
+  page: number
+  hasNext: boolean
+}
+
+export function AdminUsersPage(handle: Handle<AdminUsersPageProps>) {
+  return () => {
+    const { user, users, page, hasNext } = handle.props
+    return (
     <Document title="stickertrade - admin / users" user={user}>
       <main>
         <div mix={headerStyle}>
@@ -84,7 +83,8 @@ export function AdminUsersPage() {
         </table>
       </main>
     </Document>
-  )
+    )
+  }
 }
 
 const headerStyle = css({
