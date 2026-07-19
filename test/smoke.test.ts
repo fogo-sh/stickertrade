@@ -742,9 +742,46 @@ describe('api: stickers', () => {
       assert.match(payload.sticker.slug, /^api-created-[a-z0-9]{6}$/)
       assert.equal(payload.sticker.owner?.username, 'liam')
 
+      const created = await env.db.findOne(stickers, { where: { id: payload.sticker.id } })
+      assert.ok(created)
+      assert.equal(created.slug, payload.sticker.slug)
+
+      const apiList = await env.fetch(new Request(buildUrl(routes.api.stickersIndex.href())))
+      assert.equal(apiList.status, 200)
+      const apiListPayload = (await apiList.json()) as { stickers: Array<{ slug: string }> }
+      assert.equal(apiListPayload.stickers[0]?.slug, payload.sticker.slug)
+
+      const userStickers = await env.fetch(
+        new Request(buildUrl(routes.api.userStickers.href({ username: 'liam' }))),
+      )
+      assert.equal(userStickers.status, 200)
+      const userStickersPayload = (await userStickers.json()) as {
+        stickers: Array<{ slug: string }>
+      }
+      assert.equal(userStickersPayload.stickers[0]?.slug, payload.sticker.slug)
+
       const home = await env.fetch(new Request(buildUrl(routes.home.href())))
       assert.equal(home.status, 200)
-      assert.match(await home.text(), new RegExp(`/sticker/${payload.sticker.slug}`))
+      const homeHtml = await home.text()
+      assert.match(homeHtml, new RegExp(`/sticker/${payload.sticker.slug}`))
+
+      const stickersPage = await env.fetch(new Request(buildUrl(routes.stickers.href())))
+      assert.equal(stickersPage.status, 200)
+      const stickersHtml = await stickersPage.text()
+      assert.match(stickersHtml, new RegExp(`/sticker/${payload.sticker.slug}`))
+
+      const profile = await env.fetch(
+        new Request(buildUrl(routes.profile.href({ username: 'liam' }))),
+      )
+      assert.equal(profile.status, 200)
+      const profileHtml = await profile.text()
+      assert.match(profileHtml, new RegExp(`/sticker/${payload.sticker.slug}`))
+
+      const stickerPage = await env.fetch(
+        new Request(buildUrl(routes.sticker.href({ slug: payload.sticker.slug }))),
+      )
+      assert.equal(stickerPage.status, 200)
+      assert.match(await stickerPage.text(), /api created/)
     } finally {
       env.cleanup()
     }
