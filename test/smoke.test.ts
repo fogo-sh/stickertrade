@@ -736,10 +736,15 @@ describe('api: stickers', () => {
       )
       assert.equal(res.status, 201)
       const payload = (await res.json()) as {
-        sticker: { id: string; name: string; owner: { username: string } | null }
+        sticker: { id: string; name: string; slug: string; owner: { username: string } | null }
       }
       assert.equal(payload.sticker.name, 'api created')
+      assert.match(payload.sticker.slug, /^api-created-[a-z0-9]{6}$/)
       assert.equal(payload.sticker.owner?.username, 'liam')
+
+      const home = await env.fetch(new Request(buildUrl(routes.home.href())))
+      assert.equal(home.status, 200)
+      assert.match(await home.text(), new RegExp(`/sticker/${payload.sticker.slug}`))
     } finally {
       env.cleanup()
     }

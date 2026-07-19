@@ -150,9 +150,11 @@ export default createController(routes.api, {
       const db = context.get(Database)
       const now = Date.now()
       const id = randomUUID()
+      const slug = generateContentSlug(name)
       await db.create(stickers, {
         id,
         name,
+        slug,
         image_url: storedImageUrl,
         owner_id: user.id,
         created_at: now,
