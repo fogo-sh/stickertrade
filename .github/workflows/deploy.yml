@@ -42,10 +42,32 @@ jobs:
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
+        id: image
         with:
           context: .
+          pull: true
+          no-cache: true
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Verify image Node version and TLS distrust
+        run: |
+          docker run --rm -i --entrypoint node ghcr.io/${{ github.repository }}@${{ steps.image.outputs.digest }} - <<'NODE'
+          const assert = require('node:assert/strict');
+          assert.equal(process.versions.node, '24.22.1');
+          (async () => {
+            const good = await fetch('https://nodejs.org', { signal: AbortSignal.timeout(20000) });
+            assert.ok(good.ok);
+            console.log('PASS normal HTTPS', good.status, process.version);
+            for (const host of ['dv-g3b-emudhra', 'dv-g3b-aaa-emudhra']) {
+              const url = `https://${host}.we-have-a-problem.com/`;
+              await assert.rejects(fetch(url, { signal: AbortSignal.timeout(20000) }), (error) => {
+                const code = error.cause?.code;
+                console.log('TLS rejection', url, code);
+                return ['CERT_HAS_EXPIRED', 'UNABLE_TO_GET_ISSUER_CERT_LOCALLY', 'UNABLE_TO_VERIFY_LEAF_SIGNATURE', 'CERT_REVOKED', 'CERT_SIGNATURE_FAILURE'].includes(code);
+              });
+            }
+          })().catch((error) => { console.error(error); process.exit(1); });
+          NODE

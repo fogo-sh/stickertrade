@@ -1,0 +1,40 @@
+name: Container security smoke
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - name: Build fresh release image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          pull: true
+          no-cache: true
+          load: true
+          tags: security-smoke:local
+      - name: Verify image Node version and TLS distrust
+        run: |
+          docker run --rm -i --entrypoint node security-smoke:local - <<'NODE'
+          const assert = require('node:assert/strict');
+          assert.equal(process.versions.node, '24.22.1');
+          (async () => {
+            const good = await fetch('https://nodejs.org', { signal: AbortSignal.timeout(20000) });
+            assert.ok(good.ok);
+            console.log('PASS normal HTTPS', good.status, process.version);
+            for (const host of ['dv-g3b-emudhra', 'dv-g3b-aaa-emudhra']) {
+              const url = `https://${host}.we-have-a-problem.com/`;
+              await assert.rejects(fetch(url, { signal: AbortSignal.timeout(20000) }), (error) => {
+                const code = error.cause?.code;
+                console.log('TLS rejection', url, code);
+                return ['CERT_HAS_EXPIRED', 'UNABLE_TO_GET_ISSUER_CERT_LOCALLY', 'UNABLE_TO_VERIFY_LEAF_SIGNATURE', 'CERT_REVOKED', 'CERT_SIGNATURE_FAILURE'].includes(code);
+              });
+            }
+          })().catch((error) => { console.error(error); process.exit(1); });
+          NODE
