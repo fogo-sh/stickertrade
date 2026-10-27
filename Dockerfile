@@ -1,9 +1,8 @@
 # syntax=docker/dockerfile:1.7
 
-# Debian-slim base — glibc-compatible so sharp's prebuilt libvips bindings
-# install cleanly. Pin to a specific minor version for reproducibility.
-ARG NODE_VERSION=24.22.1
-FROM node:${NODE_VERSION}-slim AS base
+# Debian/glibc keeps sharp's N-API prebuilds compatible.
+ARG NODE_VERSION=26
+FROM platformatic/node-caged:${NODE_VERSION}-slim AS base
 RUN apt-get update && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends ca-certificates \
     && update-ca-certificates && rm -rf /var/lib/apt/lists/*
